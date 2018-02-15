@@ -66,6 +66,20 @@ describe('Commands', () => {
       });
     });
 
+    it('should be cancellable', (done) => {
+      let light = new Light;
+      let run = async () => {
+        await c.flash(light, 250);
+      };
+      run().then(() => {
+        light.on.should.be.false;
+        done();
+      });
+      light.on.should.be.true;
+      this.clock.tick(100);
+      c.cancel();
+    });
+
   });
 
 });

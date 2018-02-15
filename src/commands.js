@@ -26,19 +26,22 @@ let cancel = (ct=cancellable) => {
   cancellable = new Cancellable;
 };
 
-let pause = (ms, ct=cancellable) =>
-  new Promise(resolve => {
+let pause = (ms, ct=cancellable) => {
+  if (ct.isCancelled) return;
+  return new Promise(resolve => {
     let timeoutID = setTimeout(() => {
       ct.del(timeoutID);
       resolve();
     }, ms)
     ct.add(timeoutID, resolve);
   });
+};
 
 let flash = async (light, ms=500, ct=cancellable) => {
   light.toggle();
   await pause(ms, ct);
   light.toggle();
+  if (ct.isCancelled) return;
   await pause(ms, ct);
 };
 
