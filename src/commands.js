@@ -35,6 +35,13 @@ let pause = (ms, ct=cancellable) =>
     ct.add(timeoutID, resolve);
   });
 
+let flash = async (light, ms=500, ct=cancellable) => {
+  light.toggle();
+  await pause(ms, ct);
+  light.toggle();
+  await pause(ms, ct);
+};
+
 module.exports = {
-  Cancellable, cancel, pause
+  Cancellable, cancel, pause, flash
 }
