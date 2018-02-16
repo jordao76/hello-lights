@@ -1,0 +1,36 @@
+.traffic-light {
+  background-color: #222222;
+  border: 5px solid black;
+  margin-right: 2px;
+  width: 190px;
+  height: 520px;
+  float: left;
+}
+
+.circle {
+	border-radius: 50%;
+	width: 130px;
+	height: 130px;
+  margin: 25px;
+  border: 5px solid black;
+  cursor: pointer;
+}
+
+.red {
+  background-color: #910000;
+}
+.red.on {
+  background-color: #ff0000;
+}
+.yellow {
+  background-color: #777300;
+}
+.yellow.on {
+  background-color: #fff600;
+}
+.green {
+  background-color: #094c1e;
+}
+.green.on {
+  background-color: #00ff50;
+}

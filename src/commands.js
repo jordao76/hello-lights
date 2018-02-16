@@ -1,26 +1,6 @@
-class Cancellable {
-  constructor() {
-    this.isCancelled = false;
-    this._timeoutIDs = {};
-  }
-  add(timeoutID, resolve) {
-    this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
-  }
-  del(timeoutID) {
-    delete this._timeoutIDs[timeoutID.id||timeoutID];
-  }
-  cancel() {
-    this.isCancelled = true;
-    for (let [_, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
-      this.del(timeoutID);
-      clearTimeout(timeoutID);
-      resolve();
-    }
-  }
-}
+let Cancellable = require('./cancellable');
 
-let cancellable = new Cancellable;
-
+let cancellable = new Cancellable; // default cancellable
 async function cancel(ct=cancellable) {
   ct.cancel();
   if (ct === cancellable) {
@@ -37,6 +17,25 @@ async function pause(ms, ct=cancellable) {
     }, ms)
     ct.add(timeoutID, resolve);
   });
+}
+
+// cancellable command (cc) -> a command that runs with a (deferred) cancellation token
+// all arguments of the command but the last (the cancellation token) must be provided
+let makecc = (command, ...args) =>
+  (ct) => command(...args, ct);
+
+async function timeout(cc, ms, ct=cancellable) {
+  let timeoutC = new Cancellable;
+  let timeoutP = pause(ms,ct);
+  // race the cancellable-command against the timeout
+  await Promise.race([cc(timeoutC), timeoutP]);
+  // check if the timeout was reached
+  let value = await Promise.race([timeoutP, Promise.resolve(42)]);
+  // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
+  if (value !== 42 || ct.isCancelled) {
+    // the timeout was reached (value !== 42) OR the timeout was cancelled
+    timeoutC.cancel();
+  }
 }
 
 async function flash(light, ms=500, ct=cancellable) {
@@ -85,28 +84,8 @@ async function heartbeat(light, beatMs=250, pauseMs=350, ct=cancellable) {
   }
 }
 
-// cancellable command (cc) -> a command that runs with a (deferred) cancellation token
-// all arguments of the command but the last (the cancellation token) must be provided
-let makecc = (command, ...args) =>
-  (ct) => command(...args, ct);
-
-async function timeout(cc, ms, ct=cancellable) {
-  let timeoutC = new Cancellable;
-  let timeoutP = pause(ms,ct);
-  // race the cancellable-command against the timeout
-  await Promise.race([cc(timeoutC), timeoutP]);
-  // check if the timeout was reached
-  let value = await Promise.race([timeoutP, Promise.resolve(42)]);
-  // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
-  if (value !== 42 || ct.isCancelled) {
-    // the timeout was reached (value !== 42) OR the timeout was cancelled
-    timeoutC.cancel();
-  }
-}
-
-var module;
-(module || {}).exports = {
-  Cancellable,
+module.exports = {
+  cancellable,
   cancel, pause, timeout, makecc,
   flash, blink, twinkle,
   cycle, jointly, heartbeat
