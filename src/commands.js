@@ -43,7 +43,6 @@ async function flash(light, ms=500, ct=cancellable) {
   light.toggle();
   await pause(ms, ct);
   light.toggle();
-  if (ct.isCancelled) return;
   await pause(ms, ct);
 }
 
@@ -86,10 +85,29 @@ async function heartbeat(light, beatMs=250, pauseMs=350, ct=cancellable) {
   }
 }
 
+// cancellable command (cc) -> a command that runs with a (deferred) cancellation token
+// all arguments of the command but the last (the cancellation token) must be provided
+let makecc = (command, ...args) =>
+  (ct) => command(...args, ct);
+
+async function timeout(cc, ms, ct=cancellable) {
+  let timeoutC = new Cancellable;
+  let timeoutP = pause(ms,ct);
+  // race the cancellable-command against the timeout
+  await Promise.race([cc(timeoutC), timeoutP]);
+  // check if the timeout was reached
+  let value = await Promise.race([timeoutP, Promise.resolve(42)]);
+  // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
+  if (value !== 42 || ct.isCancelled) {
+    // the timeout was reached (value !== 42) OR the timeout was cancelled
+    timeoutC.cancel();
+  }
+}
+
 var module;
 (module || {}).exports = {
   Cancellable,
-  cancel, pause,
+  cancel, pause, timeout, makecc,
   flash, blink, twinkle,
   cycle, jointly, heartbeat
 }

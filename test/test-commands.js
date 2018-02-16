@@ -111,4 +111,53 @@ describe('Commands', () => {
 
   });
 
+  describe('timeout', () => {
+
+    it('should cancel when the timeout is reached', (done) => {
+      let light = new Light;
+      let token;
+      let run = async () => {
+        let command = (ct) =>
+          c.twinkle(light, 250, token=ct); // blink forever
+        await c.timeout(command, 5000);
+      };
+      run().then(() => {
+        token.isCancelled.should.be.true;
+        done();
+      });
+      this.clock.tick(6000);
+    });
+
+    it('the timeout itself should be cancellable', (done) => {
+      let light = new Light;
+      let token;
+      let run = async () => {
+        let command = (ct) =>
+          c.twinkle(light, 250, token=ct); // blink forever
+        await c.timeout(command, 5000);
+      };
+      run().then(() => {
+        token.isCancelled.should.be.true;
+        done();
+      });
+      c.cancel();
+    });
+
+    it('should NOT cancel when the command ends before the timeout', (done) => {
+      let light = new Light;
+      let token;
+      let run = async () => {
+        let command = (ct) => c.flash(light, 250, token=ct);
+        await c.timeout(command, 5000);
+      };
+      run().then(() => {
+        token.isCancelled.should.be.false;
+        done();
+      });
+      this.clock.tick(250);
+      yieldThen(() => this.clock.tick(250));
+    });
+
+  });
+
 });
