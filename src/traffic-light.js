@@ -17,6 +17,7 @@ class TrafficLight {
   }
 }
 
-module.exports = {
+var module;
+(module || {}).exports = {
   Light, TrafficLight
 };

@@ -61,6 +61,7 @@ let twinkle = async (light, ms=500, ct=cancellable) => {
   }
 };
 
-module.exports = {
+var module;
+(module || {}).exports = {
   Cancellable, cancel, pause, flash, blink, twinkle
 }
