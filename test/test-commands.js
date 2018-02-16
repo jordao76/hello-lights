@@ -59,10 +59,10 @@ describe('Commands', () => {
         done();
       });
       light.on.should.be.true;
-      this.clock.tick(260);
+      this.clock.tick(250);
       yieldThen(() => {
         light.on.should.be.false;
-        this.clock.tick(260);
+        this.clock.tick(250);
       });
     });
 
@@ -78,6 +78,35 @@ describe('Commands', () => {
       light.on.should.be.true;
       this.clock.tick(100);
       c.cancel();
+    });
+
+  });
+
+  describe('sparkle', () => {
+
+    it('should flash twice', (done) => {
+      let light = new Light;
+      let run = async () => {
+        await c.sparkle(light, 250, 2);
+      };
+      run().then(() => {
+        light.on.should.be.false;
+        done();
+      });
+      light.on.should.be.true;
+      this.clock.tick(250);
+      yieldThen(() => {
+        light.on.should.be.false;
+        this.clock.tick(250);
+        yieldThen(() => {
+          light.on.should.be.true;
+          this.clock.tick(250);
+          yieldThen(() => {
+            light.on.should.be.false;
+            this.clock.tick(250);
+          });
+        });
+      });
     });
 
   });
