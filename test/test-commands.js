@@ -82,12 +82,12 @@ describe('Commands', () => {
 
   });
 
-  describe('sparkle', () => {
+  describe('blink', () => {
 
     it('should flash twice', (done) => {
       let light = new Light;
       let run = async () => {
-        await c.sparkle(light, 250, 2);
+        await c.blink(light, 250, 2);
       };
       run().then(() => {
         light.on.should.be.false;
