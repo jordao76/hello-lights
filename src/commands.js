@@ -23,7 +23,9 @@ let cancellable = new Cancellable;
 
 let cancel = (ct=cancellable) => {
   ct.cancel();
-  cancellable = new Cancellable;
+  if (ct === cancellable) {
+    cancellable = new Cancellable;
+  }
 };
 
 let pause = (ms, ct=cancellable) => {
@@ -52,6 +54,13 @@ let sparkle = async (light, ms=500, times=10, ct=cancellable) => {
   }
 };
 
+let twinkle = async (light, ms=500, ct=cancellable) => {
+  while (true) {
+    if (ct.isCancelled) break;
+    await flash(light, ms, ct);
+  }
+};
+
 module.exports = {
-  Cancellable, cancel, pause, flash, sparkle
+  Cancellable, cancel, pause, flash, sparkle, twinkle
 }
