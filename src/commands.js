@@ -47,6 +47,17 @@ async function timeout(cc, ms, ct=cancellable) {
   return res;
 }
 
+function lights(tl, r, y, g, ct=cancellable) {
+  let conform = (l, v) => { if (l.on != v) l.toggle(); }
+  conform(tl.red, r);
+  conform(tl.yellow, y);
+  conform(tl.green, g);
+}
+lights.name = 'lights';
+lights.desc = 'Set the lights to the given values (on=1 or off=0)';
+lights.usage = 'lights [red on/off] [yellow on/off] [green on/off]';
+lights.eg = 'lights 0 0 1';
+
 async function flash(light, ms=500, ct=cancellable) {
   light.toggle();
   await pause(ms, ct);
@@ -173,16 +184,15 @@ soundbar.desc = 'Soundbar: just like a sound bar with the given duration';
 soundbar.usage = 'soundbar [duration in ms for the lights]';
 soundbar.eg = 'soundbar 500';
 
-// more commands:
-// error, warning, success, stale, set(red,yellow,green)
-
 module.exports = {
   cancellable,
   cancel, pause, run, timeout, makecc,
+  lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
   sos, danger, bounce, soundbar,
   published: {
+    lights,
     flash, blink, twinkle,
     cycle, jointly, heartbeat,
     sos, danger, bounce, soundbar
