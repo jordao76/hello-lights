@@ -43,13 +43,25 @@ describe('CommandParser', () => {
     let commandStr = 'turn (red green yellow 10) 100';
     let command = cp.parse(commandStr);
     // command will be
-    //   (tl, ct) => commands['turn']([tl.red, tl.green, tl.yellow, 10], ct)
+    //   (tl, ct) => commands['turn']([tl.red, tl.green, tl.yellow, 10], 100, ct)
     let res = command(tl, 80);
     commands.turned.should.deep.equal([[tl.red,tl.green,tl.yellow,10],100,80]);
     res.should.equal(97);
   });
 
-  xit('should parse string parameters that are not lights');
+  it('should parse string parameters that are not lights', () => {
+    commands.stringy = function(tl,str,n,ct) {
+      this.stringed=[tl,str,n,ct];
+      return 98;
+    };
+    let commandStr = 'stringy blue 101';
+    let command = cp.parse(commandStr);
+    // command will be
+    //   (tl, ct) => commands['stringy'](tl,'blue', 101, ct)
+    let res = command(tl, 81);
+    commands.stringed.should.deep.equal([tl,'blue',101,81]);
+    res.should.equal(98);
+  });
 
   xit('should handle errors in the command');
 

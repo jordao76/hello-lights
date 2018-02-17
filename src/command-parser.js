@@ -3,7 +3,7 @@ let isArray = a => Array.isArray(a);
 
 let isLight = a => {
   if (isArray(a)) return a.some(isLight);
-  return isString(a);
+  return a === 'red' || a === 'yellow' || a === 'green';
 };
 
 let getLight = (a, tl) => {
