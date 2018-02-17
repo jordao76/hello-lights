@@ -15,6 +15,7 @@ class CommandParser {
 
   constructor(commands) {
     this.commands = commands;
+    this.commandList = Object.keys(commands);
   }
 
   parse(commandStr) {

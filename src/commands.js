@@ -53,6 +53,10 @@ async function flash(light, ms=500, ct=cancellable) {
   light.toggle();
   await pause(ms, ct);
 }
+flash.name = 'flash';
+flash.desc = 'Flashes a light for the given duration: toggle, wait, toggle back, wait again';
+flash.usage = 'flash [light] [duration in ms]';
+flash.eg = 'flash red 500';
 
 async function blink(light, ms=500, times=10, ct=cancellable) {
   while (times-- > 0) {
@@ -60,6 +64,10 @@ async function blink(light, ms=500, times=10, ct=cancellable) {
     await flash(light, ms, ct);
   }
 }
+blink.name = 'blink';
+blink.desc = 'Flashes a light for the given duration and number of times';
+blink.usage = 'blink [light] [duration in ms] [number of times to flash]';
+blink.eg = 'blink yellow 500 10';
 
 async function twinkle(light, ms=500, ct=cancellable) {
   while (true) {
@@ -67,6 +75,10 @@ async function twinkle(light, ms=500, ct=cancellable) {
     await flash(light, ms, ct);
   }
 }
+twinkle.name = 'twinkle';
+twinkle.desc = 'Flashes a light for the given duration forever';
+twinkle.usage = 'twinkle [duration in ms]';
+twinkle.eg = 'twinkle green 500';
 
 async function cycle(tl, ms=500, flashes=2, ct=cancellable) {
   while (true) {
@@ -76,6 +88,10 @@ async function cycle(tl, ms=500, flashes=2, ct=cancellable) {
     await blink(tl.green,ms,flashes,ct);
   }
 }
+cycle.name = 'cycle';
+cycle.desc = 'Blinks each light in turn for the given duration and number of times, repeating forever; starts with Red';
+cycle.usage = 'cycle [duration in ms] [number of times to flash each light]';
+cycle.eg = 'cycle 500 2';
 
 async function jointly(tl, ms=500, ct=cancellable) {
   await Promise.all([
@@ -84,18 +100,30 @@ async function jointly(tl, ms=500, ct=cancellable) {
     twinkle(tl.green,ms,ct)
   ]);
 }
+jointly.name = 'jointly';
+jointly.desc = 'Flashes all lights together forever';
+jointly.usage = 'jointly [duration in ms of each flash]';
+jointly.eg = 'jointly 500';
 
-async function heartbeat(light, beatMs=250, pauseMs=350, ct=cancellable) {
+async function heartbeat(light, ct=cancellable) {
   while (true) {
     if (ct.isCancelled) break;
-    await blink(light,beatMs,2,ct);
-    await pause(pauseMs,ct);
+    await blink(light,250,2,ct);
+    await pause(350,ct);
   }
 }
+heartbeat.name = 'heartbeat';
+heartbeat.desc = 'Heartbeat pattern';
+heartbeat.usage = 'heartbeat [light]';
+heartbeat.eg = 'heartbeat red';
 
 module.exports = {
   cancellable,
   cancel, pause, run, timeout, makecc,
   flash, blink, twinkle,
-  cycle, jointly, heartbeat
+  cycle, jointly, heartbeat,
+  published: {
+    flash, blink, twinkle,
+    cycle, jointly, heartbeat
+  }
 }

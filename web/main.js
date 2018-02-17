@@ -18,13 +18,15 @@ class WebLight {
   toggle() { this.$light.toggleClass('on'); }
 }
 
+///////////////
+
 var cancellable = new Cancellable;
 window.cancel = function() {
   cancellable.cancel();
   cancellable = new Cancellable;
 }
 
-var cp = new CommandParser(commands);
+var cp = new CommandParser(commands.published);
 window.execute = async function(str) {
   cancel();
   var command = cp.parse(str);
@@ -37,12 +39,54 @@ window.execute = async function(str) {
   return res;
 }
 
+window.help = function(commandName) {
+  if (commandName === undefined) {
+    var commandList = cp.commandList.map(c=>`    ${c}`);
+    console.log([
+      `Commands for the traffic light`,
+      `> help()`,
+      `> help('command name')`,
+      `> execute('command')`,
+      `> cancel()`,
+      `  available commands:`,
+      ...commandList
+    ].join('\n'));
+  }
+  else {
+    var command = cp.commands[commandName];
+    if (command === undefined) {
+      help();
+      return;
+    }
+    console.log([
+      `${command.name}: ${command.desc}`,
+      `  usage: ${command.usage}`,
+      `  sample: execute('${command.eg}')`
+    ].join('\n'));
+  }
+}
+
+function utter(str) {
+  try {
+    var synth = window.speechSynthesis;
+    var utterance = new SpeechSynthesisUtterance(str);
+    synth.speak(utterance);
+  } catch(e) {}
+}
+
 ///////////////
 
-$(() => {
+async function main() {
   var r = new WebLight('#tl > .red');
   var y = new WebLight('#tl > .yellow');
   var g = new WebLight('#tl > .green');
   window.tl = new trafficlight.TrafficLight(r,y,g);
+  help();
+  await commands.pause(1000);
+  utter("Open the java script console");
   execute('cycle 150 3');
+}
+
+$(() => {
+  main();
 });
