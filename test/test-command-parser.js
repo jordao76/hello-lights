@@ -3,20 +3,15 @@ require('chai').should();
 
 describe('CommandParser', () => {
 
-  var commands = {
-    blink(light,n1,n2,ct) {
-      this.blinked=[light,n1,n2,ct];
-      return 95;
-    },
-    cycle(tl,ct) {
-      this.cycled=[tl,ct];
-      return 96;
-    }
-  };
+  var commands = {};
   let cp = new CommandParser(commands);
-  let tl = {red:32};
+  let tl = {red:32, yellow:33, green:34};
 
   it('should parse a light command', () => {
+    commands.blink = function(light,n1,n2,ct) {
+      this.blinked=[light,n1,n2,ct];
+      return 95;
+    };
     let commandStr = 'blink red 500 10';
     let command = cp.parse(commandStr);
     // command will be
@@ -27,6 +22,10 @@ describe('CommandParser', () => {
   });
 
   it('should parse a traffic light command', () => {
+    commands.cycle = function(tl,ct) {
+      this.cycled=[tl,ct];
+      return 96;
+    };
     let commandStr = 'cycle';
     let command = cp.parse(commandStr);
     // command will be
@@ -36,8 +35,22 @@ describe('CommandParser', () => {
     res.should.equal(96);
   });
 
-  xit('should handle errors in the command');
+  it('should parse array parameters', () => {
+    commands.turn = function(arr,n,ct) {
+      this.turned=[arr,n,ct];
+      return 97;
+    };
+    let commandStr = 'turn (red green yellow 10) 100';
+    let command = cp.parse(commandStr);
+    // command will be
+    //   (tl, ct) => commands['turn']([tl.red, tl.green, tl.yellow, 10], ct)
+    let res = command(tl, 80);
+    commands.turned.should.deep.equal([[tl.red,tl.green,tl.yellow,10],100,80]);
+    res.should.equal(97);
+  });
 
-  xit('should parse array parameters');
+  xit('should parse string parameters that are not lights');
+
+  xit('should handle errors in the command');
 
 });
