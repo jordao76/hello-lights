@@ -24,18 +24,27 @@ async function pause(ms, ct=cancellable) {
 let makecc = (command, ...args) =>
   (ct) => command(...args, ct);
 
+function run(command, ...args) {
+  try {
+    return command(...args);
+  } catch(e) {
+    return e;
+  }
+}
+
 async function timeout(cc, ms, ct=cancellable) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms,ct);
   // race the cancellable-command against the timeout
-  await Promise.race([cc(timeoutC), timeoutP]);
+  let res = await Promise.race([run(cc, timeoutC), timeoutP]);
   // check if the timeout was reached
-  let value = await Promise.race([timeoutP, Promise.resolve(42)]);
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
+  let value = await Promise.race([timeoutP, 42]);
   if (value !== 42 || ct.isCancelled) {
     // the timeout was reached (value !== 42) OR the timeout was cancelled
     timeoutC.cancel();
   }
+  return res;
 }
 
 async function flash(light, ms=500, ct=cancellable) {
@@ -86,7 +95,7 @@ async function heartbeat(light, beatMs=250, pauseMs=350, ct=cancellable) {
 
 module.exports = {
   cancellable,
-  cancel, pause, timeout, makecc,
+  cancel, pause, run, timeout, makecc,
   flash, blink, twinkle,
   cycle, jointly, heartbeat
 }

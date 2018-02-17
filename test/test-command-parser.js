@@ -1,4 +1,5 @@
 let CommandParser = require('../src/command-parser');
+let c = require('../src/commands');
 require('chai').should();
 
 describe('CommandParser', () => {
@@ -16,7 +17,7 @@ describe('CommandParser', () => {
     let command = cp.parse(commandStr);
     // command will be
     //   (tl, ct) => commands['blink'](tl['red'], 500, 10, ct)
-    let res = await command(tl, 78);
+    let res = await c.run(command,tl,78);
     commands.blinked.should.deep.equal([tl.red,500,10,78]);
     res.should.equal(95);
   });
@@ -30,7 +31,7 @@ describe('CommandParser', () => {
     let command = cp.parse(commandStr);
     // command will be
     //   (tl, ct) => commands['cycle'](tl, ct)
-    let res = await command(tl, 79);
+    let res = await c.run(command,tl,79);
     commands.cycled.should.deep.equal([tl,79]);
     res.should.equal(96);
   });
@@ -44,7 +45,7 @@ describe('CommandParser', () => {
     let command = cp.parse(commandStr);
     // command will be
     //   (tl, ct) => commands['turn']([tl.red, tl.green, tl.yellow, 10], 100, ct)
-    let res = await command(tl, 80);
+    let res = await c.run(command,tl,80);
     commands.turned.should.deep.equal([[tl.red,tl.green,tl.yellow,10],100,80]);
     res.should.equal(97);
   });
@@ -58,20 +59,17 @@ describe('CommandParser', () => {
     let command = cp.parse(commandStr);
     // command will be
     //   (tl, ct) => commands['stringy'](tl,'blue', 101, ct)
-    let res = await command(tl, 81);
+    let res = await c.run(command,tl,81);
     commands.stringed.should.deep.equal([tl,'blue',101,81]);
     res.should.equal(98);
   });
 
-  it('shows how to handle errors in the command', async (done) => {
+  it('shows how to handle errors in the command', async () => {
     let commandStr = 'invalid red';
     let command = cp.parse(commandStr);
-    try {
-      let res = await command(82);
-    } catch(e) {
-      e.toString().should.have.string('TypeError');
-      done();
-    }
+    let res = await c.run(command,tl,82);
+    res.should.be.an.instanceof(Error);
+    res.toString().should.have.string('TypeError');
   });
 
 });
