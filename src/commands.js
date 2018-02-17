@@ -117,13 +117,74 @@ heartbeat.desc = 'Heartbeat pattern';
 heartbeat.usage = 'heartbeat [light]';
 heartbeat.eg = 'heartbeat red';
 
+async function sos(light, ct=cancellable) {
+  while (true) {
+    if (ct.isCancelled) break;
+    await blink(light,150,3,ct);
+    await blink(light,250,2,ct);
+    light.toggle();
+    await pause(250,ct);
+    light.toggle();
+    await pause(150,ct);
+    await blink(light,150,3,ct);
+    await pause(700,ct);
+  }
+}
+sos.name = 'sos';
+sos.desc = 'SOS distress signal morse code pattern';
+sos.usage = 'sos [light]';
+sos.eg = 'sos red';
+
+async function danger(tl, ct=cancellable) {
+  await twinkle(tl.red, 400, ct);
+}
+danger.name = 'danger';
+danger.desc = 'Danger: twinkle red with 400ms';
+danger.usage = 'danger';
+danger.eg = 'danger';
+
+async function bounce(tl, ms=500, ct=cancellable) {
+  while (true) {
+    if (ct.isCancelled) break;
+    tl.green.toggle(); await pause(ms,ct); tl.green.toggle();
+    tl.yellow.toggle(); await pause(ms,ct); tl.yellow.toggle();
+    tl.red.toggle(); await pause(ms,ct); tl.red.toggle();
+    tl.yellow.toggle(); await pause(ms,ct); tl.yellow.toggle();
+  }
+}
+bounce.name = 'bounce';
+bounce.desc = 'Bounces through the lights with the given duration between them';
+bounce.usage = 'bounce [duration in ms between lights]';
+bounce.eg = 'bounce 500';
+
+async function soundbar(tl, ms=500, ct=cancellable) {
+  while (true) {
+    if (ct.isCancelled) break;
+    tl.green.toggle(); await pause(ms,ct);
+    tl.yellow.toggle(); await pause(ms,ct);
+    tl.red.toggle(); await pause(ms,ct);
+    tl.red.toggle(); await pause(ms,ct);
+    tl.yellow.toggle(); await pause(ms,ct);
+    tl.green.toggle(); await pause(ms,ct);
+  }
+}
+soundbar.name = 'soundbar';
+soundbar.desc = 'Soundbar: just like a sound bar with the given duration';
+soundbar.usage = 'soundbar [duration in ms for the lights]';
+soundbar.eg = 'soundbar 500';
+
+// more commands:
+// error, warning, success, stale, set(red,yellow,green)
+
 module.exports = {
   cancellable,
   cancel, pause, run, timeout, makecc,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
+  sos, danger, bounce, soundbar,
   published: {
     flash, blink, twinkle,
-    cycle, jointly, heartbeat
+    cycle, jointly, heartbeat,
+    sos, danger, bounce, soundbar
   }
-}
+};

@@ -27,8 +27,8 @@ window.cancel = function() {
 }
 
 var cp = new CommandParser(commands.published);
-window.execute = async function(str) {
-  cancel();
+window.execute = async function(str, shouldCancel=true) {
+  if (shouldCancel) cancel();
   var command = cp.parse(str);
   console.log(`Executing command '${str}'`);
   var res = await commands.run(command,tl,cancellable);
@@ -84,7 +84,7 @@ async function main() {
   help();
   await commands.pause(1000);
   utter("Open the java script console");
-  execute('cycle 150 3');
+  execute('heartbeat red');
 }
 
 $(() => {
