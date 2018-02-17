@@ -35,6 +35,7 @@ class CommandParser {
       return this.commands[command](...args, ct);
     };
   }
+
 }
 
 module.exports = CommandParser;
