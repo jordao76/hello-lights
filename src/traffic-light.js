@@ -12,9 +12,6 @@ class TrafficLight {
     this.yellow = yellow || new Light;
     this.green = green || new Light;
   }
-  toString() {
-    return `${+this.red.on}${+this.yellow.on}${+this.green.on}`
-  }
 }
 
 module.exports = {

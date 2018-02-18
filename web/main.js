@@ -29,9 +29,8 @@ window.cancel = function() {
 var cp = new CommandParser(commands.published);
 window.execute = async function(str, shouldCancel=true) {
   if (shouldCancel) cancel();
-  var command = cp.parse(str);
   console.log(`Executing command '${str}'`);
-  var res = await commands.run(command,tl,cancellable);
+  var res = await cp.execute(str,tl,cancellable);
   if (res instanceof Error) {
     console.error(`Error executing command '${str}'`);
     console.error(res.toString());

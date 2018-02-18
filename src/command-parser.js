@@ -37,6 +37,15 @@ class CommandParser {
     };
   }
 
+  async execute(commandStr, tl, ct) {
+    var command = this.parse(commandStr);
+    try {
+      return command(tl, ct);
+    } catch(e) {
+      return e;
+    }
+  }
+
 }
 
 module.exports = CommandParser;

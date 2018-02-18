@@ -26,26 +26,3 @@ describe('Light', () => {
     light.off.should.be.true;
   });
 });
-
-describe('TrafficLight', () => {
-  it('should be representable as a bit string', () => {
-    let tl = new l.TrafficLight();
-    tl.toString().should.equal('000');
-    tl.red.turnOn();
-    tl.toString().should.equal('100');
-    tl.red.turnOff();
-    tl.toString().should.equal('000');
-    tl.yellow.turnOn();
-    tl.toString().should.equal('010');
-    tl.yellow.turnOff();
-    tl.toString().should.equal('000');
-    tl.green.turnOn();
-    tl.toString().should.equal('001');
-    tl.green.turnOff();
-    tl.toString().should.equal('000');
-    tl.red.turnOn();
-    tl.yellow.turnOn();
-    tl.green.turnOn();
-    tl.toString().should.equal('111');
-  });
-});
