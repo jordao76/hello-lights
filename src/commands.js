@@ -185,7 +185,6 @@ soundbar.usage = 'soundbar [duration in ms for the lights]';
 soundbar.eg = 'soundbar 500';
 
 module.exports = {
-  cancellable,
   cancel, pause, run, timeout, makecc,
   lights,
   flash, blink, twinkle,

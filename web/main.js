@@ -4,7 +4,6 @@
 
 var trafficlight = require('../src/traffic-light.js');
 var commands = require('../src/commands.js');
-var Cancellable = require('../src/cancellable.js');
 var CommandParser = require('../src/command-parser.js');
 
 ///////////////
@@ -20,17 +19,15 @@ class WebLight {
 
 ///////////////
 
-var cancellable = new Cancellable;
 window.cancel = function() {
-  cancellable.cancel();
-  cancellable = new Cancellable;
+  commands.cancel();
 }
 
 var cp = new CommandParser(commands.published);
 window.execute = async function(str, shouldCancel=true) {
   if (shouldCancel) cancel();
   console.log(`Executing command '${str}'`);
-  var res = await cp.execute(str,tl,cancellable);
+  var res = await cp.execute(str,tl);
   if (res instanceof Error) {
     console.error(`Error executing command '${str}'`);
     console.error(res.toString());
