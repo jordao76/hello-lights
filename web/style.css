@@ -5,32 +5,22 @@
   width: 190px;
   height: 520px;
   float: left;
+  box-shadow: 0 0 5px rgba(0,0,0,.8);
 }
 
-.circle {
-	border-radius: 50%;
-	width: 130px;
-	height: 130px;
+.light {
+  border-radius: 50%;
+  width: 130px;
+  height: 130px;
   margin: 25px;
   border: 5px solid black;
+  opacity: .2;
   cursor: pointer;
 }
+.on {
+  opacity: 1;
+}
 
-.red {
-  background-color: #910000;
-}
-.red.on {
-  background-color: #ff0000;
-}
-.yellow {
-  background-color: #777300;
-}
-.yellow.on {
-  background-color: #fff600;
-}
-.green {
-  background-color: #094c1e;
-}
-.green.on {
-  background-color: #00ff50;
-}
+.red { background-color: red; }
+.yellow { background-color: gold; }
+.green { background-color: #0f5; }
