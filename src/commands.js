@@ -48,6 +48,7 @@ async function timeout(cc, ms, ct=cancellable) {
 }
 
 function lights(tl, r, y, g, ct=cancellable) {
+  if (ct.isCancelled) return;
   let conform = (l, v) => { if (l.on != v) l.toggle(); }
   conform(tl.red, r);
   conform(tl.yellow, y);
@@ -150,7 +151,7 @@ async function danger(tl, ct=cancellable) {
   await twinkle(tl.red, 400, ct);
 }
 danger.name = 'danger';
-danger.desc = 'Danger: twinkle red with 400ms';
+danger.desc = 'Danger: twinkle red with 400ms flashes';
 danger.usage = 'danger';
 danger.eg = 'danger';
 
