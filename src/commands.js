@@ -115,6 +115,7 @@ lights.usage = 'lights [red on/off] [yellow on/off] [green on/off]';
 lights.eg = 'lights 0 0 1';
 
 async function flash(light, ms=500, ct=cancellable) {
+  if (ct.isCancelled) return;
   light.toggle();
   await pause(ms, ct);
   light.toggle();
