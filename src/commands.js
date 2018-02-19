@@ -10,6 +10,7 @@ let Cancellable = require('./cancellable');
 
 /**
  * Default Cancellation Token used for all commands.
+ * @private
  */
 let cancellable = new Cancellable;
 

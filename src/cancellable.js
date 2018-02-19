@@ -17,12 +17,14 @@ class Cancellable {
     this.isCancelled = false;
     /**
      * Object storing timeout IDs and corresponding Promise resolve functions.
+     * @private
      */
     this._timeoutIDs = {};
   }
 
   /**
    * Registers the given timeout ID and Promise resolve function.
+   * @package
    * @param timeoutID - Timeout ID, the result of calling
    *   setTimeout, platform dependent.
    * @param {function} resolve - Resolve function for a Promise that should
@@ -35,6 +37,7 @@ class Cancellable {
   /**
    * Unregisters the given timeout ID, meaning that the timeout was reached and
    * will not be cancelled anymore.
+   * @package
    * @param timeoutID - Timeout ID to unregister.
    */
   del(timeoutID) {
@@ -42,9 +45,10 @@ class Cancellable {
   }
 
   /**
-   * Cancels all register timeouts. Sets isCancelled to true.
+   * Cancels all registered timeouts. Sets isCancelled to true.
    * Cancellation means calling clearTimeout with the stored timeout IDs and
    * calling the corresponding resolve functions.
+   * @package
    */
   cancel() {
     this.isCancelled = true;
