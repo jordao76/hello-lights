@@ -1,13 +1,39 @@
+/**
+ * @file Defines commands to control a traffic light.
+ *   The commands are usually time-based and are cancellable
+ *   by a Cancellation Token. All commands take an optional
+ *   Cancellation Token (ct) parameter and use a default if one
+ *   is not provided. Cancellation Tokens are instances of Cancellable.
+ */
+
 let Cancellable = require('./cancellable');
 
-let cancellable = new Cancellable; // default cancellable
-async function cancel(ct=cancellable) {
+/**
+ * Default Cancellation Token used for all commands.
+ */
+let cancellable = new Cancellable;
+
+/**
+ * Cancels all commands that are being executed in the context of a
+ * Cancellable (Cancellation Token).
+ * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+ */
+function cancel(ct=cancellable) {
+  if (ct.isCancelled) return;
   ct.cancel();
   if (ct === cancellable) {
     cancellable = new Cancellable;
   }
 }
 
+/**
+ * Pauses execution for the given duration.
+ * @param {number} ms - Duration in milliseconds for the pause.
+ * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+ * @returns {Promise} Promise that resolves when the pause duration is complete,
+ *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
+ *   is resolved, never rejected.
+ */
 async function pause(ms, ct=cancellable) {
   if (ct.isCancelled) return;
   return new Promise(resolve => {
@@ -19,11 +45,29 @@ async function pause(ms, ct=cancellable) {
   });
 }
 
-// cancellable command (cc) -> a command that runs with a (deferred) cancellation token
-// all arguments of the command but the last (the cancellation token) must be provided
-let makecc = (command, ...args) =>
-  (ct) => command(...args, ct);
+/**
+ * Makes a cancellable-command (cc) from the given arguments.
+ * All commands take a Cancellation Token (ct) as their last argument.
+ * This function takes a command function and all its arguments except the
+ * Cancellation Token, and returns a command function that takes a Cancellation
+ * Token for the given command.
+ * @param {function} command - Command function.
+ * @param {...*} args - All arguments of the command but the last
+ *   (the Cancellation Token).
+ * @returns {function} A new command function that takes a Cancellation Token.
+ */
+function makecc(command, ...args) {
+  return ct => command(...args, ct);
+}
 
+/**
+ * Executes a command with the given arguments.
+ * Catches any errors and returns them instead of throwing them.
+ * @param {function} command - Command function.
+ * @param {...*} args - All arguments of the command.
+ * @returns {(Promise|Error)} The result of the command execution
+ *   (usually a Promise) or an Error if one was thrown.
+ */
 function run(command, ...args) {
   try {
     return command(...args);
@@ -32,6 +76,15 @@ function run(command, ...args) {
   }
 }
 
+/**
+ * Executes a cancellable-command (cc) with a timeout.
+ * @param {function} cc - Cancellable-command, a command function
+ *   that takes a Cancellation Token parameter.
+ * @param {number} ms - Duration in milliseconds for the timeout.
+ * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+ * @returns {Promise} The result of the command execution (can be an Error) if
+ *   the command finished before the timeout.
+ */
 async function timeout(cc, ms, ct=cancellable) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms,ct);
@@ -46,6 +99,8 @@ async function timeout(cc, ms, ct=cancellable) {
   }
   return res;
 }
+
+////////////////////
 
 function lights(tl, r, y, g, ct=cancellable) {
   if (ct.isCancelled) return;
