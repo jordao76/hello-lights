@@ -146,7 +146,7 @@ async function twinkle(light, ms=500, ct=cancellable) {
 }
 twinkle.name = 'twinkle';
 twinkle.desc = 'Flashes a light for the given duration forever';
-twinkle.usage = 'twinkle [duration in ms]';
+twinkle.usage = 'twinkle [light] [duration in ms]';
 twinkle.eg = 'twinkle green 500';
 
 async function cycle(tl, ms=500, flashes=2, ct=cancellable) {
