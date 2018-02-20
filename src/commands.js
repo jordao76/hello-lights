@@ -163,11 +163,14 @@ cycle.usage = 'cycle [duration in ms] [number of times to flash each light]';
 cycle.eg = 'cycle 500 2';
 
 async function jointly(tl, ms=500, ct=cancellable) {
-  await Promise.all([
-    twinkle(tl.red,ms,ct),
-    twinkle(tl.yellow,ms,ct),
-    twinkle(tl.green,ms,ct)
-  ]);
+  while (true) {
+    if (ct.isCancelled) break;
+    await Promise.all([
+      flash(tl.red, ms, ct),
+      flash(tl.yellow, ms, ct),
+      flash(tl.green, ms, ct)
+    ]);
+  }
 }
 jointly.name = 'jointly';
 jointly.desc = 'Flashes all lights together forever';
