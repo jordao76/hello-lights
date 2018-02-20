@@ -2,12 +2,13 @@
   "name": "traffic-light-controller",
   "version": "0.0.1",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "web": "browserify web/main.js -o web/bundle.js && start web/index.html"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
     "chai": "^4.1.2",
+    "coffeescript": "^2.2.1",
     "mocha": "^5.0.1",
     "sinon": "^4.3.0"
   }
