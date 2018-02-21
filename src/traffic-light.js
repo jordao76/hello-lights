@@ -12,6 +12,11 @@ class TrafficLight {
     this.yellow = yellow || new Light;
     this.green = green || new Light;
   }
+  reset() {
+    this.red.turnOff(),
+    this.yellow.turnOff(),
+    this.green.turnOff()
+  }
 }
 
 module.exports = {
