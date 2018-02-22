@@ -31,6 +31,7 @@
  *   ```
  */
 
+let { Light, TrafficLight } = require('../traffic-light');
 let Device = require('../device');
 let proc = require('child_process');
 
@@ -68,10 +69,6 @@ module.exports = function(options) {
 
   class USBswitchCmdDevice extends Device {
 
-    static devices() {
-      return USBswitchCmdDevice._devices || {};
-    }
-
     static async resolveDevices() {
       USBswitchCmdDevice._devices = USBswitchCmdDevice._devices || {};
       let deviceListOutput = await execUSBswitchCmd('-l');
@@ -82,29 +79,37 @@ module.exports = function(options) {
       let rx = /Device\D+(\d+)\W+Type\D+(\d+)\W+Version\D+(\d+)\W+SerNum\D+(\d+)/gi;
       let m;
       while (m = rx.exec(deviceListOutput)) {
-        let deviceNum = m[1], type = m[2], version = m[3], serialNum = m[4];
-        let device = USBswitchCmdDevice._devices[serialNum];
-        if (device) {
-          // since the device was found on the list, it's assumed to be connected
-          device.connect();
-        }
-        else if (type == USB_TRAFFIC_LIGHT_DEVICE_TYPE) {
-          USBswitchCmdDevice._devices[serialNum] =
-            new USBswitchCmdDevice({deviceNum, type, version, serialNum});
-        }
+        let [, deviceNum, type, version, serialNum] = m;
+        USBswitchCmdDevice._registerDevice(deviceNum, type, version, serialNum);
       }
       return USBswitchCmdDevice._devices;
     }
 
-    constructor(deviceInfo) {
+    static _registerDevice(deviceNum, type, version, serialNum) {
+      if (type != USB_TRAFFIC_LIGHT_DEVICE_TYPE) return;
+      let device = USBswitchCmdDevice._devices[serialNum];
+      if (device) {
+        // connect device that's already registered,
+        // in case it was disconnected and now reconnected
+        device.connect();
+      }
+      else {
+        // register new device
+        USBswitchCmdDevice._devices[serialNum] =
+          new USBswitchCmdDevice(deviceNum, serialNum);
+      }
+    }
+
+    constructor(deviceNum, serialNum) {
       super();
-      this.deviceInfo = deviceInfo;
+      this.deviceNum = deviceNum;
+      this.serialNum = serialNum;
     }
 
     async turn(lightNum, on) {
       if (!this.isConnected) return;
       try {
-        await execUSBswitchCmd(`-n ${this.deviceInfo.deviceNum} -# ${lightNum} ${on}`);
+        await execUSBswitchCmd(`-n ${this.deviceNum} -# ${lightNum} ${on}`);
       } catch(e) {
         // if the executable failed, assume the device was disconnected
         this.disconnect();
@@ -113,6 +118,58 @@ module.exports = function(options) {
 
   }
   module.USBswitchCmdDevice = USBswitchCmdDevice;
+
+  ///////////////
+
+  class USBswitchCmdLight extends Light {
+    constructor(lightNum, device) {
+      super();
+      this.lightNum = lightNum;
+      this.device = device;
+    }
+    async toggle() {
+      if (!this.device.isConnected) return;
+      super.toggle();
+      await this.device.turn(this.lightNum, +this.on);
+    }
+    async turnOn() {
+      if (!this.device.isConnected) return;
+      super.turnOn();
+      await this.device.turn(this.lightNum, ON);
+    }
+    async turnOff() {
+      if (!this.device.isConnected) return;
+      super.turnOff();
+      await this.device.turn(this.lightNum, OFF);
+    }
+  }
+  module.USBswitchCmdLight = USBswitchCmdLight;
+
+  ///////////////
+
+  class USBswitchCmdTrafficLight extends TrafficLight {
+    constructor(device) {
+      super(
+        new USBswitchCmdLight(RED, device),
+        new USBswitchCmdLight(YELLOW, device),
+        new USBswitchCmdLight(GREEN, device)
+      );
+      this.device = device;
+    }
+  }
+  module.USBswitchCmdTrafficLight = USBswitchCmdTrafficLight;
+
+  ///////////////
+
+  async function resolveConnectedTrafficLight() {
+    let devicesBySerialNum = await USBswitchCmdDevice.resolveDevices();
+    let tls = Object.values(devicesBySerialNum)
+      .filter(device => device.isConnected)
+      .map(device => new USBswitchCmdTrafficLight(device));
+    if (tls.length === 0) return null;
+    return tls[0]; // the first connected traffic light
+  }
+  module.resolveConnectedTrafficLight = resolveConnectedTrafficLight;
 
   ///////////////
 
