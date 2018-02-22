@@ -10,11 +10,15 @@ var CommandParser = require('../src/command-parser.js');
 
 class WebLight {
   constructor(selector) {
-    this.$light = $(selector);
-    this.$light.on('click', () => this.toggle());
+    this.elLight = document.querySelector(selector);
+    this.elLight.addEventListener('click', () => this.toggle());
   }
-  get on() { return this.$light.hasClass('on'); }
-  toggle() { this.$light.toggleClass('on'); }
+  get on() {
+    return this.elLight.classList.contains('on');
+  }
+  toggle() {
+    this.elLight.classList.toggle('on');
+  }
 }
 
 ///////////////
@@ -83,6 +87,8 @@ async function main() {
   execute('heartbeat red');
 }
 
-$(() => {
+if (document.readyState !== 'loading') {
   main();
-});
+} else {
+  document.addEventListener('DOMContentLoaded', main);
+}
