@@ -24,7 +24,7 @@ describe 'USBswitchCmd', ->
     ]
     @exec = sinon.stub(proc, 'exec')
       .callsFake(fakeExec(@deviceListOutput))
-    @devices = await USBswitchCmdDevice.resolveDevices()
+    @devices = await USBswitchCmdDevice.refreshDevices()
     @device = @devices['900636'] # calls to turn will success
     @lastDevice = @devices['900639'] # calls to turn will fail
 
@@ -57,10 +57,17 @@ describe 'USBswitchCmd', ->
       await @lastDevice.turn(2, 1) # green (2) on (1)
       sinon.assert.calledOnce(@exec) # `cmd -l`, but not `cmd -n 3 -# 2 1`
 
-    it 'detects disconnected device reconnection when resolving devices', ->
+    it 'detects disconnected device reconnection when refreshing devices', ->
       @lastDevice.disconnect()
-      await USBswitchCmdDevice.resolveDevices()
+      await USBswitchCmdDevice.refreshDevices()
       @lastDevice.isConnected.should.be.true
+      sinon.assert.calledTwice(@exec)
+
+    it 'marks removed device as disconnected when refreshing', ->
+      @deviceListOutput.pop() # remove last
+      @lastDevice.isConnected.should.be.true # still connected before refresh
+      await USBswitchCmdDevice.refreshDevices()
+      @lastDevice.isConnected.should.be.false
       sinon.assert.calledTwice(@exec)
 
   describe 'USBswitchCmdLight', ->

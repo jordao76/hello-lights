@@ -35,6 +35,8 @@ let { Light, TrafficLight } = require('../traffic-light');
 let Device = require('../device');
 let proc = require('child_process');
 
+///////////////
+
 module.exports = function(options) {
 
   var module = {};
@@ -49,7 +51,7 @@ module.exports = function(options) {
   ////////////////
 
   function execUSBswitchCmd(params) {
-    let call = options.path + ' ' + params;
+    let call = `${options.path} ${params}`;
     return new Promise((resolve, reject) => {
       proc.exec(call, (error, stdout, stderr) => {
         // USBswitchCmd exits with code != 0 (error) even when it succeeds,
@@ -67,37 +69,59 @@ module.exports = function(options) {
 
   ////////////////
 
-  class USBswitchCmdDevice extends Device {
+  class USBswitchCmdDeviceRegister {
 
-    static async resolveDevices() {
-      USBswitchCmdDevice._devices = USBswitchCmdDevice._devices || {};
+    constructor() {
+      // devices keyed by their serial numbers
+      this._devices = {};
+    }
+
+    async refreshDevices() {
       let deviceListOutput = await execUSBswitchCmd('-l');
       // returns lines like:
       //   Device 0: Type=8, Version=29, SerNum=900636
       // Traffic Lights are devices with Type=${USB_TRAFFIC_LIGHT_DEVICE_TYPE}
       // Serial Numbers are unique per device
-      let rx = /Device\D+(\d+)\W+Type\D+(\d+)\W+Version\D+(\d+)\W+SerNum\D+(\d+)/gi;
-      let m;
+      let rx = /Device\D+(\d+)\W+Type\D+(\d+)\W+Version\D+\d+\W+SerNum\D+(\d+)/gi;
+      let ds = this._devices, serialNums = [], m;
       while (m = rx.exec(deviceListOutput)) {
-        let [, deviceNum, type, version, serialNum] = m;
-        USBswitchCmdDevice._registerDevice(deviceNum, type, version, serialNum);
+        let [, deviceNum, type, serialNum] = m;
+        if (type != USB_TRAFFIC_LIGHT_DEVICE_TYPE) continue;
+        ds[serialNum] = ds[serialNum] ||
+          new USBswitchCmdDevice(deviceNum, serialNum);
+        serialNums.push(serialNum);
       }
-      return USBswitchCmdDevice._devices;
+      this._connectDevicesIn(serialNums);
+      this._disconnectDevicesNotIn(serialNums);
+      return ds;
     }
 
-    static _registerDevice(deviceNum, type, version, serialNum) {
-      if (type != USB_TRAFFIC_LIGHT_DEVICE_TYPE) return;
-      let device = USBswitchCmdDevice._devices[serialNum];
-      if (device) {
-        // connect device that's already registered,
-        // in case it was disconnected and now reconnected
-        device.connect();
-      }
-      else {
-        // register new device
-        USBswitchCmdDevice._devices[serialNum] =
-          new USBswitchCmdDevice(deviceNum, serialNum);
-      }
+    _connectDevicesIn(serialNums) {
+      serialNums
+        .map(sn => this._devices[sn]) // get devices
+        .forEach(device => device.connect()); // connect them
+    }
+
+    _disconnectDevicesNotIn(serialNums) {
+      Object.keys(this._devices) // all serial numbers
+        .filter(sn => serialNums.indexOf(sn) < 0) // array diff (not in)
+        .map(sn => this._devices[sn]) // get devices
+        .forEach(device => device.disconnect()); // disconnect them
+    }
+
+  }
+  module.USBswitchCmdDeviceRegister = USBswitchCmdDeviceRegister;
+
+  ////////////////
+
+  let DeviceRegister = new USBswitchCmdDeviceRegister();
+
+  ////////////////
+
+  class USBswitchCmdDevice extends Device {
+
+    static async refreshDevices() {
+      return DeviceRegister.refreshDevices();
     }
 
     constructor(deviceNum, serialNum) {
@@ -162,7 +186,7 @@ module.exports = function(options) {
   ///////////////
 
   async function resolveConnectedTrafficLight() {
-    let devicesBySerialNum = await USBswitchCmdDevice.resolveDevices();
+    let devicesBySerialNum = await USBswitchCmdDevice.refreshDevices();
     let tls = Object.values(devicesBySerialNum)
       .filter(device => device.isConnected)
       .map(device => new USBswitchCmdTrafficLight(device));
