@@ -1,20 +1,29 @@
 /**
- * A Cancellation Token (ct) that traffic light commands can check for
- * cancellation. Keeps a list of timeout IDs issued by setTimeout calls
- * and cancels them all when cancel() is called, setting the isCancelled
- * attribute to true.
+ * A Cancellation Token (ct) that cancellable commands can check for
+ * cancellation.
  * Commands should regularly check for their Cancellation Token isCancelled
  * attribute and exit eagerly if true.
  */
-class Cancellable {
+class CancellationToken {
 
-  /**
-   * Creates a Cancellable instance, also called a Cancellation Token by
-   * traffic light commands that only care for the isCancelled attribute.
-   */
+  /** Creates a Cancellation Token instance. */
+  constructor(isCancelled=false) {
+    /** If the Cancellation Token is cancelled. False by default. */
+    this.isCancelled = isCancelled;
+  }
+
+}
+
+/**
+ * A Cancellation Token (ct) that keeps a list of timeout IDs issued by
+ * setTimeout calls and cancels them all when cancel() is called, setting
+ * the isCancelled attribute to true.
+ */
+class Cancellable extends CancellationToken {
+
+  /** Creates a Cancellable instance. */
   constructor() {
-    /** If the Cancellable is cancelled. Starts off as false. */
-    this.isCancelled = false;
+    super(false);
     /**
      * Object storing timeout IDs and corresponding Promise resolve functions.
      * @private
@@ -27,16 +36,16 @@ class Cancellable {
    * @package
    * @param timeoutID - Timeout ID, the result of calling
    *   setTimeout, platform dependent.
-   * @param {function} resolve - Resolve function for a Promise that should
-   *   be called if the timeout is cancelled.
+   * @param {function} resolve - Resolve function for a Promise to be called
+   *   if the timeout is cancelled.
    */
   add(timeoutID, resolve) {
     this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
   }
 
   /**
-   * Unregisters the given timeout ID, meaning that the timeout was reached and
-   * will not be cancelled anymore.
+   * Unregisters the given timeout ID, when the timeout is reached and
+   * does not need to be cancelled anymore, or if it was cancelled.
    * @package
    * @param timeoutID - Timeout ID to unregister.
    */
