@@ -1,5 +1,5 @@
 let {PhysicalTrafficLight} = require('../physical-traffic-light');
-let Device = require('../device');
+let {Device} = require('../device');
 let puppeteer = require('puppeteer');
 let path = require('path');
 
@@ -14,7 +14,7 @@ module.exports = function(options={}) {
   class ChromiumDevice extends Device {
 
     constructor() {
-      super(false);
+      super(null, false); // the serial number is not defined on construction
     }
 
     async open() {
@@ -22,19 +22,17 @@ module.exports = function(options={}) {
         headless:
           typeof options.headless === 'boolean' ? options.headless : false,
         args: [
+          '--no-sandbox',
           '--disable-infobars', // https://chromium.googlesource.com/chromium/src/+/d869ab3350d8ebd95222b4a47adf87ce3d3214b1
           '--window-size=250,675',
           'file://'+path.resolve('./src/devices/chromium-page/index.html')
         ]
       });
+      this.serialNum = this.browser.wsEndpoint();
       this.browser.on('disconnected', () => this.disconnect());
       let pages = await this.browser.pages();
       this.page = pages[0];
       this.connect();
-    }
-
-    get serialNum() {
-      return this.browser.wsEndpoint();
     }
 
     async turn(lightNum, on) {

@@ -59,6 +59,9 @@ describe 'CommandParser', () ->
   it 'shows how to handle errors in the command', () ->
     commandStr = 'invalid red'
     command = cp.parse(commandStr)
+    # TODO this kind of error should come from the parse method!
+    #   - invalid command name,
+    #   - invalid command syntax, ...
     res = await c.run(command,tl,82)
     res.should.be.an.instanceof Error
     res.toString().should.have.string 'TypeError'

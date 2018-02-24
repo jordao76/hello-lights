@@ -1,10 +1,10 @@
-Device = require '../src/device'
+{Device} = require '../src/device'
 require('chai').should()
 
 describe 'Device', ->
 
   createDevice = (connected) ->
-    @device = new Device(connected)
+    @device = new Device('1', connected) # 1 is the Serial Number
     @onConnectedCalled = false
     @onDisconnectedCalled = false
     @device.onConnected () => @onConnectedCalled = true

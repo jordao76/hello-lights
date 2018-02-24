@@ -1,16 +1,20 @@
 let USBswitchCmdOptions = {
   type: 'USBswitchCmd',
-  path: '"C:\\Temp\\USBswitchCmd_E 5.0.0\\USBswitchCmd.exe"',
-  // ...maybe download if not found
-  downloadUrl: 'http://www.cleware.info/downloads/english/USBswitchCmd_E%205.0.0.zip'
+  path: '"C:\\Temp\\USBswitchCmd_E 5.0.0\\USBswitchCmd.exe"'
+};
+
+let ClewareControlOptions = {
+  type: 'ClewareControl',
+  path: 'clewarecontrol' // optional
 };
 
 let ChromiumOptions = {
   type: 'Chromium',
-  headless: false
+  headless: false // optional
 };
 
 module.exports = {
   USBswitchCmdOptions,
+  ClewareControlOptions,
   ChromiumOptions
 };

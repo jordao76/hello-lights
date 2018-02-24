@@ -5,8 +5,10 @@ let EventEmitter = require('events');
 /** @abstract */
 class Device extends EventEmitter {
 
-  constructor(isConnected=true) {
+  constructor(serialNum, isConnected = true) {
     super();
+    // Serial Numbers are unique per device
+    this.serialNum = serialNum;
     this.isConnected = isConnected;
   }
 
@@ -34,4 +36,4 @@ class Device extends EventEmitter {
 
 ///////////////
 
-module.exports = Device;
+module.exports = {Device};
