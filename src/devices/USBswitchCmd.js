@@ -45,8 +45,6 @@ module.exports = function(options) {
 
   // constants for the USBswitchCmd executable
   const USB_TRAFFIC_LIGHT_DEVICE_TYPE=0x08;
-  const RED=0, YELLOW=1, GREEN=2;
-  const ON=1, OFF=0;
 
   ////////////////
 

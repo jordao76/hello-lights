@@ -4,13 +4,15 @@
   "scripts": {
     "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "web": "browserify web/main.js -o web/bundle.js && start web/index.html",
-    "cli": "node cli/main.js"
+    "cli": "node cli/main.js",
+    "cli-browser": "node cli/main.js ChromiumOptions"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
     "chai": "^4.1.2",
     "coffeescript": "^2.2.1",
     "mocha": "^5.0.1",
+    "puppeteer": "^1.1.0",
     "sinon": "^4.3.0"
   }
 }

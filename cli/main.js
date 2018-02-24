@@ -1,6 +1,7 @@
 let c = require('../src/commands');
 let CommandParser = require('../src/command-parser');
-let options = require('./options');
+let options =
+  require('./options')[process.argv[2] || 'USBswitchCmdOptions'];
 let {TrafficLight} = require('../src/traffic-light');
 let {resolveConnectedTrafficLight} =
   require('../src/devices/'+options.type)(options);
@@ -25,7 +26,16 @@ let tl;
 async function resolveTrafficLight() {
   if (tl && tl.device.isConnected) return tl;
   if (tl = await resolveConnectedTrafficLight()) {
-    log('Found traffic light', tl.device.serialNum);
+    log('Using traffic light', tl.device.serialNum);
+    if (!tl.device.__listening_for_disconnected) {
+      tl.device.__listening_for_disconnected = true;
+      tl.device.onDisconnected(() => {
+        error('Traffic light disconnected!');
+      });
+    }
+    else {
+      error('DEBUG: attempt to listen more than once!');
+    }
   }
   else {
     error('No traffic light found');
@@ -75,7 +85,7 @@ function listen() {
     else if (text === 'check device') {
       await resolveConnectedTrafficLight();
       if (tl && tl.device.isConnected) {
-        log('Found traffic light', tl.device.serialNum);
+        log('Using traffic light', tl.device.serialNum);
       }
       else {
         await resolveTrafficLight();
