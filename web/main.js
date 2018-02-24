@@ -8,16 +8,23 @@ var CommandParser = require('../src/command-parser.js');
 
 ///////////////
 
-class WebLight {
+class WebLight extends trafficlight.Light {
   constructor(selector) {
+    super();
     this.elLight = document.querySelector(selector);
     this.elLight.addEventListener('click', () => this.toggle());
   }
-  get on() {
-    return this.elLight.classList.contains('on');
-  }
   toggle() {
+    super.toggle();
     this.elLight.classList.toggle('on');
+  }
+  turnOn() {
+    super.turnOn();
+    this.elLight.classList.add('on');
+  }
+  turnOff() {
+    super.turnOff();
+    this.elLight.classList.remove('on');
   }
 }
 
@@ -82,9 +89,8 @@ async function main() {
   var g = new WebLight('#tl > .green');
   window.tl = new trafficlight.TrafficLight(r,y,g);
   help();
-  await commands.pause(1000);
   utter("Open the java script console");
-  execute('heartbeat red');
+  execute('danger');
 }
 
 if (document.readyState !== 'loading') {
