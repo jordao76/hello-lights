@@ -1,6 +1,7 @@
 options = type: 'USBswitchCmd', path: 'cmd'
-{ USBswitchCmdDevice, USBswitchCmdLight, USBswitchCmdTrafficLight } =
-  require('../../src/devices/USBswitchCmd')(options)
+{RED, YELLOW, GREEN, ON, OFF, PhysicalLight, PhysicalTrafficLight} =
+  require('../../src/physical-traffic-light')
+{USBswitchCmdDevice} = require('../../src/devices/USBswitchCmd')(options)
 require('chai').should()
 proc = require('child_process')
 sinon = require('sinon')
@@ -41,20 +42,20 @@ describe 'USBswitchCmd', ->
       @device.isConnected.should.be.true
 
     it 'turns connected device', ->
-      await @device.turn(2, 1) # green (2) on (1)
+      await @device.turn(GREEN, ON)
       sinon.assert.calledWith(@exec, 'cmd -n 0 -# 2 1')
       @device.isConnected.should.be.true
       sinon.assert.calledTwice(@exec)
 
     it 'detects disconnected device when turning', ->
-      await @lastDevice.turn(2, 1) # green (2) on (1)
+      await @lastDevice.turn(GREEN, ON)
       sinon.assert.calledWith(@exec, 'cmd -n 3 -# 2 1')
       @lastDevice.isConnected.should.be.false
       sinon.assert.calledTwice(@exec)
 
     it 'does NOT turn disconnected device', ->
       @lastDevice.disconnect()
-      await @lastDevice.turn(2, 1) # green (2) on (1)
+      await @lastDevice.turn(GREEN, ON)
       sinon.assert.calledOnce(@exec) # `cmd -l`, but not `cmd -n 3 -# 2 1`
 
     it 'detects disconnected device reconnection when refreshing devices', ->
@@ -70,10 +71,10 @@ describe 'USBswitchCmd', ->
       @lastDevice.isConnected.should.be.false
       sinon.assert.calledTwice(@exec)
 
-  describe 'USBswitchCmdLight', ->
+  describe 'PhysicalLight', ->
 
     beforeEach () ->
-      @light = new USBswitchCmdLight(1, @device) # yellow (1)
+      @light = new PhysicalLight(YELLOW, @device)
 
     it 'starts as off', ->
       @light.on.should.be.false
@@ -101,10 +102,10 @@ describe 'USBswitchCmd', ->
       @light.on.should.be.false
       sinon.assert.calledWith(@exec, 'cmd -n 0 -# 1 0')
 
-  describe 'USBswitchCmdTrafficLight', ->
+  describe 'PhysicalTrafficLight', ->
 
     beforeEach () ->
-      @tl = new USBswitchCmdTrafficLight(@device)
+      @tl = new PhysicalTrafficLight(@device)
       sinon.assert.calledOnce(@exec) # `cmd -l`
 
     it 'reset turns all on lights off', ->

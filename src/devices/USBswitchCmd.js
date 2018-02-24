@@ -31,7 +31,7 @@
  *   ```
  */
 
-let { Light, TrafficLight } = require('../traffic-light');
+let {PhysicalTrafficLight} = require('../physical-traffic-light');
 let Device = require('../device');
 let proc = require('child_process');
 
@@ -145,51 +145,11 @@ module.exports = function(options) {
 
   ///////////////
 
-  class USBswitchCmdLight extends Light {
-    constructor(lightNum, device) {
-      super();
-      this.lightNum = lightNum;
-      this.device = device;
-    }
-    async toggle() {
-      if (!this.device.isConnected) return;
-      super.toggle();
-      await this.device.turn(this.lightNum, +this.on);
-    }
-    async turnOn() {
-      if (!this.device.isConnected) return;
-      super.turnOn();
-      await this.device.turn(this.lightNum, ON);
-    }
-    async turnOff() {
-      if (!this.device.isConnected) return;
-      super.turnOff();
-      await this.device.turn(this.lightNum, OFF);
-    }
-  }
-  module.USBswitchCmdLight = USBswitchCmdLight;
-
-  ///////////////
-
-  class USBswitchCmdTrafficLight extends TrafficLight {
-    constructor(device) {
-      super(
-        new USBswitchCmdLight(RED, device),
-        new USBswitchCmdLight(YELLOW, device),
-        new USBswitchCmdLight(GREEN, device)
-      );
-      this.device = device;
-    }
-  }
-  module.USBswitchCmdTrafficLight = USBswitchCmdTrafficLight;
-
-  ///////////////
-
   async function resolveConnectedTrafficLight() {
     let devicesBySerialNum = await USBswitchCmdDevice.refreshDevices();
     let tls = Object.values(devicesBySerialNum)
       .filter(device => device.isConnected)
-      .map(device => new USBswitchCmdTrafficLight(device));
+      .map(device => new PhysicalTrafficLight(device));
     if (tls.length === 0) return null;
     return tls[0]; // the first connected traffic light
   }
