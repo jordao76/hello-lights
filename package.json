@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
-    "web": "browserify web/main.js -o web/bundle.js && start web/index.html"
+    "web": "browserify web/main.js -o web/bundle.js && start web/index.html",
+    "cli": "node cli/main.js"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
