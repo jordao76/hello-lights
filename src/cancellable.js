@@ -70,4 +70,7 @@ class Cancellable extends CancellationToken {
 
 }
 
-module.exports = Cancellable;
+module.exports = {
+  CancellationToken,
+  Cancellable
+};

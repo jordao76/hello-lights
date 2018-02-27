@@ -14,7 +14,7 @@ class Device extends EventEmitter {
 
   /** @abstract */
   turn(lightID, onOff) {
-    throw new Error('Device.turn is abstract');
+    throw new Error('Device#turn is abstract');
   }
 
   connect() {

@@ -6,7 +6,7 @@
  *   is not provided. Cancellation Tokens are instances of Cancellable.
  */
 
-let Cancellable = require('./cancellable');
+let {Cancellable} = require('./cancellable');
 
 /**
  * Default Cancellation Token used for all commands.

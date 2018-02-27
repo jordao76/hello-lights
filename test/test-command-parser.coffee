@@ -57,12 +57,8 @@ describe 'CommandParser', () ->
     @commands.stringed.should.deep.equal [@tl,'blue',101,81]
     res.should.equal 98
 
-  it 'shows how to handle errors in the command', () =>
+  it 'should return an error for an invalid command name', () =>
     commandStr = 'invalid red'
     command = @cp.parse(commandStr)
-    # TODO this kind of error should come from the parse method!
-    #   - invalid command name,
-    #   - invalid command syntax, ...
-    res = await c.run(command,@tl,82)
-    res.should.be.an.instanceof Error
-    res.toString().should.have.string 'TypeError'
+    command.should.be.an.instanceof Error
+    command.toString().should.have.string 'Command not found: "invalid"'

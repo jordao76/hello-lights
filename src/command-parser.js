@@ -26,19 +26,25 @@ class CommandParser {
       .replace(/\(/g,'[').replace(/\)/g,']')
       +']';
     let commandArr = JSON.parse(commandJSON);
-    let command = commandArr[0];
+    let commandName = commandArr[0];
+    if (!this.commands[commandName]) {
+      return new Error(`Command not found: "${commandName}"`);
+    }
     let args = commandArr.slice(1);
     return (tl, ct) => {
       // if there are no lights,
       //   then pass the full traffic light as the 1st parameter
       if (!args.some(isLight)) args.unshift(tl);
       args = args.map(a => getLight(a, tl));
-      return this.commands[command](...args, ct);
+      return this.commands[commandName](...args, ct);
     };
   }
 
-  async execute(commandStr, tl, ct) {
+  execute(commandStr, tl, ct) {
     var command = this.parse(commandStr);
+    if (command instanceof Error) {
+      return command;
+    }
     try {
       return command(tl, ct);
     } catch(e) {
