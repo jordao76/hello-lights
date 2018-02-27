@@ -105,10 +105,10 @@ async function timeout(cc, ms, ct=cancellable) {
 
 function lights(tl, r, y, g, ct=cancellable) {
   if (ct.isCancelled) return;
-  let conform = (l, v) => { if (l.on != v) l.toggle(); }
-  conform(tl.red, r);
-  conform(tl.yellow, y);
-  conform(tl.green, g);
+  let turn = (l, v) => l[v ? 'turnOn' : 'turnOff']();
+  turn(tl.red, r);
+  turn(tl.yellow, y);
+  turn(tl.green, g);
 }
 lights.name = 'lights';
 lights.desc = 'Set the lights to the given values (on=1 or off=0)';
