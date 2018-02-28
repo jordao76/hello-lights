@@ -32,81 +32,7 @@ function cancel(ct = cancellable) {
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * A traffic light command.
- * @abstract
- */
-class Command {
-
-  /**
-   * Executes the command.
-   * @abstract
-   * @param {TrafficLight} tl - Traffic light for the command to operate on.
-   * @param {Cancellable} [ct] - Optional Cancellation Token, or a default one.
-   * @returns {Promise} Promise that resolves when the command is complete or
-   *   cancelled. Note that even if the command is cancelled, the Promise
-   *   should be resolved, never rejected.
-   */
-  call(tl, ct) {
-    throw new Error('Command#call is abstract');
-  }
-
-  /**
-   * Encapsulates the call to {@link this.call} in a function.
-   *  @returns {function} A function that calls {@link this.call}.
-   */
-  get func() {
-    return (tl, ct) => this.call(tl, ct);
-  }
-
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-/** Pauses execution for the given duration. */
-class Pause extends Command {
-
-  /**
-   * Pause constructor.
-   * @param {number} ms - Duration in milliseconds for the pause.
-   */
-  constructor(ms) {
-    super();
-    this.ms = ms;
-  }
-
-  /**
-   * Executes the pause.
-   * @param {TrafficLight} [tl] - Traffic light for the command to operate on.
-   *   Ignored for this command.
-   * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
-   * @returns {Promise} Promise that resolves when the pause duration is complete,
-   *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
-   *   is resolved, never rejected.
-   */
-  call(tl, ct = cancellable) {
-    if (ct.isCancelled) return;
-    return new Promise(resolve => {
-      let timeoutID = setTimeout(() => {
-        ct.del(timeoutID);
-        resolve();
-      }, this.ms)
-      ct.add(timeoutID, resolve);
-    });
-  }
-
-}
-
-/** Pause documentation. */
-Pause.doc = {
-  name: 'pause',
-  desc: 'Pauses execution for the given duration.',
-  usage: 'pause [duration in ms]',
-  eg: 'pause 500'
-};
-
-/**
  * Pauses execution for the given duration.
- * Functional encapsulation of Pause.
  * @param {number} ms - Duration in milliseconds for the pause.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  * @returns {Promise} Promise that resolves when the pause duration is complete,
@@ -114,8 +40,22 @@ Pause.doc = {
  *   is resolved, never rejected.
  */
 function pause(ms, ct = cancellable) {
-  return new Pause(ms).call(null, ct);
+  if (ct.isCancelled) return;
+  return new Promise(resolve => {
+    let timeoutID = setTimeout(() => {
+      ct.del(timeoutID);
+      resolve();
+    }, ms)
+    ct.add(timeoutID, resolve);
+  });
 }
+/** Pause documentation. */
+pause.doc = {
+  name: 'pause',
+  desc: 'Pauses execution for the given duration.',
+  usage: 'pause [duration in ms]',
+  eg: 'pause 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -138,57 +78,8 @@ function run(command, ...args) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Executes a command with a timeout. */
-class Timeout extends Command {
-
-  /**
-   * Timeout constructor.
-   * @param {number} ms - Duration in milliseconds for the timeout.
-   * @param {Command} command - Command to execute.
-   */
-  constructor(ms, command) {
-    super();
-    this.pause = new Pause(ms).func;
-    this.command = command.func;
-  }
-
-  /**
-   * Executes the command.
-   * @param {TrafficLight} tl - Traffic light for the command to operate on.
-   * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
-   * @returns {Promise} The result of the command execution if the command
-   *   finished before the timeout.
-   */
-  async call(tl, ct = cancellable) {
-    let timeoutC = new Cancellable;
-    let timeoutP = this.pause(tl, ct);
-    // race the command against the timeout
-    let res = await Promise.race([
-      this.command(tl, timeoutC),
-      timeoutP
-    ]);
-    // check if the timeout was reached
-    // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
-    let value = await Promise.race([timeoutP, 42]);
-    if (value !== 42 || ct.isCancelled) {
-      // the timeout was reached (value !== 42) OR the timeout was cancelled
-      timeoutC.cancel();
-    }
-    return res;
-  }
-}
-
-/** Timeout documentation. */
-Timeout.doc = {
-  name: 'timeout',
-  desc: 'Executes a command with a timeout.',
-  usage: 'timeout [duration in ms] ([command to execute])',
-  eg: 'timeout 5000 (twinkle red 400)'
-};
-
 /**
  * Executes a cancellable-command (cc) with a timeout.
- * @deprecated Adapt this function!
  * @param {function} cc - Cancellable-command, a command function
  *   that takes a Cancellation Token parameter.
  * @param {number} ms - Duration in milliseconds for the timeout.
@@ -198,7 +89,7 @@ Timeout.doc = {
  */
 async function timeout(cc, ms, ct = cancellable) {
   let timeoutC = new Cancellable;
-  let timeoutP = pause(ms,ct);
+  let timeoutP = pause(ms, ct);
   // race the cancellable-command against the timeout
   let res = await Promise.race([run(cc, timeoutC), timeoutP]);
   // check if the timeout was reached
@@ -211,19 +102,76 @@ async function timeout(cc, ms, ct = cancellable) {
   return res;
 }
 
+/** Timeout documentation. */
+timeout.doc = {
+  name: 'timeout',
+  desc: 'Executes a command with a timeout.',
+  usage: 'timeout [duration in ms] ([command to execute])',
+  eg: 'timeout 5000 (twinkle red 400)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+// Utility functions
+//////////////////////////////////////////////////////////////////////////////
+
+let isOn = state =>
+  (state === 'off' || state === 'false') ? false : !!state;
+
+let turnLight = (oLight, state) => oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+
+//////////////////////////////////////////////////////////////////////////////
+
+function toggle(tl, light, ct = cancellable) {
+  if (ct.isCancelled) return;
+  tl[light].toggle();
+}
+toggle.doc = {
+  name: 'toggle',
+  desc: 'Toggles the given light',
+  usage: 'toggle [red|yellow|green]',
+  eg: 'toggle green'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function turn(tl, light, on, ct = cancellable) {
+  if (ct.isCancelled) return;
+  turnLight(tl[light], on);
+}
+turn.doc = {
+  name: 'turn',
+  desc: 'Turns the given light on or off',
+  usage: 'turn [red|yellow|green] [on|off]',
+  eg: 'turn green on'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function reset(tl, ct = cancellable) {
+  if (ct.isCancelled) return;
+  tl.reset();
+}
+reset.doc = {
+  name: 'reset',
+  desc: 'Sets all lights to off',
+  usage: 'reset',
+  eg: 'reset'
+};
+
 //////////////////////////////////////////////////////////////////////////////
 
 function lights(tl, r, y, g, ct = cancellable) {
   if (ct.isCancelled) return;
-  let turn = (l, v) => l[v ? 'turnOn' : 'turnOff']();
-  turn(tl.red, r);
-  turn(tl.yellow, y);
-  turn(tl.green, g);
+  turnLight(tl.red, r);
+  turnLight(tl.yellow, y);
+  turnLight(tl.green, g);
 }
-lights.name = 'lights';
-lights.desc = 'Set the lights to the given values (on=1 or off=0)';
-lights.usage = 'lights [red on/off] [yellow on/off] [green on/off]';
-lights.eg = 'lights 0 0 1';
+lights.doc = {
+  name: 'lights',
+  desc: 'Set the lights to the given values (on=1 or off=0)',
+  usage: 'lights [red on/off] [yellow on/off] [green on/off]',
+  eg: 'lights off off on'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -234,10 +182,12 @@ async function flash(tl, light, ms=500, ct = cancellable) {
   tl[light].toggle();
   await pause(ms, ct);
 }
-flash.name = 'flash';
-flash.desc = 'Flashes a light for the given duration: toggle, wait, toggle back, wait again';
-flash.usage = 'flash [light] [duration in ms]';
-flash.eg = 'flash red 500';
+flash.doc = {
+  name: 'flash',
+  desc: 'Flashes a light for the given duration: toggle, wait, toggle back, wait again',
+  usage: 'flash [light] [duration in ms]',
+  eg: 'flash red 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -247,10 +197,12 @@ async function blink(tl, light, ms=500, times=10, ct = cancellable) {
     await flash(tl, light, ms, ct);
   }
 }
-blink.name = 'blink';
-blink.desc = 'Flashes a light for the given duration and number of times';
-blink.usage = 'blink [light] [duration in ms] [number of times to flash]';
-blink.eg = 'blink yellow 500 10';
+blink.doc = {
+  name: 'blink',
+  desc: 'Flashes a light for the given duration and number of times',
+  usage: 'blink [light] [duration in ms] [number of times to flash]',
+  eg: 'blink yellow 500 10'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -260,10 +212,12 @@ async function twinkle(tl, light, ms=500, ct = cancellable) {
     await flash(tl, light, ms, ct);
   }
 }
-twinkle.name = 'twinkle';
-twinkle.desc = 'Flashes a light for the given duration forever';
-twinkle.usage = 'twinkle [light] [duration in ms]';
-twinkle.eg = 'twinkle green 500';
+twinkle.doc = {
+  name: 'twinkle',
+  desc: 'Flashes a light for the given duration forever',
+  usage: 'twinkle [light] [duration in ms]',
+  eg: 'twinkle green 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -275,10 +229,12 @@ async function cycle(tl, ms=500, flashes=2, ct = cancellable) {
     await blink(tl,'green',ms,flashes,ct);
   }
 }
-cycle.name = 'cycle';
-cycle.desc = 'Blinks each light in turn for the given duration and number of times, repeating forever; starts with Red';
-cycle.usage = 'cycle [duration in ms] [number of times to flash each light]';
-cycle.eg = 'cycle 500 2';
+cycle.doc = {
+  name: 'cycle',
+  desc: 'Blinks each light in turn for the given duration and number of times, repeating forever; starts with red',
+  usage: 'cycle [duration in ms] [number of times to flash each light]',
+  eg: 'cycle 500 2'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -292,10 +248,12 @@ async function jointly(tl, ms=500, ct = cancellable) {
     ]);
   }
 }
-jointly.name = 'jointly';
-jointly.desc = 'Flashes all lights together forever';
-jointly.usage = 'jointly [duration in ms of each flash]';
-jointly.eg = 'jointly 500';
+jointly.doc = {
+  name: 'jointly',
+  desc: 'Flashes all lights together forever',
+  usage: 'jointly [duration in ms of each flash]',
+  eg: 'jointly 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -306,10 +264,12 @@ async function heartbeat(tl, light, ct = cancellable) {
     await pause(350,ct);
   }
 }
-heartbeat.name = 'heartbeat';
-heartbeat.desc = 'Heartbeat pattern';
-heartbeat.usage = 'heartbeat [light]';
-heartbeat.eg = 'heartbeat red';
+heartbeat.doc = {
+  name: 'heartbeat',
+  desc: 'Heartbeat pattern',
+  usage: 'heartbeat [light]',
+  eg: 'heartbeat red'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -326,20 +286,24 @@ async function sos(tl, light, ct = cancellable) {
     await pause(700,ct);
   }
 }
-sos.name = 'sos';
-sos.desc = 'SOS distress signal morse code pattern';
-sos.usage = 'sos [light]';
-sos.eg = 'sos red';
+sos.doc = {
+  name: 'sos',
+  desc: 'SOS distress signal morse code pattern',
+  usage: 'sos [light]',
+  eg: 'sos red'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
 async function danger(tl, ct = cancellable) {
   await twinkle(tl, 'red', 400, ct);
 }
-danger.name = 'danger';
-danger.desc = 'Danger: twinkle red with 400ms flashes';
-danger.usage = 'danger';
-danger.eg = 'danger';
+danger.doc = {
+  name: 'danger',
+  desc: 'Danger: twinkle red with 400ms flashes',
+  usage: 'danger',
+  eg: 'danger'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -352,10 +316,12 @@ async function bounce(tl, ms=500, ct = cancellable) {
     tl.yellow.toggle(); await pause(ms,ct); tl.yellow.toggle();
   }
 }
-bounce.name = 'bounce';
-bounce.desc = 'Bounces through the lights with the given duration between them';
-bounce.usage = 'bounce [duration in ms between lights]';
-bounce.eg = 'bounce 500';
+bounce.doc = {
+  name: 'bounce',
+  desc: 'Bounces through the lights with the given duration between them',
+  usage: 'bounce [duration in ms between lights]',
+  eg: 'bounce 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -370,21 +336,23 @@ async function soundbar(tl, ms=500, ct = cancellable) {
     tl.green.toggle(); await pause(ms,ct);
   }
 }
-soundbar.name = 'soundbar';
-soundbar.desc = 'Soundbar: just like a sound bar with the given duration';
-soundbar.usage = 'soundbar [duration in ms for the lights]';
-soundbar.eg = 'soundbar 500';
+soundbar.doc = {
+  name: 'soundbar',
+  desc: 'Soundbar: just like a sound bar with the given duration',
+  usage: 'soundbar [duration in ms for the lights]',
+  eg: 'soundbar 500'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
   cancel, pause, run, timeout,
-  lights,
+  toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
   sos, danger, bounce, soundbar,
   published: {
-    lights,
+    toggle, turn, reset, lights,
     flash, blink, twinkle,
     cycle, jointly, heartbeat,
     sos, danger, bounce, soundbar

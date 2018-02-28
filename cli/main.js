@@ -123,9 +123,9 @@ function help(commandName) {
       return;
     }
     console.log([
-      `${command.name}: ${command.desc}`,
-      `  usage: ${command.usage}`,
-      `  sample: ${command.eg}`
+      `${command.doc.name}: ${command.doc.desc}`,
+      `  usage: ${command.doc.usage}`,
+      `  sample: ${command.doc.eg}`
     ].join('\n'));
   }
 }

@@ -21,10 +21,7 @@ class CommandParser {
       return new Error(`Command not found: "${commandName}"`);
     }
     let args = commandArr.slice(1);
-    return (tl, ct) => {
-      args.unshift(tl);
-      return this.commands[commandName](...args, ct);
-    };
+    return (tl, ct) => this.commands[commandName](tl, ...args, ct);
   }
 
   execute(commandStr, tl, ct) {

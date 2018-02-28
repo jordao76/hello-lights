@@ -66,9 +66,9 @@ window.help = function(commandName) {
       return;
     }
     console.log([
-      `${command.name}: ${command.desc}`,
-      `  usage: ${command.usage}`,
-      `  sample: execute('${command.eg}')`
+      `${command.doc.name}: ${command.doc.desc}`,
+      `  usage: ${command.doc.usage}`,
+      `  sample: execute('${command.doc.eg}')`
     ].join('\n'));
   }
 }
