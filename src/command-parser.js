@@ -1,16 +1,6 @@
 let isString = a => typeof a === 'string';
 let isArray = a => Array.isArray(a);
 
-let isLight = a => {
-  if (isArray(a)) return a.some(isLight);
-  return a === 'red' || a === 'yellow' || a === 'green';
-};
-
-let getLight = (a, tl) => {
-  if (isArray(a)) return a.map(a => getLight(a, tl));
-  return isLight(a) ? tl[a] : a;
-};
-
 class CommandParser {
 
   constructor(commands) {
@@ -32,10 +22,7 @@ class CommandParser {
     }
     let args = commandArr.slice(1);
     return (tl, ct) => {
-      // if there are no lights,
-      //   then pass the full traffic light as the 1st parameter
-      if (!args.some(isLight)) args.unshift(tl);
-      args = args.map(a => getLight(a, tl));
+      args.unshift(tl);
       return this.commands[commandName](...args, ct);
     };
   }

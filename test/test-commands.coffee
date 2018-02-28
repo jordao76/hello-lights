@@ -37,11 +37,13 @@ describe 'Commands', () =>
 
   describe 'flash', () =>
 
-    beforeEach () => @light = new Light
+    beforeEach () =>
+      @tl = new TrafficLight
+      @light = @tl.red
 
     it 'should flash for 500ms', (done) =>
       run = () =>
-        await c.flash @light, 250
+        await c.flash @tl, 'red', 250
       run().then () =>
         @light.on.should.be.false
         done()
@@ -53,7 +55,7 @@ describe 'Commands', () =>
 
     it 'should be cancellable', (done) =>
       run = () =>
-        await c.flash @light, 250
+        await c.flash @tl, 'red', 250
       run().then () =>
         @light.on.should.be.false
         done()
@@ -63,11 +65,13 @@ describe 'Commands', () =>
 
   describe 'blink', () =>
 
-    beforeEach () => @light = new Light
+    beforeEach () =>
+      @tl = new TrafficLight
+      @light = @tl.red
 
     it 'should flash twice', (done) =>
       run = () =>
-        await c.blink @light, 250, 2
+        await c.blink @tl, 'red', 250, 2
       run().then () =>
         @light.on.should.be.false
         done()
@@ -86,13 +90,14 @@ describe 'Commands', () =>
   describe 'timeout', () =>
 
     beforeEach () =>
-      @light = new Light
+      @tl = new TrafficLight
+      @light = @tl.red
       @token = null
 
     it 'should cancel when the timeout is reached', (done) =>
       run = () =>
         command = (ct) =>
-          c.twinkle @light, 250, @token=ct # blink forever
+          c.twinkle @tl, 'red', 250, @token=ct # blink forever
         await c.timeout command, 5000
       run().then () =>
         @token.isCancelled.should.be.true
@@ -102,7 +107,7 @@ describe 'Commands', () =>
     it 'the timeout itself should be cancellable', (done) =>
       run = () =>
         command = (ct) =>
-          c.twinkle @light, 250, @token=ct # blink forever
+          c.twinkle @tl, 'red', 250, @token=ct # blink forever
         await c.timeout command, 5000
       run().then () =>
         @token.isCancelled.should.be.true
@@ -111,7 +116,7 @@ describe 'Commands', () =>
 
     it 'should NOT cancel when the command ends before the timeout', (done) =>
       run = () =>
-        command = (ct) => c.flash @light, 250, @token=ct
+        command = (ct) => c.flash @tl, 'red', 250, @token=ct
         await c.timeout command, 5000
       run().then () =>
         @token.isCancelled.should.be.false

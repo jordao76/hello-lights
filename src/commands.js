@@ -149,7 +149,7 @@ class Timeout extends Command {
   constructor(ms, command) {
     super();
     this.pause = new Pause(ms).func;
-    this.command = command;
+    this.command = command.func;
   }
 
   /**
@@ -164,7 +164,7 @@ class Timeout extends Command {
     let timeoutP = this.pause(tl, ct);
     // race the command against the timeout
     let res = await Promise.race([
-      this.command.execute(tl, timeoutC),
+      this.command(tl, timeoutC),
       timeoutP
     ]);
     // check if the timeout was reached
@@ -227,11 +227,11 @@ lights.eg = 'lights 0 0 1';
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function flash(light, ms=500, ct = cancellable) {
+async function flash(tl, light, ms=500, ct = cancellable) {
   if (ct.isCancelled) return;
-  light.toggle();
+  tl[light].toggle();
   await pause(ms, ct);
-  light.toggle();
+  tl[light].toggle();
   await pause(ms, ct);
 }
 flash.name = 'flash';
@@ -241,10 +241,10 @@ flash.eg = 'flash red 500';
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function blink(light, ms=500, times=10, ct = cancellable) {
+async function blink(tl, light, ms=500, times=10, ct = cancellable) {
   while (times-- > 0) {
     if (ct.isCancelled) break;
-    await flash(light, ms, ct);
+    await flash(tl, light, ms, ct);
   }
 }
 blink.name = 'blink';
@@ -254,10 +254,10 @@ blink.eg = 'blink yellow 500 10';
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function twinkle(light, ms=500, ct = cancellable) {
+async function twinkle(tl, light, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
-    await flash(light, ms, ct);
+    await flash(tl, light, ms, ct);
   }
 }
 twinkle.name = 'twinkle';
@@ -270,9 +270,9 @@ twinkle.eg = 'twinkle green 500';
 async function cycle(tl, ms=500, flashes=2, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
-    await blink(tl.red,ms,flashes,ct);
-    await blink(tl.yellow,ms,flashes,ct);
-    await blink(tl.green,ms,flashes,ct);
+    await blink(tl,'red',ms,flashes,ct);
+    await blink(tl,'yellow',ms,flashes,ct);
+    await blink(tl,'green',ms,flashes,ct);
   }
 }
 cycle.name = 'cycle';
@@ -286,9 +286,9 @@ async function jointly(tl, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await Promise.all([
-      flash(tl.red, ms, ct),
-      flash(tl.yellow, ms, ct),
-      flash(tl.green, ms, ct)
+      flash(tl,'red', ms, ct),
+      flash(tl,'yellow', ms, ct),
+      flash(tl,'green', ms, ct)
     ]);
   }
 }
@@ -299,10 +299,10 @@ jointly.eg = 'jointly 500';
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function heartbeat(light, ct = cancellable) {
+async function heartbeat(tl, light, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
-    await blink(light,250,2,ct);
+    await blink(tl,light,250,2,ct);
     await pause(350,ct);
   }
 }
@@ -313,16 +313,16 @@ heartbeat.eg = 'heartbeat red';
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function sos(light, ct = cancellable) {
+async function sos(tl, light, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
-    await blink(light,150,3,ct);
-    await blink(light,250,2,ct);
-    light.toggle();
+    await blink(tl,light,150,3,ct);
+    await blink(tl,light,250,2,ct);
+    tl[light].toggle();
     await pause(250,ct);
-    light.toggle();
+    tl[light].toggle();
     await pause(150,ct);
-    await blink(light,150,3,ct);
+    await blink(tl,light,150,3,ct);
     await pause(700,ct);
   }
 }
@@ -334,7 +334,7 @@ sos.eg = 'sos red';
 //////////////////////////////////////////////////////////////////////////////
 
 async function danger(tl, ct = cancellable) {
-  await twinkle(tl.red, 400, ct);
+  await twinkle(tl, 'red', 400, ct);
 }
 danger.name = 'danger';
 danger.desc = 'Danger: twinkle red with 400ms flashes';
