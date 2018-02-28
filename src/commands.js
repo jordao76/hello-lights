@@ -38,22 +38,6 @@ function cancel(ct = cancellable) {
 class Command {
 
   /**
-   * Command constructor.
-   * @param {object} doc - Command documentation.
-   */
-  constructor(doc) {
-    this.doc = doc;
-  }
-
-  /**
-   * Encapsulates the call to {@link this.call} in a function.
-   *  @returns {function} A function that calls {@link this.call}.
-   */
-  get func() {
-    return (tl, ct) => this.call(tl, ct);
-  }
-
-  /**
    * Executes the command.
    * @abstract
    * @param {TrafficLight} tl - Traffic light for the command to operate on.
@@ -64,6 +48,14 @@ class Command {
    */
   call(tl, ct) {
     throw new Error('Command#call is abstract');
+  }
+
+  /**
+   * Encapsulates the call to {@link this.call} in a function.
+   *  @returns {function} A function that calls {@link this.call}.
+   */
+  get func() {
+    return (tl, ct) => this.call(tl, ct);
   }
 
 }
@@ -78,12 +70,7 @@ class Pause extends Command {
    * @param {number} ms - Duration in milliseconds for the pause.
    */
   constructor(ms) {
-    super({
-      name: 'pause',
-      desc: 'Pauses execution for the given duration.',
-      usage: 'pause [duration in ms]',
-      eg: 'pause 500'
-    });
+    super();
     this.ms = ms;
   }
 
@@ -108,6 +95,14 @@ class Pause extends Command {
   }
 
 }
+
+/** Pause documentation. */
+Pause.doc = {
+  name: 'pause',
+  desc: 'Pauses execution for the given duration.',
+  usage: 'pause [duration in ms]',
+  eg: 'pause 500'
+};
 
 /**
  * Pauses execution for the given duration.
@@ -152,12 +147,7 @@ class Timeout extends Command {
    * @param {Command} command - Command to execute.
    */
   constructor(ms, command) {
-    super({
-      name: 'timeout',
-      desc: 'Executes a command with a timeout.',
-      usage: 'timeout [duration in ms] ([command to execute])',
-      eg: 'timeout 5000 (twinkle red 400)'
-    });
+    super();
     this.pause = new Pause(ms).func;
     this.command = command;
   }
@@ -187,6 +177,14 @@ class Timeout extends Command {
     return res;
   }
 }
+
+/** Timeout documentation. */
+Timeout.doc = {
+  name: 'timeout',
+  desc: 'Executes a command with a timeout.',
+  usage: 'timeout [duration in ms] ([command to execute])',
+  eg: 'timeout 5000 (twinkle red 400)'
+};
 
 /**
  * Executes a cancellable-command (cc) with a timeout.
