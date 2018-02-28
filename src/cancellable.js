@@ -1,43 +1,28 @@
 /**
- * A Cancellation Token (ct) that cancellable commands can check for
- * cancellation.
- * Commands should regularly check for their Cancellation Token isCancelled
+ * A Cancellation Token (ct) that commands can check for cancellation.
+ * Commands should regularly check for the {@link Cancellable#isCancelled}
  * attribute and exit eagerly if true.
+ * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
+ * them all when {@link Cancellable#cancel} is called, setting the
+ * {@link Cancellable#isCancelled} attribute to true.
  */
-class CancellationToken {
+class Cancellable {
 
-  /** Creates a Cancellation Token instance. */
-  constructor(isCancelled=false) {
-    /** If the Cancellation Token is cancelled. False by default. */
-    this.isCancelled = isCancelled;
-  }
-
-}
-
-/**
- * A Cancellation Token (ct) that keeps a list of timeout IDs issued by
- * setTimeout calls and cancels them all when cancel() is called, setting
- * the isCancelled attribute to true.
- */
-class Cancellable extends CancellationToken {
-
-  /** Creates a Cancellable instance. */
+  /** Cancellable constructor. */
   constructor() {
-    super(false);
-    /**
-     * Object storing timeout IDs and corresponding Promise resolve functions.
-     * @private
-     */
+    /** If the Cancellation Token is cancelled. Starts of as false. */
+    this.isCancelled = false;
+    /** Object storing timeout IDs and related Promise resolve functions. */
     this._timeoutIDs = {};
   }
 
   /**
-   * Registers the given timeout ID and Promise resolve function.
+   * Registers the given timeout ID and {@link Promise} resolve function.
    * @package
    * @param timeoutID - Timeout ID, the result of calling
-   *   setTimeout, platform dependent.
-   * @param {function} resolve - Resolve function for a Promise to be called
-   *   if the timeout is cancelled.
+   *   {@link setTimeout}, platform dependent.
+   * @param {function} resolve - Resolve function for a {@link Promise} to be
+   *   called if the timeout is cancelled.
    */
   add(timeoutID, resolve) {
     this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
@@ -54,9 +39,9 @@ class Cancellable extends CancellationToken {
   }
 
   /**
-   * Cancels all registered timeouts. Sets isCancelled to true.
-   * Cancellation means calling clearTimeout with the stored timeout IDs and
-   * calling the corresponding resolve functions.
+   * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
+   * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
+   * calling the related resolve functions.
    * @package
    */
   cancel() {
@@ -70,7 +55,4 @@ class Cancellable extends CancellationToken {
 
 }
 
-module.exports = {
-  CancellationToken,
-  Cancellable
-};
+module.exports = {Cancellable};

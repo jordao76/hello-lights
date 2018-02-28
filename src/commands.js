@@ -1,10 +1,12 @@
 /**
- * @file Defines commands to control a traffic light.
+ * @file Defines commands to control a {@link TrafficLight}.
  *   The commands are usually time-based and are cancellable
  *   by a Cancellation Token. All commands take an optional
  *   Cancellation Token (ct) parameter and use a default if one
- *   is not provided. Cancellation Tokens are instances of Cancellable.
+ *   is not provided. Cancellation Tokens are instances of {@link Cancellable}.
  */
+
+//////////////////////////////////////////////////////////////////////////////
 
 let {Cancellable} = require('./cancellable');
 
@@ -16,10 +18,10 @@ let cancellable = new Cancellable;
 
 /**
  * Cancels all commands that are being executed in the context of a
- * Cancellable (Cancellation Token).
+ * Cancellation Token.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  */
-function cancel(ct=cancellable) {
+function cancel(ct = cancellable) {
   if (ct.isCancelled) return;
   ct.cancel();
   if (ct === cancellable) {
@@ -27,43 +29,105 @@ function cancel(ct=cancellable) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A traffic light command.
+ * @abstract
+ */
+class Command {
+
+  /**
+   * Command constructor.
+   * @param {object} doc - Command documentation.
+   */
+  constructor(doc) {
+    this.doc = doc;
+  }
+
+  /**
+   * Encapsulates the call to {@link this.call} in a function.
+   *  @returns {function} A function that calls {@link this.call}.
+   */
+  get func() {
+    return (tl, ct) => this.call(tl, ct);
+  }
+
+  /**
+   * Executes the command.
+   * @abstract
+   * @param {TrafficLight} tl - Traffic light for the command to operate on.
+   * @param {Cancellable} [ct] - Optional Cancellation Token, or a default one.
+   * @returns {Promise} Promise that resolves when the command is complete or
+   *   cancelled. Note that even if the command is cancelled, the Promise
+   *   should be resolved, never rejected.
+   */
+  call(tl, ct) {
+    throw new Error('Command#call is abstract');
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+/** Pauses execution for the given duration. */
+class Pause extends Command {
+
+  /**
+   * Pause constructor.
+   * @param {number} ms - Duration in milliseconds for the pause.
+   */
+  constructor(ms) {
+    super({
+      name: 'pause',
+      desc: 'Pauses execution for the given duration.',
+      usage: 'pause [duration in ms]',
+      eg: 'pause 500'
+    });
+    this.ms = ms;
+  }
+
+  /**
+   * Executes the pause.
+   * @param {TrafficLight} [tl] - Traffic light for the command to operate on.
+   *   Ignored for this command.
+   * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+   * @returns {Promise} Promise that resolves when the pause duration is complete,
+   *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
+   *   is resolved, never rejected.
+   */
+  call(tl, ct = cancellable) {
+    if (ct.isCancelled) return;
+    return new Promise(resolve => {
+      let timeoutID = setTimeout(() => {
+        ct.del(timeoutID);
+        resolve();
+      }, this.ms)
+      ct.add(timeoutID, resolve);
+    });
+  }
+
+}
+
 /**
  * Pauses execution for the given duration.
+ * Functional encapsulation of Pause.
  * @param {number} ms - Duration in milliseconds for the pause.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  * @returns {Promise} Promise that resolves when the pause duration is complete,
  *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
  *   is resolved, never rejected.
  */
-async function pause(ms, ct=cancellable) {
-  if (ct.isCancelled) return;
-  return new Promise(resolve => {
-    let timeoutID = setTimeout(() => {
-      ct.del(timeoutID);
-      resolve();
-    }, ms)
-    ct.add(timeoutID, resolve);
-  });
+function pause(ms, ct = cancellable) {
+  return new Pause(ms).call(null, ct);
 }
 
-/**
- * Makes a cancellable-command (cc) from the given arguments.
- * All commands take a Cancellation Token (ct) as their last argument.
- * This function takes a command function and all its arguments except the
- * Cancellation Token, and returns a command function that takes a Cancellation
- * Token for the given command.
- * @param {function} command - Command function.
- * @param {...*} args - All arguments of the command but the last
- *   (the Cancellation Token).
- * @returns {function} A new command function that takes a Cancellation Token.
- */
-function makecc(command, ...args) {
-  return ct => command(...args, ct);
-}
+//////////////////////////////////////////////////////////////////////////////
 
 /**
  * Executes a command with the given arguments.
  * Catches any errors and returns them instead of throwing them.
+ * @deprecated
  * @param {function} command - Command function.
  * @param {...*} args - All arguments of the command.
  * @returns {(Promise|Error)} The result of the command execution
@@ -77,8 +141,56 @@ function run(command, ...args) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
+/** Executes a command with a timeout. */
+class Timeout extends Command {
+
+  /**
+   * Timeout constructor.
+   * @param {number} ms - Duration in milliseconds for the timeout.
+   * @param {Command} command - Command to execute.
+   */
+  constructor(ms, command) {
+    super({
+      name: 'timeout',
+      desc: 'Executes a command with a timeout.',
+      usage: 'timeout [duration in ms] ([command to execute])',
+      eg: 'timeout 5000 (twinkle red 400)'
+    });
+    this.pause = new Pause(ms).func;
+    this.command = command;
+  }
+
+  /**
+   * Executes the command.
+   * @param {TrafficLight} tl - Traffic light for the command to operate on.
+   * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+   * @returns {Promise} The result of the command execution if the command
+   *   finished before the timeout.
+   */
+  async call(tl, ct = cancellable) {
+    let timeoutC = new Cancellable;
+    let timeoutP = this.pause(tl, ct);
+    // race the command against the timeout
+    let res = await Promise.race([
+      this.command.execute(tl, timeoutC),
+      timeoutP
+    ]);
+    // check if the timeout was reached
+    // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
+    let value = await Promise.race([timeoutP, 42]);
+    if (value !== 42 || ct.isCancelled) {
+      // the timeout was reached (value !== 42) OR the timeout was cancelled
+      timeoutC.cancel();
+    }
+    return res;
+  }
+}
+
 /**
  * Executes a cancellable-command (cc) with a timeout.
+ * @deprecated Adapt this function!
  * @param {function} cc - Cancellable-command, a command function
  *   that takes a Cancellation Token parameter.
  * @param {number} ms - Duration in milliseconds for the timeout.
@@ -86,7 +198,7 @@ function run(command, ...args) {
  * @returns {Promise} The result of the command execution (can be an Error) if
  *   the command finished before the timeout.
  */
-async function timeout(cc, ms, ct=cancellable) {
+async function timeout(cc, ms, ct = cancellable) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms,ct);
   // race the cancellable-command against the timeout
@@ -101,9 +213,9 @@ async function timeout(cc, ms, ct=cancellable) {
   return res;
 }
 
-////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
-function lights(tl, r, y, g, ct=cancellable) {
+function lights(tl, r, y, g, ct = cancellable) {
   if (ct.isCancelled) return;
   let turn = (l, v) => l[v ? 'turnOn' : 'turnOff']();
   turn(tl.red, r);
@@ -115,7 +227,9 @@ lights.desc = 'Set the lights to the given values (on=1 or off=0)';
 lights.usage = 'lights [red on/off] [yellow on/off] [green on/off]';
 lights.eg = 'lights 0 0 1';
 
-async function flash(light, ms=500, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function flash(light, ms=500, ct = cancellable) {
   if (ct.isCancelled) return;
   light.toggle();
   await pause(ms, ct);
@@ -127,7 +241,9 @@ flash.desc = 'Flashes a light for the given duration: toggle, wait, toggle back,
 flash.usage = 'flash [light] [duration in ms]';
 flash.eg = 'flash red 500';
 
-async function blink(light, ms=500, times=10, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function blink(light, ms=500, times=10, ct = cancellable) {
   while (times-- > 0) {
     if (ct.isCancelled) break;
     await flash(light, ms, ct);
@@ -138,7 +254,9 @@ blink.desc = 'Flashes a light for the given duration and number of times';
 blink.usage = 'blink [light] [duration in ms] [number of times to flash]';
 blink.eg = 'blink yellow 500 10';
 
-async function twinkle(light, ms=500, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function twinkle(light, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await flash(light, ms, ct);
@@ -149,7 +267,9 @@ twinkle.desc = 'Flashes a light for the given duration forever';
 twinkle.usage = 'twinkle [light] [duration in ms]';
 twinkle.eg = 'twinkle green 500';
 
-async function cycle(tl, ms=500, flashes=2, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function cycle(tl, ms=500, flashes=2, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await blink(tl.red,ms,flashes,ct);
@@ -162,7 +282,9 @@ cycle.desc = 'Blinks each light in turn for the given duration and number of tim
 cycle.usage = 'cycle [duration in ms] [number of times to flash each light]';
 cycle.eg = 'cycle 500 2';
 
-async function jointly(tl, ms=500, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function jointly(tl, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await Promise.all([
@@ -177,7 +299,9 @@ jointly.desc = 'Flashes all lights together forever';
 jointly.usage = 'jointly [duration in ms of each flash]';
 jointly.eg = 'jointly 500';
 
-async function heartbeat(light, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function heartbeat(light, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await blink(light,250,2,ct);
@@ -189,7 +313,9 @@ heartbeat.desc = 'Heartbeat pattern';
 heartbeat.usage = 'heartbeat [light]';
 heartbeat.eg = 'heartbeat red';
 
-async function sos(light, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function sos(light, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await blink(light,150,3,ct);
@@ -207,7 +333,9 @@ sos.desc = 'SOS distress signal morse code pattern';
 sos.usage = 'sos [light]';
 sos.eg = 'sos red';
 
-async function danger(tl, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function danger(tl, ct = cancellable) {
   await twinkle(tl.red, 400, ct);
 }
 danger.name = 'danger';
@@ -215,7 +343,9 @@ danger.desc = 'Danger: twinkle red with 400ms flashes';
 danger.usage = 'danger';
 danger.eg = 'danger';
 
-async function bounce(tl, ms=500, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function bounce(tl, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     tl.green.toggle(); await pause(ms,ct); tl.green.toggle();
@@ -229,7 +359,9 @@ bounce.desc = 'Bounces through the lights with the given duration between them';
 bounce.usage = 'bounce [duration in ms between lights]';
 bounce.eg = 'bounce 500';
 
-async function soundbar(tl, ms=500, ct=cancellable) {
+//////////////////////////////////////////////////////////////////////////////
+
+async function soundbar(tl, ms=500, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     tl.green.toggle(); await pause(ms,ct);
@@ -245,8 +377,10 @@ soundbar.desc = 'Soundbar: just like a sound bar with the given duration';
 soundbar.usage = 'soundbar [duration in ms for the lights]';
 soundbar.eg = 'soundbar 500';
 
+//////////////////////////////////////////////////////////////////////////////
+
 module.exports = {
-  cancel, pause, run, timeout, makecc,
+  cancel, pause, run, timeout,
   lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
