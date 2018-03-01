@@ -98,7 +98,7 @@ describe 'Commands', () =>
       run = () =>
         command = (ct) =>
           c.twinkle @tl, 'red', 250, @token=ct # blink forever
-        await c.timeout command, 5000
+        await c.timeout 5000, command
       run().then () =>
         @token.isCancelled.should.be.true
         done()
@@ -108,7 +108,7 @@ describe 'Commands', () =>
       run = () =>
         command = (ct) =>
           c.twinkle @tl, 'red', 250, @token=ct # blink forever
-        await c.timeout command, 5000
+        await c.timeout 5000, command
       run().then () =>
         @token.isCancelled.should.be.true
         done()
@@ -117,7 +117,7 @@ describe 'Commands', () =>
     it 'should NOT cancel when the command ends before the timeout', (done) =>
       run = () =>
         command = (ct) => c.flash @tl, 'red', 250, @token=ct
-        await c.timeout command, 5000
+        await c.timeout 5000, command
       run().then () =>
         @token.isCancelled.should.be.false
         done()

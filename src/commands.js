@@ -28,6 +28,13 @@ function cancel(ct = cancellable) {
     cancellable = new Cancellable;
   }
 }
+/** Cancel documentation. */
+cancel.doc = {
+  name: 'cancel',
+  desc: 'Cancels all executing commands.',
+  usage: 'cancel',
+  eg: 'cancel'
+};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -80,18 +87,18 @@ function run(command, ...args) {
 
 /**
  * Executes a cancellable-command (cc) with a timeout.
+ * @param {number} ms - Duration in milliseconds for the timeout.
  * @param {function} cc - Cancellable-command, a command function
  *   that takes a Cancellation Token parameter.
- * @param {number} ms - Duration in milliseconds for the timeout.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  * @returns {Promise} The result of the command execution (can be an Error) if
  *   the command finished before the timeout.
  */
-async function timeout(cc, ms, ct = cancellable) {
+async function timeout(ms, cc, ct = cancellable) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms, ct);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([run(cc, timeoutC), timeoutP]);
+  let res = await Promise.race([cc(timeoutC), timeoutP]);
   // check if the timeout was reached
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
   let value = await Promise.race([timeoutP, 42]);
@@ -101,7 +108,6 @@ async function timeout(cc, ms, ct = cancellable) {
   }
   return res;
 }
-
 /** Timeout documentation. */
 timeout.doc = {
   name: 'timeout',
@@ -117,7 +123,8 @@ timeout.doc = {
 let isOn = state =>
   (state === 'off' || state === 'false') ? false : !!state;
 
-let turnLight = (oLight, state) => oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+let turnLight = (oLight, state) =>
+  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -175,7 +182,7 @@ lights.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function flash(tl, light, ms=500, ct = cancellable) {
+async function flash(tl, light, ms, ct = cancellable) {
   if (ct.isCancelled) return;
   tl[light].toggle();
   await pause(ms, ct);
@@ -191,7 +198,7 @@ flash.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function blink(tl, light, ms=500, times=10, ct = cancellable) {
+async function blink(tl, light, ms, times, ct = cancellable) {
   while (times-- > 0) {
     if (ct.isCancelled) break;
     await flash(tl, light, ms, ct);
@@ -206,7 +213,7 @@ blink.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function twinkle(tl, light, ms=500, ct = cancellable) {
+async function twinkle(tl, light, ms, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await flash(tl, light, ms, ct);
@@ -221,7 +228,7 @@ twinkle.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function cycle(tl, ms=500, flashes=2, ct = cancellable) {
+async function cycle(tl, ms, flashes, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await blink(tl,'red',ms,flashes,ct);
@@ -238,7 +245,7 @@ cycle.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function jointly(tl, ms=500, ct = cancellable) {
+async function jointly(tl, ms, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     await Promise.all([
@@ -307,7 +314,7 @@ danger.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function bounce(tl, ms=500, ct = cancellable) {
+async function bounce(tl, ms, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     tl.green.toggle(); await pause(ms,ct); tl.green.toggle();

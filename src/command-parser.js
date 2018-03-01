@@ -1,6 +1,3 @@
-let isString = a => typeof a === 'string';
-let isArray = a => Array.isArray(a);
-
 class CommandParser {
 
   constructor(commands) {
@@ -17,18 +14,17 @@ class CommandParser {
       +']';
     let commandArr = JSON.parse(commandJSON);
     let commandName = commandArr[0];
-    if (!this.commands[commandName]) {
+    let command = this.commands[commandName]
+    if (!command) {
       return new Error(`Command not found: "${commandName}"`);
     }
     let args = commandArr.slice(1);
-    return (tl, ct) => this.commands[commandName](tl, ...args, ct);
+    return (tl, ct) => command(tl, ...args, ct);
   }
 
   execute(commandStr, tl, ct) {
     var command = this.parse(commandStr);
-    if (command instanceof Error) {
-      return command;
-    }
+    if (command instanceof Error) return command;
     try {
       return command(tl, ct);
     } catch(e) {
