@@ -7,6 +7,22 @@
  */
 
 //////////////////////////////////////////////////////////////////////////////
+// Utility functions
+
+let isOn = state =>
+ (state === 'off' || state === 'false') ? false : !!state;
+let turnLight = (oLight, state) =>
+ oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+
+let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
+let isState = s => s === 'on' || s === 'off';
+let isNumber = n => typeof n === 'number';
+let isPeriod = isNumber;
+
+//////////////////////////////////////////////////////////////////////////////
 
 let {Cancellable} = require('./cancellable');
 
@@ -35,6 +51,7 @@ cancel.doc = {
   usage: 'cancel',
   eg: 'cancel'
 };
+cancel.validation = [];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -63,6 +80,7 @@ pause.doc = {
   usage: 'pause [duration in ms]',
   eg: 'pause 500'
 };
+pause.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -117,16 +135,6 @@ timeout.doc = {
 };
 
 //////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-
-let turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
-
-//////////////////////////////////////////////////////////////////////////////
 
 function toggle(tl, light, ct = cancellable) {
   if (ct.isCancelled) return;
@@ -138,6 +146,7 @@ toggle.doc = {
   usage: 'toggle [red|yellow|green]',
   eg: 'toggle green'
 };
+toggle.validation = [isLight];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -151,6 +160,7 @@ turn.doc = {
   usage: 'turn [red|yellow|green] [on|off]',
   eg: 'turn green on'
 };
+turn.validation = [isLight, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -164,6 +174,7 @@ reset.doc = {
   usage: 'reset',
   eg: 'reset'
 };
+reset.validation = []; // validates number of parameters (zero)
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -179,6 +190,7 @@ lights.doc = {
   usage: 'lights [red on/off] [yellow on/off] [green on/off]',
   eg: 'lights off off on'
 };
+lights.validation = [isState, isState, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -195,6 +207,7 @@ flash.doc = {
   usage: 'flash [light] [duration in ms]',
   eg: 'flash red 500'
 };
+flash.validation = [isLight, isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -210,6 +223,7 @@ blink.doc = {
   usage: 'blink [light] [duration in ms] [number of times to flash]',
   eg: 'blink yellow 500 10'
 };
+blink.validation = [isLight, isPeriod, isNumber];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -225,6 +239,7 @@ twinkle.doc = {
   usage: 'twinkle [light] [duration in ms]',
   eg: 'twinkle green 500'
 };
+twinkle.validation = [isLight, isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -242,6 +257,7 @@ cycle.doc = {
   usage: 'cycle [duration in ms] [number of times to flash each light]',
   eg: 'cycle 500 2'
 };
+cycle.validation = [isPeriod, isNumber];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -261,6 +277,7 @@ jointly.doc = {
   usage: 'jointly [duration in ms of each flash]',
   eg: 'jointly 500'
 };
+jointly.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -277,6 +294,7 @@ heartbeat.doc = {
   usage: 'heartbeat [light]',
   eg: 'heartbeat red'
 };
+heartbeat.validation = [isLight];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -299,6 +317,7 @@ sos.doc = {
   usage: 'sos [light]',
   eg: 'sos red'
 };
+sos.validation = [isLight];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -311,6 +330,7 @@ danger.doc = {
   usage: 'danger',
   eg: 'danger'
 };
+danger.validation = [];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -329,10 +349,11 @@ bounce.doc = {
   usage: 'bounce [duration in ms between lights]',
   eg: 'bounce 500'
 };
+bounce.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function soundbar(tl, ms=500, ct = cancellable) {
+async function soundbar(tl, ms, ct = cancellable) {
   while (true) {
     if (ct.isCancelled) break;
     tl.green.toggle(); await pause(ms,ct);
@@ -349,6 +370,7 @@ soundbar.doc = {
   usage: 'soundbar [duration in ms for the lights]',
   eg: 'soundbar 500'
 };
+soundbar.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
