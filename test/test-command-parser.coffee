@@ -47,11 +47,41 @@ describe 'CommandParser', () ->
     command.should.be.an.instanceof Error
     command.toString().should.have.string 'Command not found: "invalid"'
 
-  xit 'should call a parameter validation function', () =>
-    isValid = sinon.stub().returns yes
-    @commands.turnOn = (tl, light, ct) ->
-    @commands.turnOn.validation = [isValid]
-    commandStr = 'turnOn red'
-    command = @cp.parse(commandStr)
-    command.should.not.be.an.instanceof Error
-    sinon.assert.calledOnce(isValid)
+  describe 'validation', () =>
+
+    beforeEach () =>
+      @isValid = sinon.stub()
+      @commands.turnOn = sinon.stub()
+      @commands.turnOn.validation = [@isValid]
+      @commands.turnOn.doc = usage: 'turnOn [red|yellow|green]'
+
+    it 'should validate a parameter', () =>
+      @isValid.returns yes
+      commandStr = 'turnOn red'
+      command = @cp.parse(commandStr)
+      command.should.not.be.an.instanceof Error
+      sinon.assert.calledOnce(@isValid)
+      sinon.assert.calledWith(@isValid, 'red')
+      await command(@tl, 42)
+      sinon.assert.calledWith(@commands.turnOn, @tl, 'red', 42)
+
+    it 'should return a validation error for an invalid argument', () =>
+      @isValid.returns no
+      commandStr = 'turnOn blue'
+      command = @cp.parse(commandStr)
+      command.should.be.an.instanceof Error
+      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+
+    it 'should return a validation error for a missing parameter', () =>
+      @isValid.returns yes
+      commandStr = 'turnOn'
+      command = @cp.parse(commandStr)
+      command.should.be.an.instanceof Error
+      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+
+    it 'should return a validation error for an extra parameter', () =>
+      @isValid.returns yes
+      commandStr = 'turnOn red 1'
+      command = @cp.parse(commandStr)
+      command.should.be.an.instanceof Error
+      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
