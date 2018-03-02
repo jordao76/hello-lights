@@ -151,13 +151,30 @@ async function loop(tl, commands, ct = cancellable) {
   }
 }
 loop.doc = {
-  name: 'run',
+  name: 'loop',
   desc: 'Executes the given commands in sequence, starting over forever',
   usage: 'loop [(command to execute)...]',
   eg: 'loop (toggle green) (pause 400) (toggle red) (pause 400)'
 };
 loop.transformation = args => [args];
 loop.validation = [each(isCommand)];
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function repeat(tl, times, commands, ct = cancellable) {
+  while (times-- > 0) {
+    if (ct.isCancelled) return;
+    await run(tl, commands, ct);
+  }
+}
+repeat.doc = {
+  name: 'repeat',
+  desc: 'Executes the commands in sequence, repeating the given number of times',
+  usage: 'repeat [number of times to repeat] [(command to execute)...]',
+  eg: 'repeat 5 (toggle green) (pause 400) (toggle red) (pause 400)'
+};
+repeat.transformation = args => [args[0], args.slice(1)];
+repeat.validation = [isNumber, each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -234,12 +251,12 @@ lights.validation = [isState, isState, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function flash(tl, light, ms, ct = cancellable) {
-  if (ct.isCancelled) return;
-  tl[light].toggle();
-  await pause(ms, ct);
-  tl[light].toggle();
-  await pause(ms, ct);
+async function flash(cp, tl, light, ms, ct = cancellable) {
+  await cp.execute(
+    `run
+      (toggle ${light}) (pause ${ms})
+      (toggle ${light}) (pause ${ms})`,
+    tl, ct);
 }
 flash.doc = {
   name: 'flash',
@@ -248,14 +265,14 @@ flash.doc = {
   eg: 'flash red 500'
 };
 flash.validation = [isLight, isPeriod];
+flash.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function blink(tl, light, ms, times, ct = cancellable) {
-  while (times-- > 0) {
-    if (ct.isCancelled) break;
-    await flash(tl, light, ms, ct);
-  }
+async function blink(cp, tl, light, ms, times, ct = cancellable) {
+  await cp.execute(
+    `repeat ${times} (flash ${light} ${ms})`,
+    tl, ct);
 }
 blink.doc = {
   name: 'blink',
@@ -264,14 +281,14 @@ blink.doc = {
   eg: 'blink yellow 500 10'
 };
 blink.validation = [isLight, isPeriod, isNumber];
+blink.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function twinkle(tl, light, ms, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    await flash(tl, light, ms, ct);
-  }
+async function twinkle(cp, tl, light, ms, ct = cancellable) {
+  await cp.execute(
+    `loop (flash ${light} ${ms})`,
+    tl, ct);
 }
 twinkle.doc = {
   name: 'twinkle',
@@ -280,16 +297,17 @@ twinkle.doc = {
   eg: 'twinkle green 500'
 };
 twinkle.validation = [isLight, isPeriod];
+twinkle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function cycle(tl, ms, flashes, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    await blink(tl,'red',ms,flashes,ct);
-    await blink(tl,'yellow',ms,flashes,ct);
-    await blink(tl,'green',ms,flashes,ct);
-  }
+async function cycle(cp, tl, ms, flashes, ct = cancellable) {
+  await cp.execute(
+    `loop
+      (blink red ${ms} ${flashes})
+      (blink yellow ${ms} ${flashes})
+      (blink green ${ms} ${flashes})`,
+    tl, ct);
 }
 cycle.doc = {
   name: 'cycle',
@@ -298,11 +316,12 @@ cycle.doc = {
   eg: 'cycle 500 2'
 };
 cycle.validation = [isPeriod, isNumber];
+cycle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
 async function jointly(cp, tl, ms, ct = cancellable) {
-  return await cp.execute(
+  await cp.execute(
     `loop
       (all
         (flash red ${ms})
@@ -321,12 +340,12 @@ jointly.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function heartbeat(tl, light, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    await blink(tl,light,250,2,ct);
-    await pause(350,ct);
-  }
+async function heartbeat(cp, tl, light, ct = cancellable) {
+  await cp.execute(
+    `loop
+      (blink ${light} 250 2)
+      (pause 350)`,
+    tl, ct);
 }
 heartbeat.doc = {
   name: 'heartbeat',
@@ -335,21 +354,22 @@ heartbeat.doc = {
   eg: 'heartbeat red'
 };
 heartbeat.validation = [isLight];
+heartbeat.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function sos(tl, light, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    await blink(tl,light,150,3,ct);
-    await blink(tl,light,250,2,ct);
-    tl[light].toggle();
-    await pause(250,ct);
-    tl[light].toggle();
-    await pause(150,ct);
-    await blink(tl,light,150,3,ct);
-    await pause(700,ct);
-  }
+async function sos(cp, tl, light, ct = cancellable) {
+  await cp.execute(
+    `loop
+      (blink ${light} 150 3)
+      (blink ${light} 250 2)
+      (toggle ${light})
+      (pause 250)
+      (toggle ${light})
+      (pause 150)
+      (blink ${light} 150 3)
+      (pause 700)`,
+    tl, ct);
 }
 sos.doc = {
   name: 'sos',
@@ -358,6 +378,7 @@ sos.doc = {
   eg: 'sos red'
 };
 sos.validation = [isLight];
+sos.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -374,14 +395,14 @@ danger.validation = [];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function bounce(tl, ms, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    tl.green.toggle(); await pause(ms,ct); tl.green.toggle();
-    tl.yellow.toggle(); await pause(ms,ct); tl.yellow.toggle();
-    tl.red.toggle(); await pause(ms,ct); tl.red.toggle();
-    tl.yellow.toggle(); await pause(ms,ct); tl.yellow.toggle();
-  }
+async function bounce(cp, tl, ms, ct = cancellable) {
+  await cp.execute(
+    `loop
+      (toggle green)  (pause ${ms}) (toggle green)
+      (toggle yellow) (pause ${ms}) (toggle yellow)
+      (toggle red)    (pause ${ms}) (toggle red)
+      (toggle yellow) (pause ${ms}) (toggle yellow)`,
+    tl, ct);
 }
 bounce.doc = {
   name: 'bounce',
@@ -390,19 +411,20 @@ bounce.doc = {
   eg: 'bounce 500'
 };
 bounce.validation = [isPeriod];
+bounce.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function soundbar(tl, ms, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    tl.green.toggle(); await pause(ms,ct);
-    tl.yellow.toggle(); await pause(ms,ct);
-    tl.red.toggle(); await pause(ms,ct);
-    tl.red.toggle(); await pause(ms,ct);
-    tl.yellow.toggle(); await pause(ms,ct);
-    tl.green.toggle(); await pause(ms,ct);
-  }
+async function soundbar(cp, tl, ms, ct = cancellable) {
+  await cp.execute(
+    `loop
+      (toggle green)  (pause ${ms})
+      (toggle yellow) (pause ${ms})
+      (toggle red)    (pause ${ms})
+      (toggle red)    (pause ${ms})
+      (toggle yellow) (pause ${ms})
+      (toggle green)  (pause ${ms})`,
+    tl, ct);
 }
 soundbar.doc = {
   name: 'soundbar',
@@ -411,12 +433,13 @@ soundbar.doc = {
   eg: 'soundbar 500'
 };
 soundbar.validation = [isPeriod];
+soundbar.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
 let commands = {
   pause: pauseWithTrafficLight, timeout,
-  run, loop, all,
+  run, loop, repeat, all,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
@@ -427,7 +450,7 @@ let commands = {
 
 module.exports = {
   cancel, pause, timeout,
-  run, loop, all,
+  run, loop, repeat, all,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
