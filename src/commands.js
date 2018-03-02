@@ -74,8 +74,12 @@ function pause(ms, ct = cancellable) {
     ct.add(timeoutID, resolve);
   });
 }
+async function pauseWithTrafficLight(tl, ms, ct = cancellable) {
+  // just ignore the traffic light parameter
+  await pause(ms, ct);
+}
 /** Pause documentation. */
-pause.doc = {
+pauseWithTrafficLight.doc = {
   name: 'pause',
   desc: 'Pauses execution for the given duration.',
   usage: 'pause [duration in ms]',
@@ -360,7 +364,7 @@ soundbar.validation = [isPeriod];
 //////////////////////////////////////////////////////////////////////////////
 
 let commands = {
-  timeout,
+  pause: pauseWithTrafficLight, timeout,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
