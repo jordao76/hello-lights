@@ -22,6 +22,7 @@ let isState = s => s === 'on' || s === 'off';
 let isNumber = n => typeof n === 'number';
 let isPeriod = isNumber;
 let isCommand = f => typeof f === 'function';
+let each = vf => a => Array.isArray(a) && a.every(e => vf(e));
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -122,6 +123,24 @@ timeout.doc = {
   eg: 'timeout 5000 (twinkle red 400)'
 };
 timeout.validation = [isPeriod, isCommand];
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function run(tl, commands, ct = cancellable) {
+  if (ct.isCancelled) return;
+  for (let i = 0; i < commands.length; ++i) {
+    let command = commands[i];
+    await command(tl, ct);
+  }
+}
+run.doc = {
+  name: 'run',
+  desc: 'Executes the given commands in sequence',
+  usage: 'run [(command to execute)...]',
+  eg: 'run (toggle yellow) (pause 1000) (toggle yellow)'
+};
+run.transformation = (args) => [args];
+run.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -365,6 +384,7 @@ soundbar.validation = [isPeriod];
 
 let commands = {
   pause: pauseWithTrafficLight, timeout,
+  run,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
@@ -375,6 +395,7 @@ let commands = {
 
 module.exports = {
   cancel, pause, timeout,
+  run,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
