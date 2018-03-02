@@ -86,18 +86,20 @@ pause.validation = [isPeriod];
 
 /**
  * Executes a cancellable-command (cc) with a timeout.
+ * @param {TrafficLight} tl - The traffic light to run the command against.
  * @param {number} ms - Duration in milliseconds for the timeout.
- * @param {function} cc - Cancellable-command, a command function
- *   that takes a Cancellation Token parameter.
+ * @param {function} command - A prepared command function, that takes a
+ *   traffic light (tl) and a Cancellation Token (ct) parameters. This is the
+ *   kind of command returned from {@link CommandParser#parse}.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  * @returns {Promise} The result of the command execution (can be an Error) if
  *   the command finished before the timeout.
  */
-async function timeout(ms, cc, ct = cancellable) {
+async function timeout(tl, ms, command, ct = cancellable) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms, ct);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([cc(timeoutC), timeoutP]);
+  let res = await Promise.race([command(tl, timeoutC), timeoutP]);
   // check if the timeout was reached
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
   let value = await Promise.race([timeoutP, 42]);
