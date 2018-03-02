@@ -2,8 +2,7 @@ let isWin = process.platform === "win32";
 let defaultDeviceOptions =
   isWin ? 'USBswitchCmdOptions' : 'ClewareControlOptions';
 
-let c = require('../src/commands');
-let CommandParser = require('../src/command-parser');
+let {CommandParser} = require('../src/command-parser');
 let options =
   require('./options')[process.argv[2] || defaultDeviceOptions];
 let {resolveConnectedTrafficLight} =
@@ -46,11 +45,11 @@ async function resolveTrafficLight() {
   return tl;
 }
 
-let cp = new CommandParser(c.published);
+let cp = new CommandParser();
 async function execute(str, shouldCancel=true) {
   let tl = await resolveTrafficLight();
   if (tl) {
-    if (shouldCancel) c.cancel();
+    if (shouldCancel) cp.cancel();
     log(`Executing command '${str}'`);
     var res = cp.execute(str, tl); // no await
     if (res instanceof Error) error(`Error in command '${str}'\n${res}`);
@@ -71,7 +70,7 @@ function listen() {
     let match;
     if (!text);
     else if (text === 'cancel') {
-      c.cancel();
+      cp.cancel();
       log('Cancelled current command');
     }
     else if (text === 'help') {
@@ -81,7 +80,7 @@ function listen() {
       help(match[1]);
     }
     else if (text === 'exit' || text === 'quit') {
-      c.cancel();
+      cp.cancel();
       log('Bye');
       process.exit(0);
     }

@@ -1,8 +1,31 @@
+let c = require('./commands');
+let {Cancellable} = require('./cancellable');
+
 class CommandParser {
 
-  constructor(commands) {
+  constructor(commands = c.published) {
     this.commands = commands;
     this.commandList = Object.keys(commands);
+    this.ct = new Cancellable;
+  }
+
+  cancel(ct = this.ct) {
+    if (ct.isCancelled) return;
+    ct.cancel();
+    if (ct === this.ct) {
+      this.ct = new Cancellable;
+    }
+  }
+
+  execute(commandStr, tl, ct = this.ct) {
+    if (ct.isCancelled) return;
+    var command = this.parse(commandStr);
+    if (command instanceof Error) return command;
+    try {
+      return command(tl, ct);
+    } catch(e) {
+      return e;
+    }
   }
 
   parse(commandStr) {
@@ -15,16 +38,6 @@ class CommandParser {
       return new Error(`Check your arguments: ${command.doc.usage}`);
     }
     return (tl, ct) => command(tl, ...args, ct);
-  }
-
-  execute(commandStr, tl, ct) {
-    var command = this.parse(commandStr);
-    if (command instanceof Error) return command;
-    try {
-      return command(tl, ct);
-    } catch(e) {
-      return e;
-    }
   }
 
   _parse(commandStr) {
@@ -50,4 +63,4 @@ class CommandParser {
 
 }
 
-module.exports = CommandParser;
+module.exports = {CommandParser};

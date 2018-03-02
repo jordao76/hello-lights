@@ -3,8 +3,7 @@
 ///////////////
 
 var trafficlight = require('../src/traffic-light.js');
-var commands = require('../src/commands.js');
-var CommandParser = require('../src/command-parser.js');
+var {CommandParser} = require('../src/command-parser.js');
 
 ///////////////
 
@@ -31,10 +30,10 @@ class WebLight extends trafficlight.Light {
 ///////////////
 
 window.cancel = function() {
-  commands.cancel();
+  cp.cancel();
 }
 
-var cp = new CommandParser(commands.published);
+var cp = new CommandParser();
 window.execute = async function(str, shouldCancel=true) {
   if (shouldCancel) cancel();
   console.log(`Executing command '${str}'`);

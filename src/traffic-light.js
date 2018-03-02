@@ -13,9 +13,9 @@ class TrafficLight {
     this.green = green || new Light;
   }
   reset() {
-    this.red.turnOff(),
-    this.yellow.turnOff(),
-    this.green.turnOff()
+    this.red.turnOff();
+    this.yellow.turnOff();
+    this.green.turnOff();
   }
 }
 

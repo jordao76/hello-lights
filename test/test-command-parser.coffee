@@ -1,4 +1,4 @@
-CommandParser = require '../src/command-parser'
+{CommandParser} = require '../src/command-parser'
 c = require '../src/commands'
 require('chai').should()
 sinon = require('sinon')

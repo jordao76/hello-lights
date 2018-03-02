@@ -85,25 +85,6 @@ pause.validation = [isPeriod];
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Executes a command with the given arguments.
- * Catches any errors and returns them instead of throwing them.
- * @deprecated
- * @param {function} command - Command function.
- * @param {...*} args - All arguments of the command.
- * @returns {(Promise|Error)} The result of the command execution
- *   (usually a Promise) or an Error if one was thrown.
- */
-function run(command, ...args) {
-  try {
-    return command(...args);
-  } catch(e) {
-    return e;
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-/**
  * Executes a cancellable-command (cc) with a timeout.
  * @param {number} ms - Duration in milliseconds for the timeout.
  * @param {function} cc - Cancellable-command, a command function
@@ -164,9 +145,9 @@ turn.validation = [isLight, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 
-function reset(tl, ct = cancellable) {
+async function reset(tl, ct = cancellable) {
   if (ct.isCancelled) return;
-  tl.reset();
+  await tl.reset();
 }
 reset.doc = {
   name: 'reset',
@@ -374,16 +355,20 @@ soundbar.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
+let commands = {
+  toggle, turn, reset, lights,
+  flash, blink, twinkle,
+  cycle, jointly, heartbeat,
+  sos, danger, bounce, soundbar
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 module.exports = {
-  cancel, pause, run, timeout,
+  cancel, pause, timeout,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
   sos, danger, bounce, soundbar,
-  published: {
-    toggle, turn, reset, lights,
-    flash, blink, twinkle,
-    cycle, jointly, heartbeat,
-    sos, danger, bounce, soundbar
-  }
+  published: commands
 };
