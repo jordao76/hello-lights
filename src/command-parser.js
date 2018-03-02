@@ -53,6 +53,9 @@ class CommandParser {
     let errors = args.filter(a => a instanceof Error).map(e => e.message);
     if (errors.length > 0) return new Error(errors.join('\n'));
 
+    // transform the command arguments
+    args = this._transform(command, args);
+
     // validate the command arguments
     if (!this._validate(command, args))
       return new Error(`Check your arguments: ${command.doc.usage}`);
@@ -72,6 +75,13 @@ class CommandParser {
     let vs = vfs.map((isValid, i) => isValid(args[i]));
     // return true if all are valid
     return vs.every(v => v);
+  }
+
+  _transform(command, args) {
+    if (command.transformation) {
+      return command.transformation(args);
+    }
+    return args;
   }
 
 }

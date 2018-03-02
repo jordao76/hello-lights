@@ -45,6 +45,31 @@ describe 'CommandParser', () ->
     command.should.be.an.instanceof Error
     command.toString().should.have.string 'Command not found: "invalid"'
 
+  describe 'transformation', () =>
+
+    it 'should call a transformation', () =>
+      @commands.sum = (tl, a, ct) -> a
+      @commands.sum.transformation = (args) -> [args.reduce((a, b) -> a + b)]
+      commandStr = 'sum 1 2 3 4'
+      command = @cp.parse(commandStr)
+      # command will be
+      #   (tl, ct) => @commands['sum'](tl, 10, ct)
+      res = await command(@tl, 79)
+      res.should.equal 10
+
+    it 'use a transformation for a rest parameter', () =>
+      isValid = () -> yes
+      splitter = (n) -> (a) -> [...a.slice(0, n), a.slice(n)]
+      @commands.takesRest = sinon.stub().returns 94
+      @commands.takesRest.transformation = splitter 2
+      commandStr = 'takesRest 1 2 3 4'
+      command = @cp.parse(commandStr)
+      # command will be
+      #   (tl, ct) => @commands['takesRest'](tl, 1, 2, [3, 4], ct)
+      res = await command(@tl, 79)
+      sinon.assert.calledWith(@commands.takesRest, @tl, 1, 2, [3, 4], 79)
+      res.should.equal 94
+
   describe 'validation', () =>
 
     beforeEach () =>
