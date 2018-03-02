@@ -86,7 +86,7 @@ pauseWithTrafficLight.doc = {
   usage: 'pause [duration in ms]',
   eg: 'pause 500'
 };
-pause.validation = [isPeriod];
+pauseWithTrafficLight.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -301,15 +301,14 @@ cycle.validation = [isPeriod, isNumber];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function jointly(tl, ms, ct = cancellable) {
-  while (true) {
-    if (ct.isCancelled) break;
-    await Promise.all([
-      flash(tl,'red', ms, ct),
-      flash(tl,'yellow', ms, ct),
-      flash(tl,'green', ms, ct)
-    ]);
-  }
+async function jointly(cp, tl, ms, ct = cancellable) {
+  return await cp.execute(
+    `loop
+      (all
+        (flash red ${ms})
+        (flash yellow ${ms})
+        (flash green ${ms}))`,
+    tl, ct);
 }
 jointly.doc = {
   name: 'jointly',
@@ -318,6 +317,7 @@ jointly.doc = {
   eg: 'jointly 500'
 };
 jointly.validation = [isPeriod];
+jointly.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 

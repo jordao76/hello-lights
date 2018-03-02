@@ -39,6 +39,15 @@ describe 'CommandParser', () ->
     sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
     res.should.equal 97
 
+  it 'should pass the parser to a command that needs it', () =>
+    @commands.needsParser = sinon.stub().returns 95
+    @commands.needsParser.usesParser = true
+    commandStr = 'needsParser'
+    command = @cp.parse(commandStr)
+    res = await command(@tl, 80)
+    sinon.assert.calledWith @commands.needsParser, @cp, @tl, 80
+    res.should.equal 95
+
   it 'should return an error for an invalid command name', () =>
     commandStr = 'invalid red'
     command = @cp.parse(commandStr)

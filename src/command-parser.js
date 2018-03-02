@@ -61,7 +61,9 @@ class CommandParser {
       return new Error(`Check your arguments: ${command.doc.usage}`);
 
     // return a command that takes a traffic light (tl) and a cancellation token (ct)
-    return (tl, ct) => command(tl, ...args, ct);
+    return command.usesParser ?
+      (tl, ct) => command(this, tl, ...args, ct) :
+      (tl, ct) => command(tl, ...args, ct);
   }
 
   _validate(command, args) {
