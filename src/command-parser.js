@@ -29,18 +29,6 @@ class CommandParser {
   }
 
   parse(commandStr) {
-    let [commandName, args] = this._parse(commandStr);
-    let command = this.commands[commandName];
-    if (!command) {
-      return new Error(`Command not found: "${commandName}"`);
-    }
-    if (!this._validate(command, args)) {
-      return new Error(`Check your arguments: ${command.doc.usage}`);
-    }
-    return (tl, ct) => command(tl, ...args, ct);
-  }
-
-  _parse(commandStr) {
     let commandJSON =
       '['+commandStr.trim()
       .replace(/([a-z_]\w*)/ig,'"$1"')
@@ -48,16 +36,41 @@ class CommandParser {
       .replace(/\(/g,'[').replace(/\)/g,']')
       +']';
     let commandArr = JSON.parse(commandJSON);
+    return this._interpret(commandArr);
+  }
+
+  _interpret(commandArr) {
+    // get the command components: its name and its arguments
     let commandName = commandArr[0];
     let args = commandArr.slice(1);
-    return [commandName, args];
+
+    // get the command and check that it's valid
+    let command = this.commands[commandName];
+    if (!command) return new Error(`Command not found: "${commandName}"`);
+
+    // interpret sub-commands and check for nested errors
+    args = args.map(a => Array.isArray(a) ? this._interpret(a) : a);
+    let errors = args.filter(a => a instanceof Error).map(e => e.message);
+    if (errors.length > 0) return new Error(errors.join('\n'));
+
+    // validate the command arguments
+    if (!this._validate(command, args))
+      return new Error(`Check your arguments: ${command.doc.usage}`);
+
+    // return a command that takes a traffic light (tl) and a cancellation token (ct)
+    return (tl, ct) => command(tl, ...args, ct);
   }
 
   _validate(command, args) {
-    let vfs = command.validation; // vfs = Validation FunctionS
+    // vfs = Validation FunctionS
+    let vfs = command.validation;
+    // a command with no validation is always valid
     if (!vfs) return true;
+    // the number of arguments must match the number of validation functions
     if (vfs.length !== args.length) return false;
+    // run the validation functions against the arguments
     let vs = vfs.map((isValid, i) => isValid(args[i]));
+    // return true if all are valid
     return vs.every(v => v);
   }
 

@@ -21,6 +21,7 @@ let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
 let isState = s => s === 'on' || s === 'off';
 let isNumber = n => typeof n === 'number';
 let isPeriod = isNumber;
+let isCommand = f => typeof f === 'function';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -116,6 +117,7 @@ timeout.doc = {
   usage: 'timeout [duration in ms] ([command to execute])',
   eg: 'timeout 5000 (twinkle red 400)'
 };
+timeout.validation = [isPeriod, isCommand];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -358,6 +360,7 @@ soundbar.validation = [isPeriod];
 //////////////////////////////////////////////////////////////////////////////
 
 let commands = {
+  timeout,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,

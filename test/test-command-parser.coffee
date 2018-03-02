@@ -30,15 +30,13 @@ describe 'CommandParser', () ->
     sinon.assert.calledWith(@commands.blink, @tl, 'red', 500, 10, 78)
     res.should.equal 95
 
-  it 'should parse array parameters', () =>
-    @commands.turn = sinon.stub().returns 97
-    commandStr = 'turn (red green yellow 10) 100'
+  it 'should parse sub-command', () =>
+    @commands.repeat = (tl, n, c, ct) -> c(tl, ct)
+    @commands.toggle = sinon.stub().returns 97
+    commandStr = 'repeat 100 (toggle green)'
     command = @cp.parse(commandStr)
-    # command will be
-    #   (tl, ct) => @commands['turn'](tl,['red', 'green', 'yellow', 10], 100, ct)
     res = await command(@tl, 80)
-    sinon.assert.calledWith(
-      @commands.turn, @tl, ['red', 'green', 'yellow', 10], 100, 80)
+    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
     res.should.equal 97
 
   it 'should return an error for an invalid command name', () =>
