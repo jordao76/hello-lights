@@ -127,8 +127,8 @@ timeout.validation = [isPeriod, isCommand];
 //////////////////////////////////////////////////////////////////////////////
 
 async function run(tl, commands, ct = cancellable) {
-  if (ct.isCancelled) return;
   for (let i = 0; i < commands.length; ++i) {
+    if (ct.isCancelled) return;
     let command = commands[i];
     await command(tl, ct);
   }
@@ -139,7 +139,7 @@ run.doc = {
   usage: 'run [(command to execute)...]',
   eg: 'run (toggle yellow) (pause 1000) (toggle yellow)'
 };
-run.transformation = (args) => [args];
+run.transformation = args => [args];
 run.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
@@ -156,8 +156,23 @@ loop.doc = {
   usage: 'loop [(command to execute)...]',
   eg: 'loop (toggle green) (pause 400) (toggle red) (pause 400)'
 };
-loop.transformation = (args) => [args];
+loop.transformation = args => [args];
 loop.validation = [each(isCommand)];
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function all(tl, commands, ct = cancellable) {
+  if (ct.isCancelled) return;
+  await Promise.all(commands.map(command => command(tl, ct)));
+}
+all.doc = {
+  name: 'all',
+  desc: 'Executes the given commands in parallel, all at the same time',
+  usage: 'all [(command to execute)...]',
+  eg: 'all (twinkle green 700) (twinkle yellow 300)'
+};
+all.transformation = args => [args];
+all.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -401,7 +416,7 @@ soundbar.validation = [isPeriod];
 
 let commands = {
   pause: pauseWithTrafficLight, timeout,
-  run, loop,
+  run, loop, all,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
@@ -412,7 +427,7 @@ let commands = {
 
 module.exports = {
   cancel, pause, timeout,
-  run, loop,
+  run, loop, all,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
