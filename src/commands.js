@@ -144,6 +144,23 @@ run.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
+async function loop(tl, commands, ct = cancellable) {
+  while (true) {
+    if (ct.isCancelled) return;
+    await run(tl, commands, ct);
+  }
+}
+loop.doc = {
+  name: 'run',
+  desc: 'Executes the given commands in sequence, starting over forever',
+  usage: 'loop [(command to execute)...]',
+  eg: 'loop (toggle green) (pause 400) (toggle red) (pause 400)'
+};
+loop.transformation = (args) => [args];
+loop.validation = [each(isCommand)];
+
+//////////////////////////////////////////////////////////////////////////////
+
 function toggle(tl, light, ct = cancellable) {
   if (ct.isCancelled) return;
   tl[light].toggle();
@@ -384,7 +401,7 @@ soundbar.validation = [isPeriod];
 
 let commands = {
   pause: pauseWithTrafficLight, timeout,
-  run,
+  run, loop,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
@@ -395,7 +412,7 @@ let commands = {
 
 module.exports = {
   cancel, pause, timeout,
-  run,
+  run, loop,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
