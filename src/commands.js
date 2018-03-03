@@ -382,8 +382,8 @@ sos.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function danger(tl, ct = cancellable) {
-  await twinkle(tl, 'red', 400, ct);
+async function danger(cp, tl, ct = cancellable) {
+  await twinkle(cp, tl, 'red', 400, ct);
 }
 danger.doc = {
   name: 'danger',
@@ -392,6 +392,7 @@ danger.doc = {
   eg: 'danger'
 };
 danger.validation = [];
+danger.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
