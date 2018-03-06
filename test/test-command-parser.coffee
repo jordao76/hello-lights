@@ -39,6 +39,22 @@ describe 'CommandParser', () ->
     sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
     res.should.equal 97
 
+  it 'spaces surrounding parenthesis should be allowed', () =>
+    @commands.repeat = (tl, n, c, ct) -> c(tl, ct)
+    @commands.toggle = sinon.stub()
+    commandStr = 'repeat 100 ( toggle green )'
+    command = @cp.parse(commandStr)
+    res = await command(@tl, 80)
+    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
+
+  it 'should not require a space before an opening parenthesis', () =>
+    @commands.run = (tl, c1, c2, ct) -> c1(tl, ct)
+    @commands.toggle = sinon.stub()
+    commandStr = 'run(toggle green)( toggle red)'
+    command = @cp.parse(commandStr)
+    res = await command(@tl, 80)
+    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
+
   it 'should pass the parser to a command that needs it', () =>
     @commands.needsParser = sinon.stub().returns 95
     @commands.needsParser.usesParser = true

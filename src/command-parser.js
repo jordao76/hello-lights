@@ -29,11 +29,14 @@ class CommandParser {
   }
 
   parse(commandStr) {
+    // turn the command into a JSON array
     let commandJSON =
-      '['+commandStr.trim()
-      .replace(/([a-z_]\w*)/ig,'"$1"')
-      .replace(/\s+/g,',')
-      .replace(/\(/g,'[').replace(/\)/g,']')
+      '['+
+        commandStr.trim()
+          .replace(/([a-z_]\w*)/ig,'"$1"') // surround names with quotes
+          .replace(/(\S)?\(\s*/g,'$1 [') // parenthesis turn to arrays
+          .replace(/\s*\)/g,']') // end of parenthesis
+          .replace(/\s+/g,',') // separate everything with commas
       +']';
     let commandArr = JSON.parse(commandJSON);
     return this._interpret(commandArr);
