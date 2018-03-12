@@ -2,18 +2,12 @@ let {PhysicalTrafficLight} = require('../physical-traffic-light');
 let {Device} = require('../device');
 let puppeteer = require('puppeteer');
 let path = require('path');
-let {pause} = require('../commands');
 
 ///////////////
 
 module.exports = function(options={}) {
 
   var module = {};
-
-  ///////////////
-
-  // returns random j such that i ≤ j < n
-  let random = (i, n) => Math.floor(Math.random() * (n - i) + i);
 
   ///////////////
 
@@ -46,7 +40,6 @@ module.exports = function(options={}) {
       let light = ['red', 'yellow', 'green'][lightNum];
       let change = on ? 'add' : 'remove';
       try {
-        await pause(random(1, 30)); // simulate latency
         await this.page.evaluate(
           (light, change) => {
             document.getElementById(light).classList[change]('on')

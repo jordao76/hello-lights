@@ -58,7 +58,7 @@ testClewareDevice = (type) ->
       @exec = sinon.stub(proc, 'exec')
         .callsFake(fakeExec(@deviceListOutput))
       @devices = await ClewareDevice.refreshDevices()
-      @device = @devices['900636'] # calls to turn will success
+      @device = @devices['900636'] # calls to turn will succeed
       @lastDevice = @devices['900639'] # calls to turn will fail
 
     afterEach () -> @exec.restore()

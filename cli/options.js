@@ -1,3 +1,7 @@
+let ClewareUSBOptions = {
+  type: 'ClewareUSB',
+};
+
 let USBswitchCmdOptions = {
   type: 'USBswitchCmd',
   path: '"C:\\Temp\\USBswitchCmd_E 5.0.0\\USBswitchCmd.exe"'
@@ -14,6 +18,7 @@ let ChromiumOptions = {
 };
 
 module.exports = {
+  ClewareUSBOptions,
   USBswitchCmdOptions,
   ClewareControlOptions,
   ChromiumOptions

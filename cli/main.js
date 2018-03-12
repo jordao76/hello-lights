@@ -1,10 +1,6 @@
-let isWin = process.platform === "win32";
-let defaultDeviceOptions =
-  isWin ? 'USBswitchCmdOptions' : 'ClewareControlOptions';
-
 let {CommandParser} = require('../src/command-parser');
 let options =
-  require('./options')[process.argv[2] || defaultDeviceOptions];
+  require('./options')[process.argv[2] || 'ClewareUSBOptions'];
 let {resolveConnectedTrafficLight} =
   require('../src/devices/'+options.type)(options);
 
