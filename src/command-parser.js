@@ -1,3 +1,6 @@
+let fs = require('fs');
+let parser = require('./command-peg-parser');
+
 let c = require('./commands');
 let {Cancellable} = require('./cancellable');
 
@@ -50,16 +53,7 @@ class CommandParser {
   }
 
   parse(commandStr) {
-    // turn the command into a JSON array
-    let commandJSON =
-      '['+
-        commandStr.trim()
-          .replace(/(:?[a-z_]\w*)/ig,'"$1"') // surround names and vars with quotes
-          .replace(/(\S)?\(\s*/g,'$1 [') // parenthesis turn to arrays
-          .replace(/\s*\)/g,']') // end of parenthesis
-          .replace(/\s+/g,',') // separate everything with commas
-      +']';
-    let commandArr = JSON.parse(commandJSON);
+    let commandArr = parser.parse(commandStr);
     return this._interpret(commandArr);
   }
 

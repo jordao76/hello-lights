@@ -1,3 +1,4 @@
 node_modules
 web/bundle.js
 temp
+src/command-peg-parser.js

@@ -2,10 +2,11 @@
   "name": "traffic-light-controller",
   "version": "0.0.1",
   "scripts": {
-    "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
-    "web": "browserify web/main.js -o web/bundle.js && opn web/index.html",
-    "cli": "node cli/main.js",
-    "cli-browser": "node cli/main.js ChromiumOptions"
+    "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
+    "test": "npm run peg && mocha --require coffeescript/register \"test/**/*.coffee\"",
+    "web": "npm run peg && browserify web/main.js -o web/bundle.js && opn web/index.html",
+    "cli": "npm run peg && node cli/main.js",
+    "cli-browser": "npm run peg && node cli/main.js ChromiumOptions"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
@@ -17,6 +18,7 @@
     "sinon": "^4.3.0"
   },
   "dependencies": {
-    "node-hid": "^0.7.2"
+    "node-hid": "^0.7.2",
+    "pegjs": "^0.10.0"
   }
 }
