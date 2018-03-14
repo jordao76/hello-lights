@@ -133,3 +133,47 @@ describe 'CommandParser', () ->
       command = @cp.parse(commandStr)
       command.should.be.an.instanceof Error
       command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+
+  describe 'variables', () =>
+
+    it 'should parse a command with a variable', () =>
+      @commands.pause = sinon.stub().returns 42
+      commandStr = 'pause :ms'
+      command = @cp.parse(commandStr)
+      # command will be
+      #   (tl, ms, ct) => @commands['pause'](tl, ms, ct)
+      res = await command(@tl, 44, {ms: 33})
+      sinon.assert.calledWith(@commands.pause, @tl, 33, 44)
+      res.should.equal 42
+
+    it 'should parse a command with a variable and a value', () =>
+      @commands.my_command = sinon.stub()
+      command = @cp.parse('my_command :ms 7')
+      res = await command(@tl, 4, {ms: 3})
+      sinon.assert.calledWith(@commands.my_command, @tl, 3, 7, 4)
+
+    it 'should parse a command with two variables', () =>
+      @commands.my_command = sinon.stub()
+      command = @cp.parse('my_command :v1 :v2')
+      res = await command(@tl, 5, {v2: 3, v1: 4})
+      sinon.assert.calledWith(@commands.my_command, @tl, 4, 3, 5)
+
+    xit 'should parse a command with a nested command with a variable', () =>
+      @commands.run = (tl, command, ct) -> command(tl, ct)
+      @commands.toggle = sinon.stub()
+      command = @cp.parse('run (toggle :light)')
+      res = await command(@tl, -1, {light: 'red'})
+      sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
+
+    xit 'should parse a command with nested commands with variables', () =>
+      @commands.run = sinon.stub()
+      @commands.toggle = sinon.stub()
+      @commands.pause = sinon.stub()
+      command = @cp.parse('run (toggle :light) (pause :ms) (toggle :light)')
+      res = await command(@tl, -1, {light: 'red', ms: 150})
+      sinon.assert.calledWith(@commands.run, @tl, 'red', 150, -1)
+      sinon.assert.calledWith(@commands.pause, @tl, 150, -1)
+      sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
+      sinon.assert.calledTwice(@commands.toggle)
+
+    xdescribe 'variables and validation', () ->

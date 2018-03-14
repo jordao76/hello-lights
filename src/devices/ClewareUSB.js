@@ -15,26 +15,23 @@ const SWITCH1_DEVICE = 8; // traffic light
 class ClewareUSBDeviceRegister {
 
   constructor() {
-    // keyed by their serial numbers
+    // devices keyed by their serial numbers
     this._devices = {};
-    this._deviceInfos = {};
   }
 
   refreshDevices() {
     let deviceInfos = HID.devices(VENDOR_ID, SWITCH1_DEVICE)
       .filter(d => d.serialNumber); // has a serial number
-    let serialNums = [];
+    let ds = this._devices, serialNums = [];
     for (let i = 0; i < deviceInfos.length; ++i) {
       let deviceInfo = deviceInfos[i];
       let serialNum = deviceInfo.serialNumber;
-      this._deviceInfos[serialNum] = deviceInfo;
-      this._devices[serialNum] = this._devices[serialNum] ||
-        new ClewareUSBDevice();
-      this._devices[serialNum].info(deviceInfo);
+      ds[serialNum] = ds[serialNum] || new ClewareUSBDevice();
+      ds[serialNum].info(deviceInfo);
       serialNums.push(serialNum);
     }
     this._disconnectDevicesNotIn(serialNums);
-    return this._devices;
+    return ds;
   }
 
   _disconnectDevicesNotIn(serialNums) {

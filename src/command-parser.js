@@ -1,6 +1,27 @@
 let c = require('./commands');
 let {Cancellable} = require('./cancellable');
 
+let isVar = (a) => typeof a === 'string' && a.startsWith(':');
+let getName = (v) => v.replace(/^:/, '');
+
+class Vars {
+
+  constructor(args) {
+    this.args = args;
+  }
+
+  hasVars() {
+    return this.args.some(isVar);
+  }
+
+  resolve(assignments) {
+    return this.args.map(a =>
+      isVar(a) ? assignments[getName(a)] : a
+    );
+  }
+
+}
+
 class CommandParser {
 
   constructor(commands = c.published) {
@@ -33,7 +54,7 @@ class CommandParser {
     let commandJSON =
       '['+
         commandStr.trim()
-          .replace(/([a-z_]\w*)/ig,'"$1"') // surround names with quotes
+          .replace(/(:?[a-z_]\w*)/ig,'"$1"') // surround names and vars with quotes
           .replace(/(\S)?\(\s*/g,'$1 [') // parenthesis turn to arrays
           .replace(/\s*\)/g,']') // end of parenthesis
           .replace(/\s+/g,',') // separate everything with commas
@@ -62,6 +83,16 @@ class CommandParser {
     // validate the command arguments
     if (!this._validate(command, args))
       return new Error(`Check your arguments: ${command.doc.usage}`);
+
+    // variables
+    let vars = new Vars(args);
+
+    if (vars.hasVars())
+      // return a command that takes a traffic light (tl),
+      // a cancellation token (ct) and variable assignments
+      return command.usesParser ?
+        (tl, ct, assignments) => command(this, tl, ...vars.resolve(assignments), ct) :
+        (tl, ct, assignments) => command(tl, ...vars.resolve(assignments), ct);
 
     // return a command that takes a traffic light (tl) and a cancellation token (ct)
     return command.usesParser ?
