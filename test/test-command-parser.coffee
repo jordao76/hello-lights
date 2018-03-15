@@ -64,11 +64,10 @@ describe 'CommandParser', () ->
     sinon.assert.calledWith @commands.needsParser, @cp, @tl, 80
     res.should.equal 95
 
-  it 'should return an error for an invalid command name', () =>
+  it 'should throw an error for an invalid command name', () =>
     commandStr = 'invalid red'
-    command = @cp.parse(commandStr)
-    command.should.be.an.instanceof Error
-    command.toString().should.have.string 'Command not found: "invalid"'
+    parse = () => @cp.parse(commandStr)
+    parse.should.throw 'Command not found: "invalid"'
 
   describe 'transformation', () =>
 
@@ -107,32 +106,28 @@ describe 'CommandParser', () ->
       @isValid.returns yes
       commandStr = 'turnOn red'
       command = @cp.parse(commandStr)
-      command.should.not.be.an.instanceof Error
       sinon.assert.calledOnce(@isValid)
       sinon.assert.calledWith(@isValid, 'red')
       await command(@tl, 42)
       sinon.assert.calledWith(@commands.turnOn, @tl, 'red', 42)
 
-    it 'should return a validation error for an invalid argument', () =>
+    it 'should throw a validation error for an invalid argument', () =>
       @isValid.returns no
       commandStr = 'turnOn blue'
-      command = @cp.parse(commandStr)
-      command.should.be.an.instanceof Error
-      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+      parse = () => @cp.parse(commandStr)
+      parse.should.throw 'Check your arguments: turnOn [red|yellow|green]'
 
-    it 'should return a validation error for a missing parameter', () =>
+    it 'should throw a validation error for a missing parameter', () =>
       @isValid.returns yes
       commandStr = 'turnOn'
-      command = @cp.parse(commandStr)
-      command.should.be.an.instanceof Error
-      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+      parse = () => @cp.parse(commandStr)
+      parse.should.throw 'Check your arguments: turnOn [red|yellow|green]'
 
-    it 'should return a validation error for an extra parameter', () =>
+    it 'should throw a validation error for an extra parameter', () =>
       @isValid.returns yes
       commandStr = 'turnOn red 1'
-      command = @cp.parse(commandStr)
-      command.should.be.an.instanceof Error
-      command.toString().should.have.string 'Check your arguments: turnOn [red|yellow|green]'
+      parse = () => @cp.parse(commandStr)
+      parse.should.throw 'Check your arguments: turnOn [red|yellow|green]'
 
   describe 'variables', () =>
 
@@ -158,22 +153,24 @@ describe 'CommandParser', () ->
       res = await command(@tl, 5, {v2: 3, v1: 4})
       sinon.assert.calledWith(@commands.my_command, @tl, 4, 3, 5)
 
-    xit 'should parse a command with a nested command with a variable', () =>
-      @commands.run = (tl, command, ct) -> command(tl, ct)
+    it 'should parse a command with a nested command with a variable', () =>
+      @commands.run = (tl, command, ct, options) -> command(tl, ct, options)
       @commands.toggle = sinon.stub()
       command = @cp.parse('run (toggle :light)')
       res = await command(@tl, -1, {light: 'red'})
       sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
 
-    xit 'should parse a command with nested commands with variables', () =>
-      @commands.run = sinon.stub()
+    it 'should parse a command with nested commands with variables', () =>
+      @commands.run = (tl, cs, ct, options) -> c(tl, ct, options) for c in cs
+      @commands.run.transformation = (args) -> [args] # rest parameter
       @commands.toggle = sinon.stub()
       @commands.pause = sinon.stub()
       command = @cp.parse('run (toggle :light) (pause :ms) (toggle :light)')
       res = await command(@tl, -1, {light: 'red', ms: 150})
-      sinon.assert.calledWith(@commands.run, @tl, 'red', 150, -1)
       sinon.assert.calledWith(@commands.pause, @tl, 150, -1)
       sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
       sinon.assert.calledTwice(@commands.toggle)
 
-    xdescribe 'variables and validation', () ->
+  xdescribe 'variables and validation', () ->
+
+    it 'validation is deferred for variables', () ->

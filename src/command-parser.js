@@ -7,30 +7,31 @@ let {Cancellable} = require('./cancellable');
 let isVar = (a) => typeof a === 'string' && a.startsWith(':');
 let getName = (v) => v.replace(/^:/, '');
 
-class Vars {
-
+class Scope {
   constructor(args) {
     this.args = args;
   }
-
-  hasVars() {
-    return this.args.some(isVar);
-  }
-
-  resolve(assignments) {
+  resolve(bindings) {
     return this.args.map(a =>
-      isVar(a) ? assignments[getName(a)] : a
+      isVar(a) ? bindings[getName(a)] : a
     );
   }
-
 }
 
 class CommandParser {
 
   constructor(commands = c.published) {
     this.commands = commands;
-    this.commandList = Object.keys(commands);
     this.ct = new Cancellable;
+  }
+
+  get commandList() {
+    return Object.keys(this.commands);
+  }
+
+  addCommand(name, command) {
+    if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
+    this.commands[name] = command;
   }
 
   cancel(ct = this.ct) {
@@ -44,54 +45,16 @@ class CommandParser {
   execute(commandStr, tl, ct = this.ct) {
     if (ct.isCancelled) return;
     var command = this.parse(commandStr);
-    if (command instanceof Error) return command;
-    try {
-      return command(tl, ct);
-    } catch(e) {
-      return e;
-    }
+    return command(tl, ct); // no await
   }
 
   parse(commandStr) {
-    let commandArr = parser.parse(commandStr);
-    return this._interpret(commandArr);
+    let commandAst = parser.parse(commandStr);
+    return this._interpret(commandAst);
   }
 
-  _interpret(commandArr) {
-    // get the command components: its name and its arguments
-    let commandName = commandArr[0];
-    let args = commandArr.slice(1);
-
-    // get the command and check that it's valid
-    let command = this.commands[commandName];
-    if (!command) return new Error(`Command not found: "${commandName}"`);
-
-    // interpret sub-commands and check for nested errors
-    args = args.map(a => Array.isArray(a) ? this._interpret(a) : a);
-    let errors = args.filter(a => a instanceof Error).map(e => e.message);
-    if (errors.length > 0) return new Error(errors.join('\n'));
-
-    // transform the command arguments
-    args = this._transform(command, args);
-
-    // validate the command arguments
-    if (!this._validate(command, args))
-      return new Error(`Check your arguments: ${command.doc.usage}`);
-
-    // variables
-    let vars = new Vars(args);
-
-    if (vars.hasVars())
-      // return a command that takes a traffic light (tl),
-      // a cancellation token (ct) and variable assignments
-      return command.usesParser ?
-        (tl, ct, assignments) => command(this, tl, ...vars.resolve(assignments), ct) :
-        (tl, ct, assignments) => command(tl, ...vars.resolve(assignments), ct);
-
-    // return a command that takes a traffic light (tl) and a cancellation token (ct)
-    return command.usesParser ?
-      (tl, ct) => command(this, tl, ...args, ct) :
-      (tl, ct) => command(tl, ...args, ct);
+  _interpret(node) {
+    return interpreter[node.type].call(this, node);
   }
 
   _validate(command, args) {
@@ -115,5 +78,45 @@ class CommandParser {
   }
 
 }
+
+let interpreter = {
+
+  command(node) {
+    // get the command components: its name and its arguments
+    let commandName = node.name;
+    let args = node.params;
+
+    // get the command and check that it's valid
+    let command = this.commands[commandName];
+    if (!command) throw new Error(`Command not found: "${commandName}"`);
+
+    // interpret parameters
+    args = args.map(a => this._interpret(a));
+
+    // transform the command arguments
+    args = this._transform(command, args);
+
+    // validate the command arguments
+    if (!this._validate(command, args))
+      throw new Error(`Check your arguments: ${command.doc.usage}`);
+
+    // return a command that takes a traffic light (tl),
+    // a cancellation token (ct) and optional variable bindings
+    let scope = new Scope(args);
+    let res = command.usesParser?
+      (tl, ct, bindings={}) => command(this, tl, ...scope.resolve(bindings), ct, bindings):
+      (tl, ct, bindings={}) => command(      tl, ...scope.resolve(bindings), ct, bindings);
+    return res;
+  },
+
+  variable(node) {
+    return ':' + node.name;
+  },
+
+  value(node) {
+    return node.value;
+  }
+
+};
 
 module.exports = {CommandParser};

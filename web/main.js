@@ -34,15 +34,15 @@ window.cancel = function() {
 }
 
 var cp = new CommandParser();
-window.execute = async function(str, shouldCancel=true) {
+window.execute = async function(str, shouldCancel = true) {
   if (shouldCancel) cancel();
   console.log(`Executing command '${str}'`);
-  var res = await cp.execute(str,tl);
-  if (res instanceof Error) {
+  try {
+    return await cp.execute(str, tl);
+  } catch (e) {
     console.error(`Error executing command '${str}'`);
-    console.error(res.toString());
+    console.error(e.toString());
   }
-  return res;
 }
 
 window.help = function(commandName) {

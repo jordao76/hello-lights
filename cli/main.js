@@ -47,8 +47,11 @@ async function execute(str, shouldCancel=true) {
   if (tl) {
     if (shouldCancel) cp.cancel();
     log(`Executing command '${str}'`);
-    var res = cp.execute(str, tl); // no await
-    if (res instanceof Error) error(`Error in command '${str}'\n${res}`);
+    try {
+      cp.execute(str, tl); // no await
+    } catch (e) {
+      error(`Error in command '${str}'\n${e}`);
+    }
   }
 }
 

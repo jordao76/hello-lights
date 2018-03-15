@@ -95,17 +95,18 @@ pauseWithTrafficLight.validation = [isPeriod];
  * @param {TrafficLight} tl - The traffic light to run the command against.
  * @param {number} ms - Duration in milliseconds for the timeout.
  * @param {function} command - A prepared command function, that takes a
- *   traffic light (tl) and a Cancellation Token (ct) parameters. This is the
- *   kind of command returned from {@link CommandParser#parse}.
+ *   traffic light (tl), a Cancellation Token (ct) and an options parameters.
+ *   This is the kind of command returned from {@link CommandParser#parse}.
  * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
+ * @param {object} [options] - Options object, to be passed to the called command.
  * @returns {Promise} The result of the command execution (can be an Error) if
  *   the command finished before the timeout.
  */
-async function timeout(tl, ms, command, ct = cancellable) {
+async function timeout(tl, ms, command, ct = cancellable, options = {}) {
   let timeoutC = new Cancellable;
   let timeoutP = pause(ms, ct);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([command(tl, timeoutC), timeoutP]);
+  let res = await Promise.race([command(tl, timeoutC, options), timeoutP]);
   // check if the timeout was reached
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
   let value = await Promise.race([timeoutP, 42]);
@@ -126,11 +127,11 @@ timeout.validation = [isPeriod, isCommand];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function run(tl, commands, ct = cancellable) {
+async function run(tl, commands, ct = cancellable, options = {}) {
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
     let command = commands[i];
-    await command(tl, ct);
+    await command(tl, ct, options);
   }
 }
 run.doc = {
@@ -144,10 +145,10 @@ run.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop(tl, commands, ct = cancellable) {
+async function loop(tl, commands, ct = cancellable, options = {}) {
   while (true) {
     if (ct.isCancelled) return;
-    await run(tl, commands, ct);
+    await run(tl, commands, ct, options);
   }
 }
 loop.doc = {
@@ -161,10 +162,10 @@ loop.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function repeat(tl, times, commands, ct = cancellable) {
+async function repeat(tl, times, commands, ct = cancellable, options = {}) {
   while (times-- > 0) {
     if (ct.isCancelled) return;
-    await run(tl, commands, ct);
+    await run(tl, commands, ct, options);
   }
 }
 repeat.doc = {
@@ -178,9 +179,9 @@ repeat.validation = [isNumber, each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function all(tl, commands, ct = cancellable) {
+async function all(tl, commands, ct = cancellable, options = {}) {
   if (ct.isCancelled) return;
-  await Promise.all(commands.map(command => command(tl, ct)));
+  await Promise.all(commands.map(command => command(tl, ct, options)));
 }
 all.doc = {
   name: 'all',
