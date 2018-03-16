@@ -1,5 +1,5 @@
 {CommandParser} = require '../src/command-parser'
-c = require '../src/commands'
+{Cancellable} = require '../src/cancellable'
 require('chai').should()
 sinon = require('sinon')
 
@@ -9,15 +9,17 @@ describe 'CommandParser', () ->
     @commands = {}
     @cp = new CommandParser(@commands)
     @tl = red:32, yellow:33, green:34
+    @ct = new Cancellable
+    @scope = {}
 
   it 'should parse a parameterless command', () =>
     @commands.cycle = sinon.stub().returns 96
     commandStr = 'cycle'
     command = @cp.parse(commandStr)
     # command will be
-    #   (tl, ct) => @commands['cycle'](tl, ct)
-    res = await command(@tl, 79)
-    sinon.assert.calledWith(@commands.cycle, @tl, 79)
+    #   ({tl, ct, scope={}}) => @commands['cycle']({tl, ct, scope})
+    res = await command({@tl, @ct})
+    sinon.assert.calledWith(@commands.cycle, {@tl, @ct, @scope})
     res.should.equal 96
 
   it 'should parse a command with parameters', () =>
@@ -25,43 +27,27 @@ describe 'CommandParser', () ->
     commandStr = 'blink red 500 10'
     command = @cp.parse(commandStr)
     # command will be
-    #   (tl, ct) => @commands['blink'](tl, 'red', 500, 10, ct)
-    res = await command(@tl, 78)
-    sinon.assert.calledWith(@commands.blink, @tl, 'red', 500, 10, 78)
+    #   ({tl, ct, scope={}}) => @commands['blink']({tl, ct, scope}, ['red', 500, 10])
+    res = await command({@tl, @ct})
+    sinon.assert.calledWith(@commands.blink, {@tl, @ct, @scope}, ['red', 500, 10])
     res.should.equal 95
 
   it 'should parse sub-command', () =>
-    @commands.repeat = (tl, n, c, ct) -> c(tl, ct)
+    @commands.repeat = ({tl, ct, scope}, [n, c]) -> c({tl, ct, scope})
     @commands.toggle = sinon.stub().returns 97
     commandStr = 'repeat 100 (toggle green)'
     command = @cp.parse(commandStr)
-    res = await command(@tl, 80)
-    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
+    res = await command({@tl, @ct})
+    sinon.assert.calledWith @commands.toggle, {@tl, @ct, @scope}, ['green']
     res.should.equal 97
-
-  it 'spaces surrounding parenthesis should be allowed', () =>
-    @commands.repeat = (tl, n, c, ct) -> c(tl, ct)
-    @commands.toggle = sinon.stub()
-    commandStr = 'repeat 100 ( toggle green )'
-    command = @cp.parse(commandStr)
-    res = await command(@tl, 80)
-    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
-
-  it 'should not require a space before an opening parenthesis', () =>
-    @commands.run = (tl, c1, c2, ct) -> c1(tl, ct)
-    @commands.toggle = sinon.stub()
-    commandStr = 'run(toggle green)( toggle red)'
-    command = @cp.parse(commandStr)
-    res = await command(@tl, 80)
-    sinon.assert.calledWith @commands.toggle, @tl, 'green', 80
 
   it 'should pass the parser to a command that needs it', () =>
     @commands.needsParser = sinon.stub().returns 95
     @commands.needsParser.usesParser = true
     commandStr = 'needsParser'
     command = @cp.parse(commandStr)
-    res = await command(@tl, 80)
-    sinon.assert.calledWith @commands.needsParser, @cp, @tl, 80
+    res = await command({@tl, @ct})
+    sinon.assert.calledWith @commands.needsParser, {@cp, @tl, @ct, @scope}
     res.should.equal 95
 
   it 'should throw an error for an invalid command name', () =>
@@ -72,13 +58,11 @@ describe 'CommandParser', () ->
   describe 'transformation', () =>
 
     it 'should call a transformation', () =>
-      @commands.sum = (tl, a, ct) -> a
+      @commands.sum = ({tl, ct}, [a]) -> a
       @commands.sum.transformation = (args) -> [args.reduce((a, b) -> a + b)]
       commandStr = 'sum 1 2 3 4'
       command = @cp.parse(commandStr)
-      # command will be
-      #   (tl, ct) => @commands['sum'](tl, 10, ct)
-      res = await command(@tl, 79)
+      res = await command({@tl, @ct})
       res.should.equal 10
 
     it 'use a transformation for a rest parameter', () =>
@@ -86,12 +70,11 @@ describe 'CommandParser', () ->
       splitter = (n) -> (a) -> [...a.slice(0, n), a.slice(n)]
       @commands.takesRest = sinon.stub().returns 94
       @commands.takesRest.transformation = splitter 2
+      # 1 and 2 are the first params, 3 and 4 are the rest
       commandStr = 'takesRest 1 2 3 4'
       command = @cp.parse(commandStr)
-      # command will be
-      #   (tl, ct) => @commands['takesRest'](tl, 1, 2, [3, 4], ct)
-      res = await command(@tl, 79)
-      sinon.assert.calledWith(@commands.takesRest, @tl, 1, 2, [3, 4], 79)
+      res = await command({@tl, @ct})
+      sinon.assert.calledWith(@commands.takesRest, {@tl, @ct, @scope}, [1, 2, [3, 4]])
       res.should.equal 94
 
   describe 'validation', () =>
@@ -108,8 +91,8 @@ describe 'CommandParser', () ->
       command = @cp.parse(commandStr)
       sinon.assert.calledOnce(@isValid)
       sinon.assert.calledWith(@isValid, 'red')
-      await command(@tl, 42)
-      sinon.assert.calledWith(@commands.turnOn, @tl, 'red', 42)
+      await command({@tl, @ct})
+      sinon.assert.calledWith(@commands.turnOn, {@tl, @ct, @scope}, ['red'])
 
     it 'should throw a validation error for an invalid argument', () =>
       @isValid.returns no
@@ -135,42 +118,63 @@ describe 'CommandParser', () ->
       @commands.pause = sinon.stub().returns 42
       commandStr = 'pause :ms'
       command = @cp.parse(commandStr)
-      # command will be
-      #   (tl, ms, ct) => @commands['pause'](tl, ms, ct)
-      res = await command(@tl, 44, {ms: 33})
-      sinon.assert.calledWith(@commands.pause, @tl, 33, 44)
+      @scope = ms: 33
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.pause, {@tl, @ct, @scope}, [33])
       res.should.equal 42
 
     it 'should parse a command with a variable and a value', () =>
       @commands.my_command = sinon.stub()
       command = @cp.parse('my_command :ms 7')
-      res = await command(@tl, 4, {ms: 3})
-      sinon.assert.calledWith(@commands.my_command, @tl, 3, 7, 4)
+      @scope = ms: 3
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.my_command, {@tl, @ct, @scope}, [3, 7])
 
     it 'should parse a command with two variables', () =>
       @commands.my_command = sinon.stub()
       command = @cp.parse('my_command :v1 :v2')
-      res = await command(@tl, 5, {v2: 3, v1: 4})
-      sinon.assert.calledWith(@commands.my_command, @tl, 4, 3, 5)
+      @scope = v2: 3, v1: 4
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.my_command, {@tl, @ct, @scope}, [4, 3])
 
     it 'should parse a command with a nested command with a variable', () =>
-      @commands.run = (tl, command, ct, options) -> command(tl, ct, options)
+      @commands.run = ({tl, ct, scope}, [command]) -> command({tl, ct, scope})
       @commands.toggle = sinon.stub()
       command = @cp.parse('run (toggle :light)')
-      res = await command(@tl, -1, {light: 'red'})
-      sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
+      @scope = light: 'red'
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.toggle, {@tl, @ct, @scope}, ['red'])
 
     it 'should parse a command with nested commands with variables', () =>
-      @commands.run = (tl, cs, ct, options) -> c(tl, ct, options) for c in cs
+      @commands.run = ({tl, ct, scope}, [cs]) -> c({tl, ct, scope}) for c in cs
       @commands.run.transformation = (args) -> [args] # rest parameter
       @commands.toggle = sinon.stub()
       @commands.pause = sinon.stub()
       command = @cp.parse('run (toggle :light) (pause :ms) (toggle :light)')
-      res = await command(@tl, -1, {light: 'red', ms: 150})
-      sinon.assert.calledWith(@commands.pause, @tl, 150, -1)
-      sinon.assert.calledWith(@commands.toggle, @tl, 'red', -1)
+      @scope = light: 'red', ms: 150
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.pause, {@tl, @ct, @scope}, [150])
+      sinon.assert.calledWith(@commands.toggle, {@tl, @ct, @scope}, ['red'])
       sinon.assert.calledTwice(@commands.toggle)
 
-  xdescribe 'variables and validation', () ->
+  xdescribe 'variables and validation', () =>
 
-    it 'validation is deferred for variables', () ->
+    it 'validation is deferred for variables', () =>
+
+  describe 'define', () =>
+
+    it 'should define a new command', () =>
+      @commands.stub = sinon.stub()
+      @cp.define('fake', 'stub 42') # fake calls stub
+      command = @cp.parse('fake')
+      res = await command({@tl, @ct})
+      sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
+
+    it 'should define a new command with a variable', () =>
+      @commands.stub = sinon.stub()
+      @cp.define('fake', 'stub :var', ['var'])
+      command = @cp.parse('fake 42')
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
+
+  xdescribe 'execute', () =>

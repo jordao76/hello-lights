@@ -47,8 +47,9 @@ async function execute(str, shouldCancel=true) {
   if (tl) {
     if (shouldCancel) cp.cancel();
     log(`Executing command '${str}'`);
+    prompt();
     try {
-      cp.execute(str, tl); // no await
+      await cp.execute(str, tl);
     } catch (e) {
       error(`Error in command '${str}'\n${e}`);
     }
@@ -93,7 +94,8 @@ function listen() {
       }
     }
     else {
-      await execute(text);
+      execute(text); // no await
+      return;
     }
     prompt();
   });

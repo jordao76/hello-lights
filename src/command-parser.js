@@ -1,26 +1,28 @@
-let fs = require('fs');
+let {published} = require('./commands');
+let {Cancellable} = require('./cancellable');
 let parser = require('./command-peg-parser');
 
-let c = require('./commands');
-let {Cancellable} = require('./cancellable');
+//////////////////////////////////////////////////////////////////////////////
 
 let isVar = (a) => typeof a === 'string' && a.startsWith(':');
 let getName = (v) => v.replace(/^:/, '');
 
-class Scope {
+class Vars {
   constructor(args) {
     this.args = args;
   }
-  resolve(bindings) {
+  resolve(scope) {
     return this.args.map(a =>
-      isVar(a) ? bindings[getName(a)] : a
+      isVar(a) ? scope[getName(a)] : a
     );
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 class CommandParser {
 
-  constructor(commands = c.published) {
+  constructor(commands = published) {
     this.commands = commands;
     this.ct = new Cancellable;
   }
@@ -29,9 +31,14 @@ class CommandParser {
     return Object.keys(this.commands);
   }
 
-  addCommand(name, command) {
+  define(name, commandStr, paramNames = []) {
     if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
-    this.commands[name] = command;
+    let c = this.parse(commandStr);
+    let command = ({tl, ct, scope = {}}, params = []) => {
+      params.forEach((p, i) => scope[paramNames[i]] = p);
+      return c({tl, ct, scope});
+    }
+    return this.commands[name] = command;
   }
 
   cancel(ct = this.ct) {
@@ -45,7 +52,7 @@ class CommandParser {
   execute(commandStr, tl, ct = this.ct) {
     if (ct.isCancelled) return;
     var command = this.parse(commandStr);
-    return command(tl, ct); // no await
+    return command({tl, ct}); // no await
   }
 
   parse(commandStr) {
@@ -79,6 +86,8 @@ class CommandParser {
 
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
 let interpreter = {
 
   command(node) {
@@ -101,11 +110,11 @@ let interpreter = {
       throw new Error(`Check your arguments: ${command.doc.usage}`);
 
     // return a command that takes a traffic light (tl),
-    // a cancellation token (ct) and optional variable bindings
-    let scope = new Scope(args);
+    // a cancellation token (ct) and an optional scope with variable bindings
+    let vars = new Vars(args);
     let res = command.usesParser?
-      (tl, ct, bindings={}) => command(this, tl, ...scope.resolve(bindings), ct, bindings):
-      (tl, ct, bindings={}) => command(      tl, ...scope.resolve(bindings), ct, bindings);
+      ({tl, ct, scope={}}) => command({cp:this, tl, ct, scope}, vars.resolve(scope)):
+      ({tl, ct, scope={}}) => command({tl, ct, scope}, vars.resolve(scope));
     return res;
   },
 
@@ -118,5 +127,7 @@ let interpreter = {
   }
 
 };
+
+//////////////////////////////////////////////////////////////////////////////
 
 module.exports = {CommandParser};

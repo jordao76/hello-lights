@@ -1,21 +1,22 @@
 /**
  * @file Defines commands to control a {@link TrafficLight}.
  *   The commands are usually time-based and are cancellable
- *   by a Cancellation Token. All commands take an optional
- *   Cancellation Token (ct) parameter and use a default if one
- *   is not provided. Cancellation Tokens are instances of {@link Cancellable}.
+ *   by a Cancellation Token. Cancellation Tokens are instances
+ *   of {@link Cancellable}.
  */
 
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions
+//////////////////////////////////////////////////////////////////////////////
 
 let isOn = state =>
- (state === 'off' || state === 'false') ? false : !!state;
+  (state === 'off' || state === 'false') ? false : !!state;
 let turnLight = (oLight, state) =>
- oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
 
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
+//////////////////////////////////////////////////////////////////////////////
 
 let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
 let isState = s => s === 'on' || s === 'off';
@@ -24,6 +25,15 @@ let isPeriod = isNumber;
 let isCommand = f => typeof f === 'function';
 let each = vf => a => Array.isArray(a) && a.every(e => vf(e));
 
+//////////////////////////////////////////////////////////////////////////////
+// Every command takes 2 parameters:
+//   1. context = { tl, ct, scope }
+//   where
+//      tl is a traffic light
+//      ct is a cancellation token
+//      scope are the variable bindings for nested commands
+//   2. params = [v1, v2, ..., vn]
+//      v1...vn are the values of the command parameters
 //////////////////////////////////////////////////////////////////////////////
 
 let {Cancellable} = require('./cancellable');
@@ -37,36 +47,36 @@ let cancellable = new Cancellable;
 /**
  * Cancels all commands that are being executed in the context of a
  * Cancellation Token.
- * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  */
-function cancel(ct = cancellable) {
+function cancel({ct = cancellable} = {}) {
   if (ct.isCancelled) return;
   ct.cancel();
   if (ct === cancellable) {
     cancellable = new Cancellable;
   }
 }
-/** Cancel documentation. */
+cancel.validation = []; // validates number of parameters (zero)
 cancel.doc = {
   name: 'cancel',
   desc: 'Cancels all executing commands.',
   usage: 'cancel',
   eg: 'cancel'
 };
-cancel.validation = [];
 
 //////////////////////////////////////////////////////////////////////////////
 
 /**
  * Pauses execution for the given duration.
- * @param {number} ms - Duration in milliseconds for the pause.
- * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
  * @returns {Promise} Promise that resolves when the pause duration is complete,
  *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
  *   is resolved, never rejected.
  */
-function pause(ms, ct = cancellable) {
+function pause(ctx, params) {
+  // allow the first parameter to be omitted
+  // => pause({ct}, [500]) OR pause([500])
+  let ct = ctx.ct || cancellable;
   if (ct.isCancelled) return;
+  let [ms] = params || ctx;
   return new Promise(resolve => {
     let timeoutID = setTimeout(() => {
       ct.del(timeoutID);
@@ -75,38 +85,26 @@ function pause(ms, ct = cancellable) {
     ct.add(timeoutID, resolve);
   });
 }
-async function pauseWithTrafficLight(tl, ms, ct = cancellable) {
-  // just ignore the traffic light parameter
-  await pause(ms, ct);
-}
-/** Pause documentation. */
-pauseWithTrafficLight.doc = {
+pause.validation = [isPeriod];
+pause.doc = {
   name: 'pause',
   desc: 'Pauses execution for the given duration.',
   usage: 'pause [duration in ms]',
   eg: 'pause 500'
 };
-pauseWithTrafficLight.validation = [isPeriod];
 
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Executes a cancellable-command (cc) with a timeout.
- * @param {TrafficLight} tl - The traffic light to run the command against.
- * @param {number} ms - Duration in milliseconds for the timeout.
- * @param {function} command - A prepared command function, that takes a
- *   traffic light (tl), a Cancellation Token (ct) and an options parameters.
- *   This is the kind of command returned from {@link CommandParser#parse}.
- * @param {Cancellable} [ct] - Optional Cancellation Token, or use the default.
- * @param {object} [options] - Options object, to be passed to the called command.
- * @returns {Promise} The result of the command execution (can be an Error) if
- *   the command finished before the timeout.
+ * Executes a command with a timeout.
+ * @returns {Promise} The result of the command execution if the command
+ *   finished before the timeout.
  */
-async function timeout(tl, ms, command, ct = cancellable, options = {}) {
+async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
   let timeoutC = new Cancellable;
-  let timeoutP = pause(ms, ct);
+  let timeoutP = pause({ct}, [ms]);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([command(tl, timeoutC, options), timeoutP]);
+  let res = await Promise.race([command({tl, ct: timeoutC, scope}), timeoutP]);
   // check if the timeout was reached
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
   let value = await Promise.race([timeoutP, 42]);
@@ -116,145 +114,144 @@ async function timeout(tl, ms, command, ct = cancellable, options = {}) {
   }
   return res;
 }
-/** Timeout documentation. */
+timeout.validation = [isPeriod, isCommand];
 timeout.doc = {
   name: 'timeout',
   desc: 'Executes a command with a timeout.',
   usage: 'timeout [duration in ms] ([command to execute])',
   eg: 'timeout 5000 (twinkle red 400)'
 };
-timeout.validation = [isPeriod, isCommand];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function run(tl, commands, ct = cancellable, options = {}) {
+async function run({tl, ct = cancellable, scope = {}}, [commands]) {
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
     let command = commands[i];
-    await command(tl, ct, options);
+    await command({tl, ct, scope});
   }
 }
+run.transformation = args => [args];
+run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
   desc: 'Executes the given commands in sequence',
   usage: 'run [(command to execute)...]',
   eg: 'run (toggle yellow) (pause 1000) (toggle yellow)'
 };
-run.transformation = args => [args];
-run.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop(tl, commands, ct = cancellable, options = {}) {
+async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
   while (true) {
     if (ct.isCancelled) return;
-    await run(tl, commands, ct, options);
+    await run({tl, ct, scope}, [commands]);
   }
 }
+loop.transformation = args => [args];
+loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
   desc: 'Executes the given commands in sequence, starting over forever',
   usage: 'loop [(command to execute)...]',
   eg: 'loop (toggle green) (pause 400) (toggle red) (pause 400)'
 };
-loop.transformation = args => [args];
-loop.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function repeat(tl, times, commands, ct = cancellable, options = {}) {
+async function repeat({tl, ct = cancellable, scope = {}}, [times, commands]) {
   while (times-- > 0) {
     if (ct.isCancelled) return;
-    await run(tl, commands, ct, options);
+    await run({tl, ct, scope}, [commands]);
   }
 }
+repeat.transformation = args => [args[0], args.slice(1)];
+repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
   desc: 'Executes the commands in sequence, repeating the given number of times',
   usage: 'repeat [number of times to repeat] [(command to execute)...]',
   eg: 'repeat 5 (toggle green) (pause 400) (toggle red) (pause 400)'
 };
-repeat.transformation = args => [args[0], args.slice(1)];
-repeat.validation = [isNumber, each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function all(tl, commands, ct = cancellable, options = {}) {
+async function all({tl, ct = cancellable, scope = {}}, [commands]) {
   if (ct.isCancelled) return;
-  await Promise.all(commands.map(command => command(tl, ct, options)));
+  await Promise.all(commands.map(command => command({tl, ct, scope})));
 }
+all.transformation = args => [args];
+all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
   desc: 'Executes the given commands in parallel, all at the same time',
   usage: 'all [(command to execute)...]',
   eg: 'all (twinkle green 700) (twinkle yellow 300)'
 };
-all.transformation = args => [args];
-all.validation = [each(isCommand)];
 
 //////////////////////////////////////////////////////////////////////////////
 
-function toggle(tl, light, ct = cancellable) {
+function toggle({tl, ct = cancellable}, [light]) {
   if (ct.isCancelled) return;
   tl[light].toggle();
 }
+toggle.validation = [isLight];
 toggle.doc = {
   name: 'toggle',
   desc: 'Toggles the given light',
   usage: 'toggle [red|yellow|green]',
   eg: 'toggle green'
 };
-toggle.validation = [isLight];
 
 //////////////////////////////////////////////////////////////////////////////
 
-function turn(tl, light, on, ct = cancellable) {
+function turn({tl, ct = cancellable}, [light, on]) {
   if (ct.isCancelled) return;
   turnLight(tl[light], on);
 }
+turn.validation = [isLight, isState];
 turn.doc = {
   name: 'turn',
   desc: 'Turns the given light on or off',
   usage: 'turn [red|yellow|green] [on|off]',
   eg: 'turn green on'
 };
-turn.validation = [isLight, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function reset(tl, ct = cancellable) {
+async function reset({tl, ct = cancellable}) {
   if (ct.isCancelled) return;
   await tl.reset();
 }
+reset.validation = []; // validates number of parameters (zero)
 reset.doc = {
   name: 'reset',
   desc: 'Sets all lights to off',
   usage: 'reset',
   eg: 'reset'
 };
-reset.validation = []; // validates number of parameters (zero)
 
 //////////////////////////////////////////////////////////////////////////////
 
-function lights(tl, r, y, g, ct = cancellable) {
+function lights({tl, ct = cancellable}, [r, y, g]) {
   if (ct.isCancelled) return;
   turnLight(tl.red, r);
   turnLight(tl.yellow, y);
   turnLight(tl.green, g);
 }
+lights.validation = [isState, isState, isState];
 lights.doc = {
   name: 'lights',
   desc: 'Set the lights to the given values (on=1 or off=0)',
   usage: 'lights [red on/off] [yellow on/off] [green on/off]',
   eg: 'lights off off on'
 };
-lights.validation = [isState, isState, isState];
 
 //////////////////////////////////////////////////////////////////////////////
 // Commands that use a Command Parser
 //////////////////////////////////////////////////////////////////////////////
 
-async function flash(cp, tl, light, ms, ct = cancellable) {
+async function flash({cp, tl, ct = cancellable}, [light, ms]) {
   await cp.execute(
     `run
       (toggle ${light}) (pause ${ms})
@@ -272,7 +269,7 @@ flash.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function blink(cp, tl, light, ms, times, ct = cancellable) {
+async function blink({cp, tl, ct = cancellable}, [light, ms, times]) {
   await cp.execute(
     `repeat ${times} (flash ${light} ${ms})`,
     tl, ct);
@@ -288,7 +285,7 @@ blink.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function twinkle(cp, tl, light, ms, ct = cancellable) {
+async function twinkle({cp, tl, ct = cancellable}, [light, ms]) {
   await cp.execute(
     `loop (flash ${light} ${ms})`,
     tl, ct);
@@ -304,7 +301,7 @@ twinkle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function cycle(cp, tl, ms, flashes, ct = cancellable) {
+async function cycle({cp, tl, ct = cancellable}, [ms, flashes]) {
   await cp.execute(
     `loop
       (blink red ${ms} ${flashes})
@@ -323,7 +320,7 @@ cycle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function jointly(cp, tl, ms, ct = cancellable) {
+async function jointly({cp, tl, ct = cancellable}, [ms]) {
   await cp.execute(
     `loop
       (all
@@ -343,7 +340,7 @@ jointly.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function heartbeat(cp, tl, light, ct = cancellable) {
+async function heartbeat({cp, tl, ct = cancellable}, [light]) {
   await cp.execute(
     `loop
       (blink ${light} 250 2)
@@ -361,7 +358,7 @@ heartbeat.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function sos(cp, tl, light, ct = cancellable) {
+async function sos({cp, tl, ct = cancellable}, [light]) {
   await cp.execute(
     `loop
       (blink ${light} 150 3)
@@ -385,8 +382,8 @@ sos.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function danger(cp, tl, ct = cancellable) {
-  await twinkle(cp, tl, 'red', 400, ct);
+async function danger({cp, tl, ct = cancellable}) {
+  await twinkle({cp, tl, ct}, ['red', 400]);
 }
 danger.doc = {
   name: 'danger',
@@ -394,12 +391,12 @@ danger.doc = {
   usage: 'danger',
   eg: 'danger'
 };
-danger.validation = [];
+danger.validation = []; // validates number of parameters (zero)
 danger.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function bounce(cp, tl, ms, ct = cancellable) {
+async function bounce({cp, tl, ct = cancellable}, [ms]) {
   await cp.execute(
     `loop
       (toggle green)  (pause ${ms}) (toggle green)
@@ -419,7 +416,7 @@ bounce.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function soundbar(cp, tl, ms, ct = cancellable) {
+async function soundbar({cp, tl, ct = cancellable}, [ms]) {
   await cp.execute(
     `loop
       (toggle green)  (pause ${ms})
@@ -442,7 +439,7 @@ soundbar.usesParser = true;
 //////////////////////////////////////////////////////////////////////////////
 
 let commands = {
-  pause: pauseWithTrafficLight, timeout,
+  cancel, pause, timeout,
   run, loop, repeat, all,
   toggle, turn, reset, lights,
   flash, blink, twinkle,
