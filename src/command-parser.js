@@ -54,10 +54,14 @@ class CommandParser {
   define(name, command) {
     if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
-    return this.commands[name] = ({tl, ct, scope = {}}, params = []) => {
+    let newCommand = ({tl, ct, scope = {}}, params = []) => {
+      Validator.validate(newCommand, params);
       params.forEach((p, i) => scope[paramNames[i]] = p);
       return command({tl, ct, scope});
-    }
+    };
+    newCommand.title = name;
+    newCommand.paramNames = paramNames;
+    return this.commands[name] = newCommand;
   }
 
 }
@@ -96,7 +100,7 @@ class Interpreter {
     args = this._transform(command, args);
 
     // validate the command arguments
-    this._validate(command, args);
+    Validator.validate(command, args);
 
     // return a command that takes (in an object) a traffic light (tl),
     // a cancellation token (ct) and an optional scope with variable bindings
@@ -105,7 +109,7 @@ class Interpreter {
       let ctx = {tl, ct, scope};
       if (command.usesParser) ctx.cp = this.parser; // cp = command-parser
       let params = vars.resolve(scope);
-      this._validate(command, params);
+      Validator.validate(command, params);
       return command(ctx, params);
     };
     // note: these are ALL the variables collected so far,
@@ -128,25 +132,6 @@ class Interpreter {
     return node.value;
   }
 
-  _validate(command, args) {
-    if (!this._isValid(command, args))
-      throw new Error(`Check your arguments: ${command.doc.usage}`);
-  }
-
-  _isValid(command, args) {
-    // vfs = Validation FunctionS
-    let vfs = command.validation;
-    // a command with no validation is always valid
-    if (!vfs) return true;
-    // the number of arguments must match the number of validation functions
-    if (vfs.length !== args.length) return false;
-    // run the validation functions against the arguments
-    // don't validate variables
-    let vs = vfs.map((isValid, i) => isVar(args[i]) || isValid(args[i]));
-    // return true if all are valid
-    return vs.every(v => v);
-  }
-
   _transform(command, args) {
     if (command.transformation) {
       return command.transformation(args);
@@ -157,5 +142,31 @@ class Interpreter {
 };
 
 //////////////////////////////////////////////////////////////////////////////
+
+let Validator = {
+
+  validate(command, args) {
+    let es = this._collectErrors(command, args);
+    if (es.length > 0) {
+      throw new Error(es.join('\n'));
+    }
+  },
+
+  _collectErrors(command, args) {
+    let badArity = (exp, act) =>
+      `Bad number of arguments to "${commandName}"; it takes ${exp} but was given ${act}`;
+    let badValue = (i) =>
+      `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`
+    let commandName = command.title || command.name;
+    let pns = command.paramNames; // pns = Parameter NameS
+    if (pns.length !== args.length) return [badArity(pns.length, args.length)];
+    let vfs = command.validation || []; // vfs = Validation FunctionS
+    // return all errors
+    return vfs
+      .map((isValid, i) => isVar(args[i]) || isValid(args[i]) ? null : badValue(i))
+      .filter(e => e); // filter out 'null', where the validation was successful
+  }
+
+}
 
 module.exports = {CommandParser};

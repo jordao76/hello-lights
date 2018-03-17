@@ -13,12 +13,21 @@ describe 'Parsed commands', () =>
     ct = new Cancellable
     scope = {}
     @ctx = {tl, ct, scope}
-    # commands
+    # validation functions
+    isNumber = (n) -> typeof n is 'number'
+    isNumber.exp = 'a number'
+    @isDirection = (d) -> d is 'left' or d is 'right'
+    @isDirection.exp = '"left" or "right"'
+    # wait command
     @wait = sinon.stub()
-    @wait.validation = [(n) -> typeof n is 'number']
+    @wait.title = 'wait'
+    @wait.paramNames = ['ms']
+    @wait.validation = [isNumber]
+    # turn command
     @turn = sinon.stub()
-    @turn.doc = usage: 'turn [left|right]'
-    @turn.validation = [(d) -> d is 'left' or d is 'right']
+    @turn.title = 'turn'
+    @turn.paramNames = ['where']
+    @turn.validation = [@isDirection]
     @commands = {@wait, @turn, run:c.run}
     # parser
     cp = new CommandParser(@commands)
@@ -30,12 +39,21 @@ describe 'Parsed commands', () =>
       @commands.define = c.define
 
     it 'define a new command', () =>
-      await @exec 'define turnLeft (turn left)'
+      turnLeft = await @exec 'define turnLeft (turn left)'
+      # check metadata
+      turnLeft.title.should.equal 'turnLeft'
+      turnLeft.paramNames.should.deep.equal []
+      # execute
       await @exec 'turnLeft'
       @turn.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define with a variable', () =>
-      await @exec 'define go (turn :direction)'
+      go = await @exec 'define go (turn :direction)'
+      # check metadata
+      go.title.should.equal 'go'
+      go.paramNames.should.deep.equal ['direction']
+      #TODO go.validations.should.deep.equal [@isDirection]
+      # execute
       await @exec 'go left'
       @turn.calledOnceWith(@ctx, ['left']).should.be.true
 
@@ -67,9 +85,9 @@ describe 'Parsed commands', () =>
 
       it 'define a new command: error in the definition', () =>
         exec = () => @exec 'define turnUp (turn up)'
-        exec.should.throw 'Check your arguments: turn [left|right]'
+        exec.should.throw 'Bad value "up" to "turn" parameter 1 ("where"); must be: "left" or "right"'
 
-      xit 'define a new command: error in the execution', () =>
+      it 'define a new command: error in the execution', () =>
         await @exec 'define turnLeft (turn left)'
-        exec = () => @exec 'turnLeft 40' # doesn't take any arguments
-        exec.should.throw 'Check your arguments: turnLeft'
+        exec = () => @exec 'turnLeft 40'
+        exec.should.throw 'Bad number of arguments to "turnLeft"; it takes 0 but was given 1'

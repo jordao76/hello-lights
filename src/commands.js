@@ -19,12 +19,26 @@ let turnLight = (oLight, state) =>
 //////////////////////////////////////////////////////////////////////////////
 
 let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
+isLight.exp = '"red", "yellow" or "green"';
+
 let isState = s => s === 'on' || s === 'off';
+isState.exp = '"on" or "off"';
+
 let isIdentifier = s => /^[a-z_][a-z_0-9]*$/i.test(s);
+isIdentifier.exp = 'a valid identifier';
+
 let isNumber = n => typeof n === 'number';
+isNumber.exp = 'a number';
 let isPeriod = isNumber;
+
 let isCommand = f => typeof f === 'function';
-let each = vf => a => Array.isArray(a) && a.every(e => vf(e));
+isCommand.exp = 'a command';
+
+let each = vf => {
+  let v = a => Array.isArray(a) && a.every(e => vf(e));
+  v.exp = `each is ${vf.exp}`;
+  return v;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // Every command takes 2 parameters:
@@ -56,6 +70,7 @@ function cancel({ct = cancellable} = {}) {
     cancellable = new Cancellable;
   }
 }
+cancel.paramNames = []; // no parameters
 cancel.validation = []; // validates number of parameters (zero)
 cancel.doc = {
   name: 'cancel',
@@ -86,6 +101,7 @@ function pause(ctx, params) {
     ct.add(timeoutID, resolve);
   });
 }
+pause.paramNames = ['ms'];
 pause.validation = [isPeriod];
 pause.doc = {
   name: 'pause',
@@ -115,6 +131,7 @@ async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
   }
   return res;
 }
+timeout.paramNames = ["ms", "command"];
 timeout.validation = [isPeriod, isCommand];
 timeout.doc = {
   name: 'timeout',
@@ -133,6 +150,7 @@ async function run({tl, ct = cancellable, scope = {}}, [commands]) {
   }
 }
 run.transformation = args => [args];
+run.paramNames = ["commands"];
 run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
@@ -150,6 +168,7 @@ async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
   }
 }
 loop.transformation = args => [args];
+loop.paramNames = ["commands"];
 loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
@@ -167,6 +186,7 @@ async function repeat({tl, ct = cancellable, scope = {}}, [times, commands]) {
   }
 }
 repeat.transformation = args => [args[0], args.slice(1)];
+repeat.paramNames = ["times", "commands"];
 repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
@@ -182,6 +202,7 @@ async function all({tl, ct = cancellable, scope = {}}, [commands]) {
   await Promise.all(commands.map(command => command({tl, ct, scope})));
 }
 all.transformation = args => [args];
+all.paramNames = ["commands"];
 all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
@@ -196,6 +217,7 @@ function toggle({tl, ct = cancellable}, [light]) {
   if (ct.isCancelled) return;
   tl[light].toggle();
 }
+toggle.paramNames = ["light"];
 toggle.validation = [isLight];
 toggle.doc = {
   name: 'toggle',
@@ -210,6 +232,7 @@ function turn({tl, ct = cancellable}, [light, on]) {
   if (ct.isCancelled) return;
   turnLight(tl[light], on);
 }
+turn.paramNames = ["light", "state"];
 turn.validation = [isLight, isState];
 turn.doc = {
   name: 'turn',
@@ -224,6 +247,7 @@ async function reset({tl, ct = cancellable}) {
   if (ct.isCancelled) return;
   await tl.reset();
 }
+reset.paramNames = []; // no parameters
 reset.validation = []; // validates number of parameters (zero)
 reset.doc = {
   name: 'reset',
@@ -234,12 +258,13 @@ reset.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-function lights({tl, ct = cancellable}, [r, y, g]) {
+function lights({tl, ct = cancellable}, [red, yellow, green]) {
   if (ct.isCancelled) return;
-  turnLight(tl.red, r);
-  turnLight(tl.yellow, y);
-  turnLight(tl.green, g);
+  turnLight(tl.red, red);
+  turnLight(tl.yellow, yellow);
+  turnLight(tl.green, green);
 }
+lights.paramNames = ["red", "yellow", "green"];
 lights.validation = [isState, isState, isState];
 lights.doc = {
   name: 'lights',
@@ -261,6 +286,7 @@ define.doc = {
   usage: 'define [name] [command to define]',
   eg: 'define burst (twinkle :light 50)'
 };
+define.paramNames = ["name", "command"];
 define.validation = [isIdentifier, isCommand];
 define.usesParser = true;
 
@@ -279,6 +305,7 @@ flash.doc = {
   usage: 'flash [light] [duration in ms]',
   eg: 'flash red 500'
 };
+flash.paramNames = ["light", "ms"];
 flash.validation = [isLight, isPeriod];
 flash.usesParser = true;
 
@@ -295,6 +322,7 @@ blink.doc = {
   usage: 'blink [light] [duration in ms] [number of times to flash]',
   eg: 'blink yellow 500 10'
 };
+blink.paramNames = ["light", "ms", "times"];
 blink.validation = [isLight, isPeriod, isNumber];
 blink.usesParser = true;
 
@@ -311,6 +339,7 @@ twinkle.doc = {
   usage: 'twinkle [light] [duration in ms]',
   eg: 'twinkle green 500'
 };
+twinkle.paramNames = ["light", "ms"];
 twinkle.validation = [isLight, isPeriod];
 twinkle.usesParser = true;
 
@@ -330,6 +359,7 @@ cycle.doc = {
   usage: 'cycle [duration in ms] [number of times to flash each light]',
   eg: 'cycle 500 2'
 };
+cycle.paramNames = ["ms", "flashes"];
 cycle.validation = [isPeriod, isNumber];
 cycle.usesParser = true;
 
@@ -350,6 +380,7 @@ jointly.doc = {
   usage: 'jointly [duration in ms of each flash]',
   eg: 'jointly 500'
 };
+jointly.paramNames = ["ms"];
 jointly.validation = [isPeriod];
 jointly.usesParser = true;
 
@@ -368,6 +399,7 @@ heartbeat.doc = {
   usage: 'heartbeat [light]',
   eg: 'heartbeat red'
 };
+heartbeat.paramNames = ["light"];
 heartbeat.validation = [isLight];
 heartbeat.usesParser = true;
 
@@ -392,6 +424,7 @@ sos.doc = {
   usage: 'sos [light]',
   eg: 'sos red'
 };
+sos.paramNames = ["light"];
 sos.validation = [isLight];
 sos.usesParser = true;
 
@@ -406,6 +439,7 @@ danger.doc = {
   usage: 'danger',
   eg: 'danger'
 };
+danger.paramNames = []; // no parameters
 danger.validation = []; // validates number of parameters (zero)
 danger.usesParser = true;
 
@@ -426,6 +460,7 @@ bounce.doc = {
   usage: 'bounce [duration in ms between lights]',
   eg: 'bounce 500'
 };
+bounce.paramNames = ["ms"];
 bounce.validation = [isPeriod];
 bounce.usesParser = true;
 
@@ -448,6 +483,7 @@ soundbar.doc = {
   usage: 'soundbar [duration in ms for the lights]',
   eg: 'soundbar 500'
 };
+soundbar.paramNames = ["ms"];
 soundbar.validation = [isPeriod];
 soundbar.usesParser = true;
 
