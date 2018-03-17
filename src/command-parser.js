@@ -39,10 +39,10 @@ class CommandParser {
     }
   }
 
-  execute(commandStr, tl, ct = this.ct) {
+  execute(commandStr, tl, ct = this.ct, scope = {}) {
     if (ct.isCancelled) return;
     var command = this.parse(commandStr);
-    return command({tl, ct}); // no await
+    return command({tl, ct, scope}); // no await
   }
 
   parse(commandStr) {
@@ -69,13 +69,11 @@ class Interpreter {
   constructor(parser) {
     this.parser = parser;
     this.commands = parser.commands;
-    this.variables = [];
   }
 
   interpret(ast) {
-    let res = this.recur(ast);
-    res.paramNames = this.variables; // variables become parameter names
-    return res;
+    this.variables = [];
+    return this.recur(ast);
   }
 
   recur(node) {
@@ -103,17 +101,26 @@ class Interpreter {
     // return a command that takes (in an object) a traffic light (tl),
     // a cancellation token (ct) and an optional scope with variable bindings
     let vars = new Vars(args);
-    return ({tl, ct, scope={}}) => {
+    let res = ({tl, ct, scope={}}) => {
       let ctx = {tl, ct, scope};
       if (command.usesParser) ctx.cp = this.parser; // cp = command-parser
       let params = vars.resolve(scope);
       this._validate(command, params);
       return command(ctx, params);
-    }
+    };
+    // note: these are ALL the variables collected so far,
+    // not only the ones relevant for this command
+    // e.g. (run (toggle :l1) (pause :ms) (toggle :l2))
+    //   'pause' will have [l1, ms]
+    //   the second 'toggle' will have [l1, ms, l2]
+    res.paramNames = this.variables; // variables become parameter names
+    return res;
   }
 
   variable(node) {
-    this.variables.push(node.name);
+    if (this.variables.indexOf(node.name) < 0) {
+      this.variables.push(node.name);
+    }
     return ':' + node.name;
   }
 

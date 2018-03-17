@@ -20,6 +20,7 @@ let turnLight = (oLight, state) =>
 
 let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
 let isState = s => s === 'on' || s === 'off';
+let isIdentifier = s => /^[a-z_][a-z_0-9]*$/i.test(s);
 let isNumber = n => typeof n === 'number';
 let isPeriod = isNumber;
 let isCommand = f => typeof f === 'function';
@@ -251,12 +252,26 @@ lights.doc = {
 // Commands that use a Command Parser
 //////////////////////////////////////////////////////////////////////////////
 
-async function flash({cp, tl, ct = cancellable}, [light, ms]) {
+function define({cp}, [name, command]) {
+  return cp.define(name, command);
+}
+define.doc = {
+  name: 'define',
+  desc: 'Defines a new command, variables in the command become parameters to the new command',
+  usage: 'define [name] [command to define]',
+  eg: 'define burst (twinkle :light 50)'
+};
+define.validation = [isIdentifier, isCommand];
+define.usesParser = true;
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function flash({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
   await cp.execute(
     `run
       (toggle ${light}) (pause ${ms})
       (toggle ${light}) (pause ${ms})`,
-    tl, ct);
+    tl, ct, scope);
 }
 flash.doc = {
   name: 'flash',
@@ -269,10 +284,10 @@ flash.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function blink({cp, tl, ct = cancellable}, [light, ms, times]) {
+async function blink({cp, tl, ct = cancellable, scope = {}}, [light, ms, times]) {
   await cp.execute(
     `repeat ${times} (flash ${light} ${ms})`,
-    tl, ct);
+    tl, ct, scope);
 }
 blink.doc = {
   name: 'blink',
@@ -285,10 +300,10 @@ blink.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function twinkle({cp, tl, ct = cancellable}, [light, ms]) {
+async function twinkle({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
   await cp.execute(
     `loop (flash ${light} ${ms})`,
-    tl, ct);
+    tl, ct, scope);
 }
 twinkle.doc = {
   name: 'twinkle',
@@ -301,13 +316,13 @@ twinkle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function cycle({cp, tl, ct = cancellable}, [ms, flashes]) {
+async function cycle({cp, tl, ct = cancellable, scope = {}}, [ms, flashes]) {
   await cp.execute(
     `loop
       (blink red ${ms} ${flashes})
       (blink yellow ${ms} ${flashes})
       (blink green ${ms} ${flashes})`,
-    tl, ct);
+    tl, ct, scope);
 }
 cycle.doc = {
   name: 'cycle',
@@ -320,14 +335,14 @@ cycle.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function jointly({cp, tl, ct = cancellable}, [ms]) {
+async function jointly({cp, tl, ct = cancellable, scope = {}}, [ms]) {
   await cp.execute(
     `loop
       (all
         (flash red ${ms})
         (flash yellow ${ms})
         (flash green ${ms}))`,
-    tl, ct);
+    tl, ct, scope);
 }
 jointly.doc = {
   name: 'jointly',
@@ -340,12 +355,12 @@ jointly.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function heartbeat({cp, tl, ct = cancellable}, [light]) {
+async function heartbeat({cp, tl, ct = cancellable, scope = {}}, [light]) {
   await cp.execute(
     `loop
       (blink ${light} 250 2)
       (pause 350)`,
-    tl, ct);
+    tl, ct, scope);
 }
 heartbeat.doc = {
   name: 'heartbeat',
@@ -358,7 +373,7 @@ heartbeat.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function sos({cp, tl, ct = cancellable}, [light]) {
+async function sos({cp, tl, ct = cancellable, scope = {}}, [light]) {
   await cp.execute(
     `loop
       (blink ${light} 150 3)
@@ -369,7 +384,7 @@ async function sos({cp, tl, ct = cancellable}, [light]) {
       (pause 150)
       (blink ${light} 150 3)
       (pause 700)`,
-    tl, ct);
+    tl, ct, scope);
 }
 sos.doc = {
   name: 'sos',
@@ -396,14 +411,14 @@ danger.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function bounce({cp, tl, ct = cancellable}, [ms]) {
+async function bounce({cp, tl, ct = cancellable, scope = {}}, [ms]) {
   await cp.execute(
     `loop
       (toggle green)  (pause ${ms}) (toggle green)
       (toggle yellow) (pause ${ms}) (toggle yellow)
       (toggle red)    (pause ${ms}) (toggle red)
       (toggle yellow) (pause ${ms}) (toggle yellow)`,
-    tl, ct);
+    tl, ct, scope);
 }
 bounce.doc = {
   name: 'bounce',
@@ -416,7 +431,7 @@ bounce.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function soundbar({cp, tl, ct = cancellable}, [ms]) {
+async function soundbar({cp, tl, ct = cancellable, scope = {}}, [ms]) {
   await cp.execute(
     `loop
       (toggle green)  (pause ${ms})
@@ -425,7 +440,7 @@ async function soundbar({cp, tl, ct = cancellable}, [ms]) {
       (toggle red)    (pause ${ms})
       (toggle yellow) (pause ${ms})
       (toggle green)  (pause ${ms})`,
-    tl, ct);
+    tl, ct, scope);
 }
 soundbar.doc = {
   name: 'soundbar',
@@ -442,6 +457,7 @@ let commands = {
   cancel, pause, timeout,
   run, loop, repeat, all,
   toggle, turn, reset, lights,
+  define,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
   sos, danger, bounce, soundbar
@@ -453,6 +469,7 @@ module.exports = {
   cancel, pause, timeout,
   run, loop, repeat, all,
   toggle, turn, reset, lights,
+  define,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
   sos, danger, bounce, soundbar,

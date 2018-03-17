@@ -193,4 +193,14 @@ describe 'CommandParser', () ->
       res = await command({@tl, @ct, @scope})
       sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
 
+    it 'should define a new command with validation', () =>
+      isRed = (c) -> c is 'red'
+      isNumber = (n) -> typeof n is 'number'
+      @commands.twinkle = sinon.stub()
+      @commands.twinkle.validation = [isRed, isNumber]
+      @cp.define('burst', @cp.parse('twinkle :light 50'))
+      command = @cp.parse('burst red')
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.twinkle, {@tl, @ct, @scope}, ['red', 50])
+
   xdescribe 'execute', () =>
