@@ -112,6 +112,26 @@ describe 'CommandParser', () ->
       parse = () => @cp.parse(commandStr)
       parse.should.throw 'Check your arguments: turnOn [red|yellow|green]'
 
+    it 'validation is deferred for variables', () =>
+      @isValid.returns yes
+      commandStr = 'turnOn :light'
+      command = @cp.parse(commandStr)
+      @isValid.notCalled.should.be.true # validation is deferred
+      @scope = light: 'red'
+      res = await command({@tl, @ct, @scope})
+      sinon.assert.calledWith(@commands.turnOn, {@tl, @ct, @scope}, ['red'])
+      sinon.assert.calledOnce(@isValid)
+      sinon.assert.calledWith(@isValid, 'red')
+
+    it 'should throw a validation error when validating a bound variable', () =>
+      @isValid.returns no
+      commandStr = 'turnOn :light'
+      command = @cp.parse(commandStr)
+      @isValid.notCalled.should.be.true # validation is deferred
+      @scope = light: 'blue'
+      exec = () => command({@tl, @ct, @scope})
+      exec.should.throw 'Check your arguments: turnOn [red|yellow|green]'
+
   describe 'variables', () =>
 
     it 'should parse a command with a variable', () =>
@@ -157,22 +177,18 @@ describe 'CommandParser', () ->
       sinon.assert.calledWith(@commands.toggle, {@tl, @ct, @scope}, ['red'])
       sinon.assert.calledTwice(@commands.toggle)
 
-  xdescribe 'variables and validation', () =>
-
-    it 'validation is deferred for variables', () =>
-
   describe 'define', () =>
 
     it 'should define a new command', () =>
       @commands.stub = sinon.stub()
-      @cp.define('fake', 'stub 42') # fake calls stub
+      @cp.define('fake', @cp.parse('stub 42')) # fake calls stub
       command = @cp.parse('fake')
       res = await command({@tl, @ct})
       sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
 
     it 'should define a new command with a variable', () =>
       @commands.stub = sinon.stub()
-      @cp.define('fake', 'stub :var', ['var'])
+      @cp.define('fake', @cp.parse('stub :var'))
       command = @cp.parse('fake 42')
       res = await command({@tl, @ct, @scope})
       sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])

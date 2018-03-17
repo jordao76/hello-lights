@@ -7,8 +7,8 @@ let HID = require('node-hid');
 //   https://github.com/flok99/clewarecontrol
 //////////////////////////////////////////////
 
-const VENDOR_ID = 3408; // Cleware
-const SWITCH1_DEVICE = 8; // traffic light
+const VENDOR_ID = 0xD50; // Cleware
+const SWITCH1_DEVICE = 0x8; // traffic light
 
 //////////////////////////////////////////////
 
