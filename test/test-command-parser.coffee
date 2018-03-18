@@ -35,7 +35,7 @@ describe 'CommandParser', () ->
     res.should.equal 95
 
   it 'should parse a sub-command', () =>
-    @commands.repeat = ({tl, ct, scope}, [n, c]) -> c({tl, ct, scope})
+    @commands.repeat = (ctx, [n, c]) -> c(ctx)
     @commands.repeat.paramNames = ['n','c']
     @commands.toggle = sinon.stub().returns 97
     @commands.toggle.paramNames = ['light']
@@ -87,6 +87,9 @@ describe 'CommandParser', () ->
   describe 'validation', () =>
 
     beforeEach () =>
+      @commands.run = (ctx, [c1, c2]) -> c1(ctx); c2(ctx);
+      @commands.run.title = 'run'
+      @commands.run.paramNames = ['c1','c2']
       @isValid = sinon.stub()
       @isValid.exp = '"red", "yellow" or "green"' # validation function's expectations
       @commands.turnOn = sinon.stub()
@@ -110,7 +113,7 @@ describe 'CommandParser', () ->
       msg = 'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
       parse.should.throw msg
 
-    it 'should throw a validation error for a missing parameter', () =>
+    it 'should throw a validation error for a missing parameter (bad arity)', () =>
       @isValid.returns yes
       commandStr = 'turnOn'
       parse = () => @cp.parse(commandStr)
@@ -121,6 +124,43 @@ describe 'CommandParser', () ->
       commandStr = 'turnOn red 1'
       parse = () => @cp.parse(commandStr)
       parse.should.throw 'Bad number of arguments to "turnOn"; it takes 1 but was given 2'
+
+    xit 'should validate the 1st argument even when more arguments are provided', () =>
+      @isValid.returns no
+      commandStr = 'turnOn blue 1'
+      parse = () => @cp.parse(commandStr)
+      msg = [
+        'Bad number of arguments to "turnOn"; it takes 1 but was given 2',
+        'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
+      ].join '\n'
+      parse.should.throw msg
+
+    xit 'should validate nested commands with 2 bad arguments', () =>
+      @isValid.returns no
+      parse = () => @cp.parse('run (turnOn blue) (turnOn cyan)')
+      msg = [
+        'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"',
+        'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
+      ].join '\n'
+      parse.should.throw msg
+
+    xit 'should validate nested commands with 1 bad arity and 1 bad argument', () =>
+      @isValid.returns no
+      parse = () => @cp.parse('run (turnOn) (turnOn cyan)')
+      msg = [
+        'Bad number of arguments to "turnOn"; it takes 1 but was given 0',
+        'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
+      ].join '\n'
+      parse.should.throw msg
+
+    xit 'should validate nested commands with 1 bad argument and 1 bad command', () =>
+      @isValid.returns no
+      parse = () => @cp.parse('run (turnOn cyan) (turnBlue)')
+      msg = [
+        'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"',
+        'Command not found: "turnBlue"'
+      ].join '\n'
+      parse.should.throw msg
 
     it 'validation is deferred for variables', () =>
       @isValid.returns yes
@@ -233,5 +273,3 @@ describe 'CommandParser', () ->
       command = @cp.parse('burst red')
       res = await command({@tl, @ct, @scope})
       sinon.assert.calledWith(@commands.twinkle, {@tl, @ct, @scope}, ['red', 50])
-
-  xdescribe 'execute', () =>

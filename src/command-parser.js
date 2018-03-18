@@ -146,17 +146,27 @@ class Interpreter {
 let Validator = {
 
   validate(command, args) {
-    let es = this._collectErrors(command, args);
-    if (es.length > 0) {
-      throw new Error(es.join('\n'));
+    let res = this.execute(command, args);
+    if (res.hasErrors) {
+      throw new Error(res.errorStr);
     }
+  },
+
+  execute(command, args) {
+    let es = this._collectErrors(command, args);
+    return {
+      isValid: es.length === 0,
+      hasErrors: es.length > 0,
+      errors: es,
+      errorStr: es.join('\n')
+    };
   },
 
   _collectErrors(command, args) {
     let badArity = (exp, act) =>
       `Bad number of arguments to "${commandName}"; it takes ${exp} but was given ${act}`;
     let badValue = (i) =>
-      `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`
+      `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
     let commandName = command.title || command.name;
     let pns = command.paramNames; // pns = Parameter NameS
     if (pns.length !== args.length) return [badArity(pns.length, args.length)];
