@@ -122,9 +122,10 @@ function help(commandName) {
       help();
       return;
     }
+    let usage = (c) => `${c.doc.name} ${c.paramNames.map(n=>':'+n).join(' ')}`;
     console.log([
       `${command.doc.name}: ${command.doc.desc}`,
-      `  usage: ${command.doc.usage}`,
+      `  usage: ${usage(command)}`,
       `  sample: ${command.doc.eg}`
     ].join('\n'));
   }
