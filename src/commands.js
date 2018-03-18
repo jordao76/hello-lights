@@ -263,6 +263,38 @@ lights.doc = {
 };
 
 //////////////////////////////////////////////////////////////////////////////
+
+let Easing = {
+  linear: t => t,
+  easeIn: t => t*t,
+  easeOut: t => t*(2-t),
+  easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t
+};
+let isEasing = e => !!Easing[e];
+isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
+
+async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
+  let start = Date.now();
+  let end = start + ms;
+  let [now, curr] = [start, from];
+  while (now <= end) {
+    if (ct.isCancelled) return;
+    scope[what] = curr | 0; // double -> int
+    await command({tl, ct, scope});
+    let c = Easing[easing]((now - start) / ms);
+    curr = c * (to - from) + from;
+    now = Date.now();
+  }
+}
+ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
+ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
+ease.doc = {
+  name: 'ease',
+  desc: 'Ease the `what` variable to `command`: in the given duration `ms`, go from `from` to `to` using the given `easing` function',
+  eg: 'ease linear 10000 ms 50 1000 (flash red :ms)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
 // Commands that use a Command Parser
 //////////////////////////////////////////////////////////////////////////////
 
@@ -471,6 +503,7 @@ let commands = {
   cancel, pause, timeout,
   run, loop, repeat, all,
   toggle, turn, reset, lights,
+  ease,
   define,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
@@ -483,6 +516,7 @@ module.exports = {
   cancel, pause, timeout,
   run, loop, repeat, all,
   toggle, turn, reset, lights,
+  ease,
   define,
   flash, blink, twinkle,
   cycle, jointly, heartbeat,
