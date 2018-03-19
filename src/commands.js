@@ -276,22 +276,32 @@ isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
 async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
   let start = Date.now();
   let end = start + ms;
-  let [now, curr] = [start, from];
-  while (now <= end) {
-    if (ct.isCancelled) return;
-    scope[what] = curr | 0; // double -> int
-    await command({tl, ct, scope});
+  let next = () => {
+    let now = Date.now();
     let c = Easing[easing]((now - start) / ms);
-    curr = c * (to - from) + from;
-    now = Date.now();
+    let curr = c * (to - from) + from;
+    return curr | 0; // double -> int
+  };
+  // `[what]` is a "live" variable, so it's defined as a property
+  Object.defineProperty(scope, what, {
+    configurable: true, // allow the property to be deleted or redefined
+    get: next,
+    set: () => {} // no-op
+  });
+  while (true) {
+    if (ct.isCancelled) break;
+    let now = Date.now();
+    let max = end - now;
+    if (max <= 0) break;
+    await timeout({tl, ct, scope}, [max, command]);
   }
 }
 ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
 ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
 ease.doc = {
   name: 'ease',
-  desc: 'Ease the `what` variable to `command`: in the given duration `ms`, go from `from` to `to` using the given `easing` function',
-  eg: 'ease linear 10000 ms 50 1000 (flash red :ms)'
+  desc: 'Ease the `what` variable to `command`: in the duration `ms`, go from `from` to `to` using the `easing` function',
+  eg: 'ease linear 10000 ms 50 200 (flash yellow :ms)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
