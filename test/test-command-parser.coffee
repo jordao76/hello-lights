@@ -125,7 +125,7 @@ describe 'CommandParser', () ->
       parse = () => @cp.parse(commandStr)
       parse.should.throw 'Bad number of arguments to "turnOn"; it takes 1 but was given 2'
 
-    xit 'should validate the 1st argument even when more arguments are provided', () =>
+    it 'should validate the 1st argument even when more arguments are provided', () =>
       @isValid.returns no
       commandStr = 'turnOn blue 1'
       parse = () => @cp.parse(commandStr)
@@ -135,7 +135,7 @@ describe 'CommandParser', () ->
       ].join '\n'
       parse.should.throw msg
 
-    xit 'should validate nested commands with 2 bad arguments', () =>
+    it 'should validate nested commands with 2 bad arguments', () =>
       @isValid.returns no
       parse = () => @cp.parse('run (turnOn blue) (turnOn cyan)')
       msg = [
@@ -144,7 +144,7 @@ describe 'CommandParser', () ->
       ].join '\n'
       parse.should.throw msg
 
-    xit 'should validate nested commands with 1 bad arity and 1 bad argument', () =>
+    it 'should validate nested commands with 1 bad arity and 1 bad argument', () =>
       @isValid.returns no
       parse = () => @cp.parse('run (turnOn) (turnOn cyan)')
       msg = [
@@ -153,7 +153,7 @@ describe 'CommandParser', () ->
       ].join '\n'
       parse.should.throw msg
 
-    xit 'should validate nested commands with 1 bad argument and 1 bad command', () =>
+    it 'should validate nested commands with 1 bad argument and 1 bad command', () =>
       @isValid.returns no
       parse = () => @cp.parse('run (turnOn cyan) (turnBlue)')
       msg = [
