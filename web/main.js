@@ -66,9 +66,8 @@ window.help = function(commandName) {
     }
     let usage = (c) => `${c.doc.name} ${c.paramNames.map(n=>':'+n).join(' ')}`;
     console.log([
-      `${command.doc.name}: ${command.doc.desc}`,
-      `  usage: ${usage(command)}`,
-      `  sample: execute('${command.doc.eg}')`
+      usage(command),
+      command.doc.desc
     ].join('\n'));
   }
 }

@@ -74,8 +74,7 @@ cancel.paramNames = []; // no parameters
 cancel.validation = []; // validates number of parameters (zero)
 cancel.doc = {
   name: 'cancel',
-  desc: 'Cancels all executing commands.',
-  eg: 'cancel'
+  desc: 'Cancels all executing commands.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -104,8 +103,8 @@ pause.paramNames = ['ms'];
 pause.validation = [isPeriod];
 pause.doc = {
   name: 'pause',
-  desc: 'Pauses execution for the given duration.',
-  eg: 'pause 500'
+  desc: 'Pauses execution for the given duration in milliseconds:\n' +
+        '(pause 500)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -133,8 +132,8 @@ timeout.paramNames = ["ms", "command"];
 timeout.validation = [isPeriod, isCommand];
 timeout.doc = {
   name: 'timeout',
-  desc: 'Executes a command with a timeout.',
-  eg: 'timeout 5000 (twinkle red 400)'
+  desc: 'Executes a command with a timeout:\n' +
+        '(timeout 5000 (twinkle red 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -151,8 +150,8 @@ run.paramNames = ["commands"];
 run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
-  desc: 'Executes the given commands in sequence',
-  eg: 'run (toggle yellow) (pause 1000) (toggle yellow)'
+  desc: 'Executes the given commands in sequence:\n' +
+        '(run (toggle red) (pause 1000) (toggle red))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -168,8 +167,8 @@ loop.paramNames = ["commands"];
 loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
-  desc: 'Executes the given commands in sequence, starting over forever',
-  eg: 'loop (toggle green) (pause 400) (toggle red) (pause 400)'
+  desc: 'Executes the given commands in sequence, starting over forever:\n' +
+        '(loop (toggle green) (pause 400) (toggle red) (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -185,8 +184,8 @@ repeat.paramNames = ["times", "commands"];
 repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
-  desc: 'Executes the commands in sequence, repeating the given number of times',
-  eg: 'repeat 5 (toggle green) (pause 400) (toggle red) (pause 400)'
+  desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
+        '(repeat 5 (toggle green) (pause 400) (toggle red) (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -200,8 +199,8 @@ all.paramNames = ["commands"];
 all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
-  desc: 'Executes the given commands in parallel, all at the same time',
-  eg: 'all (twinkle green 700) (twinkle yellow 300)'
+  desc: 'Executes the given commands in parallel, all at the same time:\n' +
+        '(all (twinkle green 700) (twinkle yellow 300))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -214,8 +213,7 @@ toggle.paramNames = ["light"];
 toggle.validation = [isLight];
 toggle.doc = {
   name: 'toggle',
-  desc: 'Toggles the given light',
-  eg: 'toggle green'
+  desc: 'Toggles the given light:\n(toggle green)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -228,8 +226,8 @@ turn.paramNames = ["light", "state"];
 turn.validation = [isLight, isState];
 turn.doc = {
   name: 'turn',
-  desc: 'Turns the given light on or off',
-  eg: 'turn green on'
+  desc: 'Turns the given light on or off:\n' +
+        '(turn green on)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -242,8 +240,7 @@ reset.paramNames = []; // no parameters
 reset.validation = []; // validates number of parameters (zero)
 reset.doc = {
   name: 'reset',
-  desc: 'Sets all lights to off',
-  eg: 'reset'
+  desc: 'Sets all lights to off.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -258,8 +255,8 @@ lights.paramNames = ["red", "yellow", "green"];
 lights.validation = [isState, isState, isState];
 lights.doc = {
   name: 'lights',
-  desc: 'Set the lights to the given values (on=1 or off=0)',
-  eg: 'lights off off on'
+  desc: 'Set the lights to the given values (on or off):\n' +
+        '(lights off off on)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -300,8 +297,9 @@ ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
 ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
 ease.doc = {
   name: 'ease',
-  desc: 'Ease the `what` variable to `command`: in the duration `ms`, go from `from` to `to` using the `easing` function',
-  eg: 'ease linear 10000 ms 50 200 (flash yellow :ms)'
+  desc: 'Ease the `what` variable to `command`.\n' +
+        'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
+        '(ease linear 10000 ms 50 200 (flash yellow :ms))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -313,8 +311,8 @@ function define({cp}, [name, command]) {
 }
 define.doc = {
   name: 'define',
-  desc: 'Defines a new command, variables in the command become parameters to the new command',
-  eg: 'define burst (twinkle :light 50)'
+  desc: 'Defines a new command, variables in the command become parameters to the new command:\n' +
+        '(define burst (twinkle :light 50))'
 };
 define.paramNames = ["name", "command"];
 define.validation = [isIdentifier, isCommand];
@@ -331,8 +329,8 @@ async function flash({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
 }
 flash.doc = {
   name: 'flash',
-  desc: 'Flashes a light for the given duration: toggle, wait, toggle back, wait again',
-  eg: 'flash red 500'
+  desc: 'Flashes a light for the given duration: toggle, wait, toggle back, wait again:\n' +
+        '(flash red 500)'
 };
 flash.paramNames = ["light", "ms"];
 flash.validation = [isLight, isPeriod];
@@ -347,8 +345,8 @@ async function blink({cp, tl, ct = cancellable, scope = {}}, [light, ms, times])
 }
 blink.doc = {
   name: 'blink',
-  desc: 'Flashes a light for the given duration and number of times',
-  eg: 'blink yellow 500 10'
+  desc: 'Flashes a light for the given duration and number of times:\n' +
+        '(blink yellow 500 10)'
 };
 blink.paramNames = ["light", "ms", "times"];
 blink.validation = [isLight, isPeriod, isNumber];
@@ -363,8 +361,8 @@ async function twinkle({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
 }
 twinkle.doc = {
   name: 'twinkle',
-  desc: 'Flashes a light for the given duration forever',
-  eg: 'twinkle green 500'
+  desc: 'Flashes a light for the given duration forever:\n' +
+        '(twinkle green 500)'
 };
 twinkle.paramNames = ["light", "ms"];
 twinkle.validation = [isLight, isPeriod];
@@ -382,8 +380,9 @@ async function cycle({cp, tl, ct = cancellable, scope = {}}, [ms, flashes]) {
 }
 cycle.doc = {
   name: 'cycle',
-  desc: 'Blinks each light in turn for the given duration and number of times, repeating forever; starts with red',
-  eg: 'cycle 500 2'
+  desc: 'Blinks each light in turn for the given duration and number of times, ' +
+        'repeating forever; starts with red:\n' +
+        '(cycle 500 2)'
 };
 cycle.paramNames = ["ms", "flashes"];
 cycle.validation = [isPeriod, isNumber];
@@ -402,8 +401,7 @@ async function jointly({cp, tl, ct = cancellable, scope = {}}, [ms]) {
 }
 jointly.doc = {
   name: 'jointly',
-  desc: 'Flashes all lights together forever',
-  eg: 'jointly 500'
+  desc: 'Flashes all lights together forever:\n(jointly 500)'
 };
 jointly.paramNames = ["ms"];
 jointly.validation = [isPeriod];
@@ -420,8 +418,7 @@ async function heartbeat({cp, tl, ct = cancellable, scope = {}}, [light]) {
 }
 heartbeat.doc = {
   name: 'heartbeat',
-  desc: 'Heartbeat pattern',
-  eg: 'heartbeat red'
+  desc: 'Heartbeat pattern:\n(heartbeat red)'
 };
 heartbeat.paramNames = ["light"];
 heartbeat.validation = [isLight];
@@ -444,8 +441,7 @@ async function sos({cp, tl, ct = cancellable, scope = {}}, [light]) {
 }
 sos.doc = {
   name: 'sos',
-  desc: 'SOS distress signal morse code pattern',
-  eg: 'sos red'
+  desc: 'SOS distress signal morse code pattern:\n(sos red)'
 };
 sos.paramNames = ["light"];
 sos.validation = [isLight];
@@ -458,8 +454,7 @@ async function danger({cp, tl, ct = cancellable}) {
 }
 danger.doc = {
   name: 'danger',
-  desc: 'Danger: twinkle red with 400ms flashes',
-  eg: 'danger'
+  desc: 'Danger: twinkle red with 400ms flashes.'
 };
 danger.paramNames = []; // no parameters
 danger.validation = []; // validates number of parameters (zero)
@@ -478,8 +473,8 @@ async function bounce({cp, tl, ct = cancellable, scope = {}}, [ms]) {
 }
 bounce.doc = {
   name: 'bounce',
-  desc: 'Bounces through the lights with the given duration between them',
-  eg: 'bounce 500'
+  desc: 'Bounces through the lights with the given duration between them:\n' +
+        '(bounce 500)'
 };
 bounce.paramNames = ["ms"];
 bounce.validation = [isPeriod];
@@ -500,8 +495,8 @@ async function soundbar({cp, tl, ct = cancellable, scope = {}}, [ms]) {
 }
 soundbar.doc = {
   name: 'soundbar',
-  desc: 'Soundbar: just like a sound bar with the given duration',
-  eg: 'soundbar 500'
+  desc: 'Soundbar: just like a sound bar with the given duration:\n' +
+        '(soundbar 500)'
 };
 soundbar.paramNames = ["ms"];
 soundbar.validation = [isPeriod];
