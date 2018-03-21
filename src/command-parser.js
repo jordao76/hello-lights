@@ -42,7 +42,7 @@ class CommandParser {
       params.forEach((p, i) => scope[paramNames[i]] = p);
       return command({tl, ct, scope});
     };
-    newCommand.title = name;
+    newCommand.doc = {name};
     newCommand.paramNames = paramNames;
     return this.commands[name] = newCommand;
   }
@@ -175,7 +175,7 @@ let Validator = {
     let badValue = (i) =>
       `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
 
-    let commandName = command.title || command.name;
+    let commandName = command.doc ? command.doc.name : command.name;
     let pns = command.paramNames; // pns = Parameter NameS
     let es = []; // es = ErrorS
 

@@ -20,12 +20,12 @@ describe 'Parsed commands', () =>
     @isDirection.exp = '"left" or "right"'
     # wait command
     @wait = sinon.stub()
-    @wait.title = 'wait'
+    @wait.doc = name: 'wait'
     @wait.paramNames = ['ms']
     @wait.validation = [isNumber]
     # turn command
     @turn = sinon.stub()
-    @turn.title = 'turn'
+    @turn.doc = name: 'turn'
     @turn.paramNames = ['where']
     @turn.validation = [@isDirection]
     @commands = {@wait, @turn, run:c.run}
@@ -41,7 +41,7 @@ describe 'Parsed commands', () =>
     it 'define a new command', () =>
       turnLeft = await @exec 'define turnLeft (turn left)'
       # check metadata
-      turnLeft.title.should.equal 'turnLeft'
+      turnLeft.doc.name.should.equal 'turnLeft'
       turnLeft.paramNames.should.deep.equal []
       # execute
       await @exec 'turnLeft'
@@ -50,7 +50,7 @@ describe 'Parsed commands', () =>
     it 'define with a variable', () =>
       go = await @exec 'define go (turn :direction)'
       # check metadata
-      go.title.should.equal 'go'
+      go.doc.name.should.equal 'go'
       go.paramNames.should.deep.equal ['direction']
       #TODO go.validations.should.deep.equal [@isDirection]
       # execute

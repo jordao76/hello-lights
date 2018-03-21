@@ -88,14 +88,12 @@ describe 'CommandParser', () ->
 
     beforeEach () =>
       @commands.run = (ctx, [c1, c2]) -> c1(ctx); c2(ctx);
-      @commands.run.title = 'run'
+      @commands.run.doc = name: 'run'
       @commands.run.paramNames = ['c1','c2']
       @isValid = sinon.stub()
       @isValid.exp = '"red", "yellow" or "green"' # validation function's expectations
       @commands.turnOn = sinon.stub()
-      @commands.turnOn.name = 'turnOn' # changing the "name" of a stub silently fails
-      @commands.turnOn.name.should.equal 'proxy' # "proxy" is the "name" given by sinon
-      @commands.turnOn.title = 'turnOn' # so "title" is used as an alternative (taking precedence over "name")
+      @commands.turnOn.doc = name: 'turnOn'
       @commands.turnOn.paramNames = ['light'] # parameters names to turnOn
       @commands.turnOn.validation = [@isValid] # validations to turnOn, matching the paramNames
 
@@ -251,7 +249,7 @@ describe 'CommandParser', () ->
       @commands.stub.paramNames = ['v']
       fake = @cp.define('fake', @cp.parse('stub :var'))
       # check metadata
-      fake.title.should.equal 'fake'
+      fake.doc.name.should.equal 'fake'
       fake.paramNames.should.deep.equal ['var']
       # execute
       command = @cp.parse('fake 42')
@@ -266,7 +264,7 @@ describe 'CommandParser', () ->
       @commands.twinkle.validation = [isRed, isNumber]
       burst = @cp.define('burst', @cp.parse('twinkle :light 50'))
       # check metadata
-      burst.title.should.equal 'burst'
+      burst.doc.name.should.equal 'burst'
       burst.paramNames.should.deep.equal ['light']
       #TODO burst.validation.should.deep.equal [isRed]
       # execute
