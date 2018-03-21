@@ -8,7 +8,7 @@ Command
   }
 
 Parameters
-  = _ head:Parameter tail:Parameters? { return [head, ...(tail || [])]; }
+  = __ head:Parameter tail:Parameters? { return [head, ...(tail || [])]; }
 
 Parameter
   = name:Variable     { return { type: 'variable', name }; }
@@ -29,5 +29,16 @@ Number
 String
   = '"' contents:[^"]* '"' { return (contents || []).join(''); }
 
-_ "Whitespace"
-  = [ \n\t\r]*
+_
+  = Filler*
+
+__
+  = Filler+
+
+Filler
+  = [ \t\r\n]             // whitespace
+  / ";" [^\r\n]* [\r\n]   // comment then line-feed
+  / ";" [^\r\n]* EOF      // last comment without line-feed
+
+EOF
+  = !.

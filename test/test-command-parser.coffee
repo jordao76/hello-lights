@@ -214,7 +214,17 @@ describe 'CommandParser', () ->
       @commands.run.paramNames = ['command']
       @commands.toggle = sinon.stub()
       @commands.toggle.paramNames = ['light']
-      command = @cp.parse('run (toggle :light)')
+      command = @cp.parse("""; test parsing comments as well
+        ; a comment till the end of the line
+        run ; comments
+          (toggle
+            ; more comments
+            :light
+            ; and more comments
+          )
+          ; still more
+          ; comments
+      """)
       @scope = light: 'red'
       res = await command({@tl, @ct, @scope})
       sinon.assert.calledWith(@commands.toggle, {@tl, @ct, @scope}, ['red'])
