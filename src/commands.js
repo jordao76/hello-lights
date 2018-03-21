@@ -45,8 +45,9 @@ let each = vf => {
 
 //////////////////////////////////////////////////////////////////////////////
 // Every command takes 2 parameters:
-//   1. context = { tl, ct, scope }
+//   1. context = { cp, tl, ct, scope }
 //   where
+//      cp is a command parser (on demand)
 //      tl is a traffic light
 //      ct is a cancellation token
 //      scope are the variable bindings for nested commands
@@ -79,6 +80,20 @@ cancel.doc = {
   name: 'cancel',
   desc: 'Cancels all executing commands.'
 };
+
+//////////////////////////////////////////////////////////////////////////////
+
+function define({cp}, [name, desc, command]) {
+  return cp.define(name, command, desc);
+}
+define.doc = {
+  name: 'define',
+  desc: 'Defines a new command, variables in the command become parameters to the new command:\n' +
+        '(define burst "Burst of light." (twinkle :light 50))'
+};
+define.paramNames = ["name", "desc", "command"];
+define.validation = [isIdentifier, isString, isCommand];
+define.usesParser = true; // receives the cp (command parser) parameter
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -195,7 +210,11 @@ repeat.doc = {
 
 async function all({tl, ct = cancellable, scope = {}}, [commands]) {
   if (ct.isCancelled) return;
-  await Promise.all(commands.map(command => command({tl, ct, scope})));
+  await Promise.all(commands.map(command => {
+    // since the commands run in parallel, they must
+    // have separate scopes so as not to step in each other's toes
+    return command({tl, ct, scope: {...scope}});
+  }));
 }
 all.transformation = args => [args];
 all.paramNames = ["commands"];
@@ -204,6 +223,49 @@ all.doc = {
   name: 'all',
   desc: 'Executes the given commands in parallel, all at the same time:\n' +
         '(all (twinkle green 700) (twinkle yellow 300))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+let Easing = {
+  linear: t => t,
+  easeIn: t => t*t,
+  easeOut: t => t*(2-t),
+  easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t
+};
+let isEasing = e => !!Easing[e];
+isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
+
+async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
+  let start = Date.now();
+  let end = start + ms;
+  let next = () => {
+    let now = Date.now();
+    let c = Easing[easing]((now - start) / ms);
+    let curr = c * (to - from) + from;
+    return curr | 0; // double -> int
+  };
+  // `[what]` is a "live" variable, so it's defined as a property
+  Object.defineProperty(scope, what, {
+    configurable: true, // allow the property to be deleted or redefined
+    get: next,
+    set: () => {} // no-op
+  });
+  while (true) {
+    if (ct.isCancelled) break;
+    let now = Date.now();
+    let max = end - now;
+    if (max <= 0) break;
+    await timeout({tl, ct, scope}, [max, command]);
+  }
+}
+ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
+ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
+ease.doc = {
+  name: 'ease',
+  desc: 'Ease the `what` variable to `command`.\n' +
+        'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
+        '(ease linear 10000 ms 50 200 (flash yellow :ms))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -264,270 +326,19 @@ lights.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-let Easing = {
-  linear: t => t,
-  easeIn: t => t*t,
-  easeOut: t => t*(2-t),
-  easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t
-};
-let isEasing = e => !!Easing[e];
-isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
-
-async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
-  let start = Date.now();
-  let end = start + ms;
-  let next = () => {
-    let now = Date.now();
-    let c = Easing[easing]((now - start) / ms);
-    let curr = c * (to - from) + from;
-    return curr | 0; // double -> int
-  };
-  // `[what]` is a "live" variable, so it's defined as a property
-  Object.defineProperty(scope, what, {
-    configurable: true, // allow the property to be deleted or redefined
-    get: next,
-    set: () => {} // no-op
-  });
-  while (true) {
-    if (ct.isCancelled) break;
-    let now = Date.now();
-    let max = end - now;
-    if (max <= 0) break;
-    await timeout({tl, ct, scope}, [max, command]);
-  }
-}
-ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
-ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
-ease.doc = {
-  name: 'ease',
-  desc: 'Ease the `what` variable to `command`.\n' +
-        'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
-        '(ease linear 10000 ms 50 200 (flash yellow :ms))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-// Commands that use a Command Parser
-//////////////////////////////////////////////////////////////////////////////
-
-function define({cp}, [name, desc, command]) {
-  return cp.define(name, command, desc);
-}
-define.doc = {
-  name: 'define',
-  desc: 'Defines a new command, variables in the command become parameters to the new command:\n' +
-        '(define burst (twinkle :light 50))'
-};
-define.paramNames = ["name", "desc", "command"];
-define.validation = [isIdentifier, isString, isCommand];
-define.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function flash({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
-  await cp.execute(
-    `run
-      (toggle ${light}) (pause ${ms})
-      (toggle ${light}) (pause ${ms})`,
-    tl, ct, scope);
-}
-flash.doc = {
-  name: 'flash',
-  desc: 'Flashes a light for the given duration: toggle, wait, toggle back, wait again:\n' +
-        '(flash red 500)'
-};
-flash.paramNames = ["light", "ms"];
-flash.validation = [isLight, isPeriod];
-flash.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function blink({cp, tl, ct = cancellable, scope = {}}, [light, ms, times]) {
-  await cp.execute(
-    `repeat ${times} (flash ${light} ${ms})`,
-    tl, ct, scope);
-}
-blink.doc = {
-  name: 'blink',
-  desc: 'Flashes a light for the given duration and number of times:\n' +
-        '(blink yellow 500 10)'
-};
-blink.paramNames = ["light", "ms", "times"];
-blink.validation = [isLight, isPeriod, isNumber];
-blink.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function twinkle({cp, tl, ct = cancellable, scope = {}}, [light, ms]) {
-  await cp.execute(
-    `loop (flash ${light} ${ms})`,
-    tl, ct, scope);
-}
-twinkle.doc = {
-  name: 'twinkle',
-  desc: 'Flashes a light for the given duration forever:\n' +
-        '(twinkle green 500)'
-};
-twinkle.paramNames = ["light", "ms"];
-twinkle.validation = [isLight, isPeriod];
-twinkle.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function cycle({cp, tl, ct = cancellable, scope = {}}, [ms, flashes]) {
-  await cp.execute(
-    `loop
-      (blink red ${ms} ${flashes})
-      (blink yellow ${ms} ${flashes})
-      (blink green ${ms} ${flashes})`,
-    tl, ct, scope);
-}
-cycle.doc = {
-  name: 'cycle',
-  desc: 'Blinks each light in turn for the given duration and number of times, ' +
-        'repeating forever; starts with red:\n' +
-        '(cycle 500 2)'
-};
-cycle.paramNames = ["ms", "flashes"];
-cycle.validation = [isPeriod, isNumber];
-cycle.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function jointly({cp, tl, ct = cancellable, scope = {}}, [ms]) {
-  await cp.execute(
-    `loop
-      (all
-        (flash red ${ms})
-        (flash yellow ${ms})
-        (flash green ${ms}))`,
-    tl, ct, scope);
-}
-jointly.doc = {
-  name: 'jointly',
-  desc: 'Flashes all lights together forever:\n(jointly 500)'
-};
-jointly.paramNames = ["ms"];
-jointly.validation = [isPeriod];
-jointly.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function heartbeat({cp, tl, ct = cancellable, scope = {}}, [light]) {
-  await cp.execute(
-    `loop
-      (blink ${light} 250 2)
-      (pause 350)`,
-    tl, ct, scope);
-}
-heartbeat.doc = {
-  name: 'heartbeat',
-  desc: 'Heartbeat pattern:\n(heartbeat red)'
-};
-heartbeat.paramNames = ["light"];
-heartbeat.validation = [isLight];
-heartbeat.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function sos({cp, tl, ct = cancellable, scope = {}}, [light]) {
-  await cp.execute(
-    `loop
-      (blink ${light} 150 3)
-      (blink ${light} 250 2)
-      (toggle ${light})
-      (pause 250)
-      (toggle ${light})
-      (pause 150)
-      (blink ${light} 150 3)
-      (pause 700)`,
-    tl, ct, scope);
-}
-sos.doc = {
-  name: 'sos',
-  desc: 'SOS distress signal morse code pattern:\n(sos red)'
-};
-sos.paramNames = ["light"];
-sos.validation = [isLight];
-sos.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function danger({cp, tl, ct = cancellable}) {
-  await twinkle({cp, tl, ct}, ['red', 400]);
-}
-danger.doc = {
-  name: 'danger',
-  desc: 'Danger: twinkle red with 400ms flashes.'
-};
-danger.paramNames = []; // no parameters
-danger.validation = []; // validates number of parameters (zero)
-danger.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function bounce({cp, tl, ct = cancellable, scope = {}}, [ms]) {
-  await cp.execute(
-    `loop
-      (toggle green)  (pause ${ms}) (toggle green)
-      (toggle yellow) (pause ${ms}) (toggle yellow)
-      (toggle red)    (pause ${ms}) (toggle red)
-      (toggle yellow) (pause ${ms}) (toggle yellow)`,
-    tl, ct, scope);
-}
-bounce.doc = {
-  name: 'bounce',
-  desc: 'Bounces through the lights with the given duration between them:\n' +
-        '(bounce 500)'
-};
-bounce.paramNames = ["ms"];
-bounce.validation = [isPeriod];
-bounce.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function soundbar({cp, tl, ct = cancellable, scope = {}}, [ms]) {
-  await cp.execute(
-    `loop
-      (toggle green)  (pause ${ms})
-      (toggle yellow) (pause ${ms})
-      (toggle red)    (pause ${ms})
-      (toggle red)    (pause ${ms})
-      (toggle yellow) (pause ${ms})
-      (toggle green)  (pause ${ms})`,
-    tl, ct, scope);
-}
-soundbar.doc = {
-  name: 'soundbar',
-  desc: 'Soundbar: just like a sound bar with the given duration:\n' +
-        '(soundbar 500)'
-};
-soundbar.paramNames = ["ms"];
-soundbar.validation = [isPeriod];
-soundbar.usesParser = true;
-
-//////////////////////////////////////////////////////////////////////////////
-
 let commands = {
-  cancel, pause, timeout,
-  run, loop, repeat, all,
-  toggle, turn, reset, lights,
-  ease,
-  define,
-  flash, blink, twinkle,
-  cycle, jointly, heartbeat,
-  sos, danger, bounce, soundbar
+  cancel, define,
+  pause, timeout,
+  run, loop, repeat, all, ease,
+  toggle, turn, reset, lights
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
-  cancel, pause, timeout,
-  run, loop, repeat, all,
+  cancel, define,
+  pause, timeout,
+  run, loop, repeat, all, ease,
   toggle, turn, reset, lights,
-  ease,
-  define,
-  flash, blink, twinkle,
-  cycle, jointly, heartbeat,
-  sos, danger, bounce, soundbar,
   published: commands
 };

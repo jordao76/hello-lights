@@ -83,6 +83,19 @@ describe 'Parsed commands', () =>
       @turn.getCall(1).calledWith(@ctx, ['right']).should.be.true
       @wait.calledOnceWith(@ctx, [42]).should.be.true
 
+    xit 'define two commands at once, the second uses the first', () =>
+      await @exec '''
+        (define turnLeft
+          "Turns left."
+          (turn left))
+        (define turnBack
+          "Turns back."
+          (run
+            (turnLeft) (turnLeft)))
+      '''
+      await @exec 'turnBack'
+      @turn.calledTwiceWith(@ctx, ['left']).should.be.true
+
     describe 'errors', () =>
 
       it 'define a new command: error in the definition', () =>

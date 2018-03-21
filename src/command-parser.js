@@ -9,6 +9,11 @@ class CommandParser {
   constructor(commands = published) {
     this.commands = commands;
     this.ct = new Cancellable;
+
+    if (commands === published) {
+      // load derived commands
+      require('./define-commands.cljs')(this);
+    }
   }
 
   get commandList() {
