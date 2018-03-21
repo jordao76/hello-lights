@@ -34,7 +34,7 @@ class CommandParser {
     return new Generator(this).execute(commandAst);
   }
 
-  define(name, command) {
+  define(name, command, desc = "") {
     if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
     let newCommand = ({tl, ct, scope = {}}, params = []) => {
@@ -42,7 +42,7 @@ class CommandParser {
       params.forEach((p, i) => scope[paramNames[i]] = p);
       return command({tl, ct, scope});
     };
-    newCommand.doc = {name};
+    newCommand.doc = {name, desc};
     newCommand.paramNames = paramNames;
     return this.commands[name] = newCommand;
   }

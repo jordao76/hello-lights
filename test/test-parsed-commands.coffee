@@ -39,18 +39,20 @@ describe 'Parsed commands', () =>
       @commands.define = c.define
 
     it 'define a new command', () =>
-      turnLeft = await @exec 'define turnLeft (turn left)'
+      turnLeft = await @exec 'define turnLeft "Turns left." (turn left)'
       # check metadata
       turnLeft.doc.name.should.equal 'turnLeft'
+      turnLeft.doc.desc.should.equal 'Turns left.'
       turnLeft.paramNames.should.deep.equal []
       # execute
       await @exec 'turnLeft'
       @turn.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define with a variable', () =>
-      go = await @exec 'define go (turn :direction)'
+      go = await @exec 'define go "Just go." (turn :direction)'
       # check metadata
       go.doc.name.should.equal 'go'
+      go.doc.desc.should.equal 'Just go.'
       go.paramNames.should.deep.equal ['direction']
       #TODO go.validations.should.deep.equal [@isDirection]
       # execute
@@ -58,7 +60,7 @@ describe 'Parsed commands', () =>
       @turn.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define complex command', () =>
-      await @exec 'define left_and_right (run (turn left) (wait 50) (turn right))'
+      await @exec 'define left_and_right "Left and right." (run (turn left) (wait 50) (turn right))'
       await @exec 'left_and_right'
       @turn.calledTwice.should.be.true
       @turn.calledWith(@ctx, ['left']).should.be.true
@@ -66,7 +68,7 @@ describe 'Parsed commands', () =>
       @wait.calledOnceWith(@ctx, [50]).should.be.true
 
     it 'define complex command with variables', () =>
-      await @exec 'define turn_wait_turn (run (turn :d1) (wait :ms) (turn :d2))'
+      await @exec 'define turn_wait_turn "Turn twice." (run (turn :d1) (wait :ms) (turn :d2))'
       await @exec 'turn_wait_turn right 42 left'
       @turn.calledTwice.should.be.true
       @turn.calledWith(@ctx, ['right']).should.be.true
@@ -74,7 +76,7 @@ describe 'Parsed commands', () =>
       @wait.calledOnceWith(@ctx, [42]).should.be.true
 
     it 'define complex command with shared variables', () =>
-      await @exec 'define turn_wait_turn_again (run (turn :d) (wait :ms) (turn :d))'
+      await @exec 'define turn_wait_turn_again "Turn twice." (run (turn :d) (wait :ms) (turn :d))'
       await @exec 'turn_wait_turn_again right 42'
       @turn.calledTwice.should.be.true
       @turn.getCall(0).calledWith(@ctx, ['right']).should.be.true
@@ -84,10 +86,10 @@ describe 'Parsed commands', () =>
     describe 'errors', () =>
 
       it 'define a new command: error in the definition', () =>
-        exec = () => @exec 'define turnUp (turn up)'
+        exec = () => @exec 'define turnUp "Turn up the radio." (turn up)'
         exec.should.throw 'Bad value "up" to "turn" parameter 1 ("where"); must be: "left" or "right"'
 
       it 'define a new command: error in the execution', () =>
-        await @exec 'define turnLeft (turn left)'
+        await @exec 'define turnLeft "Turn left." (turn left)'
         exec = () => @exec 'turnLeft 40'
         exec.should.throw 'Bad number of arguments to "turnLeft"; it takes 0 but was given 1'

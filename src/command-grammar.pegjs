@@ -11,9 +11,10 @@ Parameters
   = _ head:Parameter tail:Parameters? { return [head, ...(tail || [])]; }
 
 Parameter
-  = name:Variable    { return { type: 'variable', name }; }
+  = name:Variable     { return { type: 'variable', name }; }
   / value:Identifier  { return { type: 'value', value }; }
   / value:Number      { return { type: 'value', value }; }
+  / value:String      { return { type: 'value', value }; }
   / "(" _ command:Command _ ")" { return command; }
 
 Variable
@@ -24,6 +25,9 @@ Identifier
 
 Number
   = digits:[0-9]+ { return parseInt(digits.join(''), 10); }
+
+String
+  = '"' contents:[^"]* '"' { return (contents || []).join(''); }
 
 _ "Whitespace"
   = [ \n\t\r]*

@@ -27,6 +27,9 @@ isState.exp = '"on" or "off"';
 let isIdentifier = s => /^[a-z_][a-z_0-9]*$/i.test(s);
 isIdentifier.exp = 'a valid identifier';
 
+let isString = s => typeof s === 'string';
+isString.exp = 'a string';
+
 let isNumber = n => typeof n === 'number';
 isNumber.exp = 'a number';
 let isPeriod = isNumber;
@@ -306,16 +309,16 @@ ease.doc = {
 // Commands that use a Command Parser
 //////////////////////////////////////////////////////////////////////////////
 
-function define({cp}, [name, command]) {
-  return cp.define(name, command);
+function define({cp}, [name, desc, command]) {
+  return cp.define(name, command, desc);
 }
 define.doc = {
   name: 'define',
   desc: 'Defines a new command, variables in the command become parameters to the new command:\n' +
         '(define burst (twinkle :light 50))'
 };
-define.paramNames = ["name", "command"];
-define.validation = [isIdentifier, isCommand];
+define.paramNames = ["name", "desc", "command"];
+define.validation = [isIdentifier, isString, isCommand];
 define.usesParser = true;
 
 //////////////////////////////////////////////////////////////////////////////
