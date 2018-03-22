@@ -1,5 +1,5 @@
 {Light, TrafficLight} = require '../src/traffic-light'
-c = require '../src/commands'
+c = require '../src/base-commands'
 require('chai').should()
 sinon = require 'sinon'
 nativeSetTimeout = setTimeout
@@ -75,38 +75,3 @@ describe 'Commands', () =>
         done()
       @clock.tick 250
       yieldThen () => @clock.tick 250
-
-  describe 'lights', () =>
-
-    beforeEach () => @tl = new TrafficLight
-
-    it 'should turn lights on and off', () =>
-      await c.lights {@tl}, [1, true, 'on'] # different styles
-      @tl.red.on.should.be.true
-      @tl.yellow.on.should.be.true
-      @tl.green.on.should.be.true
-      await c.lights {@tl}, ['off', false, 0]
-      @tl.red.on.should.be.false
-      @tl.yellow.on.should.be.false
-      @tl.green.on.should.be.false
-      await c.lights {@tl}, [1, 'false', 0]
-      @tl.red.on.should.be.true
-      @tl.yellow.on.should.be.false
-      @tl.green.on.should.be.false
-      await c.lights {@tl}, [0, 0, 0]
-      await c.lights {@tl}, ['off', 'true', false]
-      @tl.red.on.should.be.false
-      @tl.yellow.on.should.be.true
-      @tl.green.on.should.be.false
-      await c.lights {@tl}, [0, 0, 0]
-      await c.lights {@tl}, [0, 0, 'on']
-      @tl.red.on.should.be.false
-      @tl.yellow.on.should.be.false
-      @tl.green.on.should.be.true
-
-    it 'should NOT turn lights on when already cancelled', () =>
-      ct = isCancelled: true
-      await c.lights {@tl, ct}, [1, true, 'on']
-      @tl.red.on.should.be.false
-      @tl.yellow.on.should.be.false
-      @tl.green.on.should.be.false

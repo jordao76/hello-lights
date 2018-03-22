@@ -1,28 +1,12 @@
 /**
- * @file Defines commands to control a {@link TrafficLight}.
- *   The commands are usually time-based and are cancellable
- *   by a Cancellation Token. Cancellation Tokens are instances
- *   of {@link Cancellable}.
+ * @file Defines base commands to control a Traffic Light.
+ *   The commands are cancellable by a Cancellation Token.
+ *   Cancellation Tokens are instances of {@link Cancellable}.
  */
-
-//////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-let turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
 
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
-
-let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
-
-let isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
 
 let isIdentifier = s => /^[a-z_][a-z_0-9]*$/i.test(s);
 isIdentifier.exp = 'a valid identifier';
@@ -47,7 +31,7 @@ let each = vf => {
 // Every command takes 2 parameters:
 //   1. context = { cp, tl, ct, scope }
 //   where
-//      cp is a command parser (on demand)
+//      cp is the command parser (on demand)
 //      tl is a traffic light
 //      ct is a cancellation token
 //      scope are the variable bindings for nested commands
@@ -88,8 +72,8 @@ function define({cp}, [name, desc, command]) {
 }
 define.doc = {
   name: 'define',
-  desc: 'Defines a new command, variables in the command become parameters to the new command:\n' +
-        '(define burst "Burst of light." (twinkle :light 50))'
+  desc: 'Defines a new command, where variables become parameters:\n' +
+        '(define burst "Burst of light" (twinkle :light 50))'
 };
 define.paramNames = ["name", "desc", "command"];
 define.validation = [isIdentifier, isString, isCommand];
@@ -226,6 +210,8 @@ all.doc = {
 };
 
 //////////////////////////////////////////////////////////////////////////////
+// Ease validation
+//////////////////////////////////////////////////////////////////////////////
 
 let Easing = {
   linear: t => t,
@@ -233,8 +219,11 @@ let Easing = {
   easeOut: t => t*(2-t),
   easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t
 };
+
 let isEasing = e => !!Easing[e];
 isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
+
+//////////////////////////////////////////////////////////////////////////////
 
 async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
   let start = Date.now();
@@ -267,6 +256,34 @@ ease.doc = {
         'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
         '(ease linear 10000 ms 50 200 (flash yellow :ms))'
 };
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Defines base commands to control a {@link TrafficLight}.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// Utility functions
+//////////////////////////////////////////////////////////////////////////////
+
+let isOn = state =>
+  (state === 'off' || state === 'false') ? false : !!state;
+
+let turnLight = (oLight, state) =>
+  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+//////////////////////////////////////////////////////////////////////////////
+
+let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
+isLight.exp = '"red", "yellow" or "green"';
+
+let isState = s => s === 'on' || s === 'off';
+isState.exp = '"on" or "off"';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -310,35 +327,11 @@ reset.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-function lights({tl, ct = cancellable}, [red, yellow, green]) {
-  if (ct.isCancelled) return;
-  turnLight(tl.red, red);
-  turnLight(tl.yellow, yellow);
-  turnLight(tl.green, green);
-}
-lights.paramNames = ["red", "yellow", "green"];
-lights.validation = [isState, isState, isState];
-lights.doc = {
-  name: 'lights',
-  desc: 'Set the lights to the given values (on or off):\n' +
-        '(lights off off on)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-let commands = {
-  cancel, define,
-  pause, timeout,
-  run, loop, repeat, all, ease,
-  toggle, turn, reset, lights
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
 module.exports = {
+  // base commands
   cancel, define,
   pause, timeout,
   run, loop, repeat, all, ease,
-  toggle, turn, reset, lights,
-  published: commands
+  // base traffic light commands
+  toggle, turn, reset
 };

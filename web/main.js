@@ -1,9 +1,6 @@
-"use strict";
-
-///////////////
-
 var trafficlight = require('../src/traffic-light.js');
 var {CommandParser} = require('../src/command-parser.js');
+let defineCommands = require('../src/traffic-light-commands.cljs');
 
 ///////////////
 
@@ -33,7 +30,7 @@ window.cancel = function() {
   cp.cancel();
 }
 
-var cp = new CommandParser();
+var cp = new CommandParser(); defineCommands(cp);
 window.execute = async function(str, shouldCancel = true) {
   if (shouldCancel) cancel();
   console.log(`Executing command '${str}'`);

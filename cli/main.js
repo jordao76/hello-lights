@@ -1,4 +1,5 @@
 let {CommandParser} = require('../src/command-parser');
+let defineCommands = require('../src/traffic-light-commands.cljs');
 let options =
   require('./options')[process.argv[2] || 'ClewareUSBOptions'];
 let {resolveConnectedTrafficLight} =
@@ -41,7 +42,7 @@ async function resolveTrafficLight() {
   return tl;
 }
 
-let cp = new CommandParser();
+let cp = new CommandParser(); defineCommands(cp);
 async function execute(str, shouldCancel=true) {
   let tl = await resolveTrafficLight();
   if (tl) {

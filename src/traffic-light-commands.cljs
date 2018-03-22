@@ -1,9 +1,19 @@
 ; // This file is a JavaScript file. It has the cljs extension just to render
-; // as ClojureScript.
-; // The commands defined here are NOT ClojureScript, they just look good
+; // as Clojure (or ClojureScript).
+; // The commands defined here are NOT Clojure, they just look good
 ; // rendered as such.
 ; module.exports = function(cp) { cp.execute(`
 ;---------------------------------------------------------------------------
+
+(define lights
+  "Set the lights to the given values (on or off):
+  (lights off off on)"
+  (run
+    (turn red    :red)
+    (turn yellow :yellow)
+    (turn green  :green)))
+
+;`);cp.execute(`;-----------------------------------------------------------
 
 (define flash
   "Flashes a light for the given duration.
@@ -26,7 +36,8 @@
 (define twinkle
   "Flashes a light for the given duration forever:
   (twinkle green 500)"
-  (loop (flash :light :ms)))
+  (loop
+    (flash :light :ms)))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
@@ -45,10 +56,8 @@
   "Flashes all lights together forever:
   (jointly 500)"
   (loop
-    (lights on on on)
-    (pause :ms)
-    (lights off off off)
-    (pause :ms)))
+    (lights on  on  on)  (pause :ms)
+    (lights off off off) (pause :ms)))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 

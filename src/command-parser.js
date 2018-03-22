@@ -1,4 +1,4 @@
-let {published} = require('./commands');
+let baseCommands = require('./base-commands');
 let {Cancellable} = require('./cancellable');
 let parser = require('./command-peg-parser');
 
@@ -6,14 +6,9 @@ let parser = require('./command-peg-parser');
 
 class CommandParser {
 
-  constructor(commands = published) {
+  constructor(commands = baseCommands) {
     this.commands = commands;
     this.ct = new Cancellable;
-
-    if (commands === published) {
-      // load derived commands
-      require('./define-commands.cljs')(this);
-    }
   }
 
   get commandList() {
