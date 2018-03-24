@@ -1,9 +1,7 @@
 let {CommandParser} = require('../src/command-parser');
 let defineCommands = require('../src/traffic-light-commands.cljs');
-let options =
-  require('./options')[process.argv[2] || 'ClewareUSBOptions'];
-let {resolveConnectedTrafficLight} =
-  require('../src/devices/'+options.type)(options);
+let device = process.argv[2] || 'cleware-switch1';
+let {Manager} = require('../src/devices/'+device);
 
 ///////////////
 
@@ -24,7 +22,7 @@ function error(error) {
 let tl;
 async function resolveTrafficLight() {
   if (tl && tl.device.isConnected) return tl;
-  if (tl = await resolveConnectedTrafficLight()) {
+  if (tl = await Manager.firstConnectedTrafficLight()) {
     log('Using traffic light', tl.device.serialNum);
     if (!tl.device.__listening_for_disconnected) {
       tl.device.__listening_for_disconnected = true;
@@ -86,7 +84,7 @@ function listen() {
       process.exit(0);
     }
     else if (text === 'check device') {
-      await resolveConnectedTrafficLight();
+      await Manager.firstConnectedTrafficLight();
       if (tl && tl.device.isConnected) {
         log('Using traffic light', tl.device.serialNum);
       }

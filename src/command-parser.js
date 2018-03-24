@@ -7,7 +7,8 @@ let parser = require('./command-peg-parser');
 class CommandParser {
 
   constructor(commands = baseCommands) {
-    this.commands = commands;
+    // clone base commands
+    this.commands = commands === baseCommands  ? {...commands} : commands;
     this.ct = new Cancellable;
   }
 

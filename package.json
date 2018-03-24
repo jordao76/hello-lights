@@ -6,7 +6,7 @@
     "test": "npm run peg && mocha --require coffeescript/register \"test/**/*.coffee\"",
     "web": "npm run peg && browserify web/main.js -o web/bundle.js && opn web/index.html",
     "cli": "npm run peg && node cli/main.js",
-    "cli-browser": "npm run peg && node cli/main.js ChromiumOptions"
+    "cli-browser": "npm run peg && node cli/main.js Chromium"
   },
   "devDependencies": {
     "browserify": "^16.1.0",

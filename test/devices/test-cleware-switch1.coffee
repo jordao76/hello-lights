@@ -1,12 +1,11 @@
 {RED, YELLOW, GREEN, ON, OFF, PhysicalLight, PhysicalTrafficLight} =
   require('../../src/physical-traffic-light')
+{Manager} = require("../../src/devices/cleware-switch1");
 require('chai').should()
 HID = require('node-hid')
 sinon = require('sinon')
 
-{ClewareUSBDevice} = require("../../src/devices/ClewareUSB")({})
-
-describe 'ClewareUSBDevice', ->
+describe 'Cleware Switch1 device', ->
 
   beforeEach () ->
     @deviceList = [
@@ -17,7 +16,7 @@ describe 'ClewareUSBDevice', ->
     @HID_devices = sinon.stub(HID, 'devices').returns @deviceList
     @HID_HID_write = sinon.stub()
     @HID_HID = sinon.stub(HID, 'HID').returns write: @HID_HID_write
-    @devices = await ClewareUSBDevice.refreshDevices()
+    @devices = await Manager.refreshDevices()
     @device = @devices['900636']
     @lastDevice = @devices['900639']
 
@@ -25,7 +24,7 @@ describe 'ClewareUSBDevice', ->
     @HID_devices.restore()
     @HID_HID.restore()
 
-  describe 'Device', ->
+  describe 'Manager and devices', ->
 
     it 'resolves connected devices', ->
       VENDOR_ID = 3408
@@ -33,7 +32,7 @@ describe 'ClewareUSBDevice', ->
       sinon.assert.calledWith(@HID_devices, VENDOR_ID, SWITCH1_DEVICE)
       sinon.assert.calledOnce(@HID_devices)
       Object.keys(@devices).should.deep.equal ['900636','900637','900639']
-      @device.serialNum.should.equal '900636'
+      @device.serialNum.should.equal parseInt('900636', 16)
       @device.isConnected.should.be.true
 
     it 'turns connected device', ->
@@ -51,22 +50,23 @@ describe 'ClewareUSBDevice', ->
       @HID_HID_write.throws()
       @device.disconnect()
       await @device.turn(GREEN, ON)
+      @HID_HID_write.callCount.should.equal 0
 
     it 'detects disconnected device reconnection when refreshing devices', ->
       @device.disconnect()
-      await ClewareUSBDevice.refreshDevices()
+      await Manager.refreshDevices()
       @device.isConnected.should.be.true
 
     it 'marks removed device as disconnected when refreshing', ->
       @deviceList.pop() # remove last
       @lastDevice.isConnected.should.be.true # still connected before refresh
-      await ClewareUSBDevice.refreshDevices()
+      await Manager.refreshDevices()
       @lastDevice.isConnected.should.be.false
 
   describe 'PhysicalLight', ->
 
     beforeEach () ->
-      @light = new PhysicalLight(YELLOW, @device)
+      @light = @device.trafficLight().yellow
 
     it 'starts as off', ->
       @light.on.should.be.false
@@ -96,7 +96,7 @@ describe 'ClewareUSBDevice', ->
   describe 'PhysicalTrafficLight', ->
 
     beforeEach () ->
-      @tl = new PhysicalTrafficLight(@device)
+      @tl = @device.trafficLight()
 
     it 'reset turns all lights off', ->
       @tl.red.turnOn()
