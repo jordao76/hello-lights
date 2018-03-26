@@ -36,7 +36,7 @@ describe 'Traffic light commands', () =>
     defineCommands(cp); # parse and load "defined" commands
     @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, tl, ct, scope)
 
-  describe 'defining', () => # TODO: belongs test-base-commands
+  describe 'defining', () => # TODO: belongs to test-base-commands
 
     it 'define a new command', () =>
       moveLeft = await @exec 'define moveLeft "Moves left." (move left)'

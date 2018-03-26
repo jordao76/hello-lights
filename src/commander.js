@@ -18,6 +18,10 @@ class Commander {
     this.parser = options.parser;
     this.manager = options.manager;
     this.logger = options.logger;
+
+    this.devicesBySerialNum = {}; // known devices by their serial numbers
+    this.manager.startMonitoring();
+    this.manager.on('add', () => this._resumeIfNeeded());
   }
 
   devicesInfo() {
@@ -39,7 +43,8 @@ class Commander {
   async run(command) {
     let tl = await this._trafficLight();
     if (!tl) {
-      this.logger.log(`no device found to run '${command}'`);
+      this.suspended = command;
+      this.logger.log(`no device available to run '${command}'`);
       return;
     }
     try {
@@ -60,8 +65,8 @@ class Commander {
   }
 
   _skipIfRunningSame(command, tl) {
-    let sn = tl.device.serialNum;
     if (this.running !== command) return false;
+    let sn = tl.device.serialNum;
     this.logger.log(`device ${sn}: skip '${command}'`);
     return true;
   }
@@ -73,7 +78,14 @@ class Commander {
     this.running = command;
     let res = await this.parser.execute(command, tl);
     this.running = null;
-    log(`device ${sn}: finished '${command}'`);
+    if (tl.device.isConnected) {
+      this.suspended = null;
+      log(`device ${sn}: finished '${command}'`);
+    }
+    else {
+      this.suspended = command;
+      log(`device ${sn}: disconnected, suspending '${command}'`);
+    }
     return res;
   }
 
@@ -89,10 +101,28 @@ class Commander {
     this.parser.cancel();
   }
 
+  _resumeIfNeeded() {
+    if (!this.suspended) return;
+    this.run(this.suspended);
+    this.suspended = null;
+  }
+
   async _trafficLight() {
     let device = await this.manager.firstConnectedDevice();
     if (!device) return null;
+    this._registerDeviceIfNeeded(device);
     return device.trafficLight();
+  }
+
+  _registerDeviceIfNeeded(device) {
+    let sn = device.serialNum;
+    if (this.devicesBySerialNum[sn]) return;
+    this.devicesBySerialNum[sn] = device;
+    device.onConnected(() => {
+      device.trafficLight().sync(); // no await
+      this.logger.log(`device ${sn}: connected`);
+    });
+    device.onDisconnected(() => this.cancel());
   }
 
 }

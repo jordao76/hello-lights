@@ -36,18 +36,44 @@ class ClewareSwitch1Device extends Device {
 
 //////////////////////////////////////////////
 
+let usbDetect = require('usb-detection');
+
+//////////////////////////////////////////////
+
 class ClewareSwitch1DeviceManager extends DeviceManager {
+
+  startMonitoring() {
+    usbDetect.startMonitoring();
+  }
+
+  stopMonitoring() {
+    usbDetect.stopMonitoring();
+  }
 
   constructor() {
     super('cleware-switch1');
-    // devices keyed by their serial numbers
-    this._devices = {};
+    this._devicesBySerialNum = {}; // devices keyed by their serial numbers
+
+    this.refreshDevices();
+    usbDetect.on(`add:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
+      this.refreshDevices();
+      this.emit('add');
+    });
+    usbDetect.on(`remove:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
+      this.refreshDevices();
+      this.emit('remove');
+    });
+  }
+
+  reset() {
+    // clear the devices
+    this._devicesBySerialNum = {};
   }
 
   refreshDevices() {
     let deviceInfos = HID.devices(VENDOR_ID, SWITCH1_DEVICE)
       .filter(d => d.serialNumber); // has a serial number
-    let ds = this._devices, serialNums = [];
+    let ds = this._devicesBySerialNum, serialNums = [];
     for (let i = 0; i < deviceInfos.length; ++i) {
       let deviceInfo = deviceInfos[i];
       let serialNum = deviceInfo.serialNumber;
@@ -60,15 +86,14 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
   }
 
   _disconnectDevicesNotIn(serialNums) {
-    Object.keys(this._devices) // all serial numbers
+    Object.keys(this._devicesBySerialNum) // all serial numbers
       .filter(sn => serialNums.indexOf(sn) < 0) // array diff (not in)
-      .map(sn => this._devices[sn]) // get devices
+      .map(sn => this._devicesBySerialNum[sn]) // get devices
       .forEach(device => device.disconnect()); // disconnect them
   }
 
   allDevices() {
-    let devicesBySerialNum = this.refreshDevices();
-    return Object.values(devicesBySerialNum);
+    return Object.values(this._devicesBySerialNum);
   }
 
 }

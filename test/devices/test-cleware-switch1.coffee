@@ -16,6 +16,7 @@ describe 'Cleware Switch1 device', ->
     @HID_devices = sinon.stub(HID, 'devices').returns @deviceList
     @HID_HID_write = sinon.stub()
     @HID_HID = sinon.stub(HID, 'HID').returns write: @HID_HID_write
+    Manager.reset()
     @devices = await Manager.refreshDevices()
     @device = @devices['900636']
     @lastDevice = @devices['900639']

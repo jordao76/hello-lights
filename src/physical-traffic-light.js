@@ -33,6 +33,11 @@ class PhysicalLight extends Light {
     await this.device.turn(this.lightNum, OFF);
   }
 
+  async sync() {
+    if (!this.device.isConnected) return;
+    await this.device.turn(this.lightNum, +this.on);
+  }
+
 }
 
 ///////////////
@@ -53,6 +58,15 @@ class PhysicalTrafficLight extends TrafficLight {
       this.red.turnOff(),
       this.yellow.turnOff(),
       this.green.turnOff()
+    ]);
+  }
+
+  async sync() {
+    if (!this.device.isConnected) return;
+    await Promise.all([
+      this.red.sync(),
+      this.yellow.sync(),
+      this.green.sync()
     ]);
   }
 

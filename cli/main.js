@@ -2,6 +2,7 @@ let {CommandParser} = require('../src/command-parser');
 let defineCommands = require('../src/traffic-light-commands.cljs');
 let device = process.argv[2] || 'cleware-switch1';
 let {Manager} = require('../src/devices/'+device);
+Manager.startMonitoring();
 
 ///////////////
 
@@ -28,6 +29,7 @@ async function resolveTrafficLight() {
       tl.device.__listening_for_disconnected = true;
       tl.device.onDisconnected(() => {
         error('Traffic light disconnected!');
+        cp.cancel();
       });
     }
     else {

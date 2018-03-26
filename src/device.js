@@ -43,9 +43,15 @@ class Device extends EventEmitter {
 ///////////////
 
 /** @abstract */
-class DeviceManager {
+class DeviceManager extends EventEmitter {
+  // a monitoring DeviceManager should emit the "add" event
+  // then there's a new device added (detected)
+
+  startMonitoring() { }
+  stopMonitoring() { }
 
   constructor(type) {
+    super();
     this.type = type;
   }
 
