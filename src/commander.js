@@ -40,7 +40,11 @@ class Commander {
       this.logger.log(`device ${info.serialNum}: ${info.status}`));
   }
 
-  async run(command) {
+  cancel() {
+    this.parser.cancel();
+  }
+
+  async run(command, reset = false) {
     let tl = await this._trafficLight();
     if (!tl) {
       this.suspended = command;
@@ -49,19 +53,19 @@ class Commander {
     }
     try {
       if (this._skipIfRunningSame(command, tl)) return;
-      this._cancelIfRunningDifferent(command, tl);
-      return await this._execute(command, tl);
+      await this._cancelIfRunningDifferent(command, tl);
+      return await this._execute(command, tl, reset);
     } catch (e) {
       this._errorInExecution(command, tl, e);
     }
   }
 
-  _cancelIfRunningDifferent(command, tl) {
+  async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
     let sn = tl.device.serialNum;
     this.logger.log(`device ${sn}: cancel '${this.running}'`);
     this.parser.cancel();
-    tl.reset(); // no await
+    await tl.reset();
   }
 
   _skipIfRunningSame(command, tl) {
@@ -71,13 +75,21 @@ class Commander {
     return true;
   }
 
-  async _execute(command, tl) {
+  async _execute(command, tl, reset) {
+    if (reset) await tl.reset();
     let sn = tl.device.serialNum;
     let log = this.logger.log;
     log(`device ${sn}: running '${command}'`);
     this.running = command;
     let res = await this.parser.execute(command, tl);
     this.running = null;
+    this._finishedExecution(command, tl);
+    return res;
+  }
+
+  _finishedExecution(command, tl) {
+    let sn = tl.device.serialNum;
+    let log = this.logger.log;
     if (tl.device.isConnected) {
       this.suspended = null;
       log(`device ${sn}: finished '${command}'`);
@@ -86,7 +98,6 @@ class Commander {
       this.suspended = command;
       log(`device ${sn}: disconnected, suspending '${command}'`);
     }
-    return res;
   }
 
   _errorInExecution(command, tl, error) {
@@ -97,14 +108,11 @@ class Commander {
     err(error);
   }
 
-  cancel() {
-    this.parser.cancel();
-  }
-
   _resumeIfNeeded() {
-    if (!this.suspended) return;
-    this.run(this.suspended);
+    let command = this.suspended;
+    if (!command) return;
     this.suspended = null;
+    this.run(command, true); // no await
   }
 
   async _trafficLight() {

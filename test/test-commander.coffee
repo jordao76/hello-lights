@@ -117,7 +117,7 @@ describe 'Commander', () =>
               sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
               done()
 
-      it 'resumes the command when reconnected', (done) =>
+      it 'resumes the running command when reconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
           @device.disconnect()
@@ -131,7 +131,7 @@ describe 'Commander', () =>
               sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
               done()
 
-      it 'reinstates the traffic light state when reconnected', (done) =>
+      it 'reinstates the traffic light state when reconnected if not running a command', (done) =>
         @cm.run('fast command')
         @resolve()
         tl = @device.trafficLight() # simulates a command that ended with the yellow light on
@@ -167,6 +167,8 @@ describe 'Commander', () =>
                 @parser.execute.callCount.should.equal 1
                 sinon.assert.calledWith(@logger.log, "device 999999: connected")
                 done()
+
+    xdescribe 'disconnect and connect another device', () =>
 
   describe 'no device', () =>
 
