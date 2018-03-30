@@ -10,11 +10,19 @@ defineCommands(Parser);
 // the default device manager
 let {Manager} = require('./devices/cleware-switch1');
 
+let red = '\x1b[31m';
+let reset = '\x1b[0m';
+// the default logger
+let Logger = {
+  log: console.log,
+  error: (...args) => console.error(red, ...args, reset)
+};
+
 ////////////////////////////////////////////////
 
 class Commander {
 
-  constructor(options = {parser: Parser, manager: Manager, logger: console}) {
+  constructor(options = {parser: Parser, manager: Manager, logger: Logger}) {
     this.parser = options.parser;
     this.manager = options.manager;
     this.logger = options.logger;
@@ -131,6 +139,25 @@ class Commander {
       this.logger.log(`device ${sn}: connected`);
     });
     device.onDisconnected(() => this.cancel());
+  }
+
+  commands() {
+    return this.parser.commandList;
+  }
+
+  logCommands() {
+    this.parser.commandList.forEach(command => this.logger.log(command));
+  }
+
+  help(commandName) {
+    let command = this.parser.commands[commandName];
+    if (!command) return;
+    let paramNames = command.paramNames, params = '';
+    if (paramNames && paramNames.length > 0) {
+      params = ' ' + paramNames.map(n => ':' + n).join(' ');
+    }
+    this.logger.log(`${command.doc.name}${params}`);
+    this.logger.log(command.doc.desc);
   }
 
 }

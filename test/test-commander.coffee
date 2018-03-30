@@ -191,4 +191,25 @@ describe 'Commander', () =>
           sinon.assert.calledWith(@parser.execute, 'fast command', @device.trafficLight())
           done()
 
-  describe 'help', () =>
+  describe 'command help', () =>
+
+    beforeEach () =>
+      @commandList = ['move','turn','stop']
+      @parser.commandList = @commandList
+      moveCommand = sinon.stub()
+      moveCommand.paramNames = ['where']
+      moveCommand.doc = name: 'move', desc: 'Moves the widget'
+      @parser.commands = move: moveCommand
+
+    it 'commands(): lists all available commands', () =>
+      @cm.commands().should.deep.equal @commandList
+
+    it 'logCommands(): logs all available commands', () =>
+      @cm.logCommands()
+      for command in @commandList
+        sinon.assert.calledWith(@logger.log, command)
+
+    it 'help: log help for a command', () =>
+      @cm.help('move')
+      sinon.assert.calledWith(@logger.log, 'move :where')
+      sinon.assert.calledWith(@logger.log, 'Moves the widget')
