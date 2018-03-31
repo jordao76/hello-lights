@@ -65,7 +65,7 @@ describe 'Commander', () =>
           @parser.execute.calledOnceWith('error command', @device.trafficLight()).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
           @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
-          @logger.error.calledWith(error).should.be.true
+          @logger.error.calledWith(error.message).should.be.true
           done()
 
       it 'if the same command is already running, does nothing', (done) =>
@@ -203,11 +203,6 @@ describe 'Commander', () =>
 
     it 'commands(): lists all available commands', () =>
       @cm.commands().should.deep.equal @commandList
-
-    it 'logCommands(): logs all available commands', () =>
-      @cm.logCommands()
-      for command in @commandList
-        sinon.assert.calledWith(@logger.log, command)
 
     it 'help: log help for a command', () =>
       @cm.help('move')
