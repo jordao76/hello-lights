@@ -57,11 +57,11 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
     this.refreshDevices();
     usbDetect.on(`add:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
       this.refreshDevices();
-      this.emit('add');
+      this.emit('added');
     });
     usbDetect.on(`remove:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
       this.refreshDevices();
-      this.emit('remove');
+      this.emit('removed');
     });
   }
 

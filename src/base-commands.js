@@ -1,8 +1,8 @@
-/**
- * @file Defines base commands to control a Traffic Light.
- *   The commands are cancellable by a Cancellation Token.
- *   Cancellation Tokens are instances of {@link Cancellable}.
- */
+//////////////////////////////////////////////////////////////////////////////
+// Defines base commands to control a Device.
+// The commands are cancellable by a Cancellation Token.
+// Cancellation Tokens are instances of Cancellable.
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
@@ -41,16 +41,11 @@ let each = vf => {
 
 let {Cancellable} = require('./cancellable');
 
-/**
- * Default Cancellation Token used for all commands.
- * @private
- */
+// Default Cancellation Token used for all commands
 let cancellable = new Cancellable;
 
-/**
- * Cancels all commands that are being executed in the context of a
- * Cancellation Token.
- */
+// Cancels all commands that are being executed in the context of a
+// Cancellation Token.
 function cancel({ct = cancellable} = {}) {
   if (ct.isCancelled) return;
   ct.cancel();
@@ -81,12 +76,10 @@ define.usesParser = true; // receives the cp (command parser) parameter
 
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * Pauses execution for the given duration.
- * @returns {Promise} Promise that resolves when the pause duration is complete,
- *   or if it's cancelled. Note that even if the pause is cancelled, the Promise
- *   is resolved, never rejected.
- */
+// Pauses execution for the given duration.
+// Returns a Promise that resolves when the pause duration is complete,
+// or if it's cancelled. Even if the pause is cancelled, the Promise
+// is resolved, never rejected.
 function pause(ctx, params) {
   // allow the first parameter to be omitted
   // => pause({ct}, [500]) OR pause([500])
@@ -111,11 +104,7 @@ pause.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * Executes a command with a timeout.
- * @returns {Promise} The result of the command execution if the command
- *   finished before the timeout.
- */
+// Executes a command with a timeout
 async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
   let timeoutC = new Cancellable;
   let timeoutP = pause({ct}, [ms]);
@@ -261,9 +250,9 @@ ease.doc = {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * Defines base commands to control a {@link TrafficLight}.
- */
+//////////////////////////////////////////////////////////////////////////////
+// Defines base commands to control a Traffic Light.
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions

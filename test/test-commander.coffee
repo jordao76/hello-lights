@@ -124,7 +124,7 @@ describe 'Commander', () =>
           @resolve()
           yieldThen () =>
             @device.connect() # reconnect
-            @manager.emit('add')
+            @manager.emit('added')
             yieldThen () =>
               @parser.execute.callCount.should.equal 2
               sinon.assert.calledWith(@logger.log, "device 999999: connected")
@@ -185,7 +185,7 @@ describe 'Commander', () =>
         @device = new Device('888888', true)
         @device.turn = sinon.stub()
         @manager.allDevices.returns [@device]
-        @manager.emit('add') # new device added (detected)
+        @manager.emit('added') # new device added (detected)
         yieldThen () =>
           @parser.execute.calledOnce.should.be.true
           sinon.assert.calledWith(@parser.execute, 'fast command', @device.trafficLight())

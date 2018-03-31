@@ -21,7 +21,7 @@ let Logger = {
 /**
  * @typedef {Object} DeviceInfo
  * @property {string} type - The type of the device.
- * @property {string|number} serialNum - The serial number of the device.
+ * @property {(string|number)} serialNum - The serial number of the device.
  * @property {string} status - The status of the device, either
  *   'connected' or 'disconnected'.
  */
@@ -35,9 +35,9 @@ class Commander {
 
   /**
    * Creates a new Commander instance. Only one is needed to control a
-   * traffic light. Calls @see DeviceManager#startMonitoring
-   * to start monitoring for devices.
+   * traffic light. Right away starts monitoring for devices.
    * Uses the first connected traffic light to issue commands.
+   * @see DeviceManager#startMonitoring
    * @param {Object} [options] - Commander options.
    * @param {Object} [options.logger] - A Console-like object for logging, with
    *   a log and an error function.
@@ -51,7 +51,7 @@ class Commander {
 
     this.devicesBySerialNum = {}; // known devices by their serial numbers
     this.manager.startMonitoring();
-    this.manager.on('add', () => this._resumeIfNeeded());
+    this.manager.on('added', () => this._resumeIfNeeded());
   }
 
   /**
@@ -63,7 +63,9 @@ class Commander {
   }
 
   /**
-   * Returns information about devices.
+   * Returns information about known devices.
+   * Known devices are either connected devices or
+   * devices that were once connected and then got disconnected.
    * @returns {DeviceInfo[]} Device info list.
    */
   devicesInfo() {
@@ -78,7 +80,10 @@ class Commander {
   }
 
   /**
-   * Logs the device information given in @see Commander#devicesInfo
+   * Logs information about known devices.
+   * Known devices are either connected devices or
+   * devices that were once connected and then got disconnected.
+   * @see Commander#devicesInfo
    */
   logDevicesInfo() {
     this.devicesInfo().forEach(info =>
@@ -121,7 +126,6 @@ class Commander {
     }
   }
 
-  /** @private */
   async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
     let sn = tl.device.serialNum;
@@ -130,7 +134,6 @@ class Commander {
     await tl.reset();
   }
 
-  /** @private */
   _skipIfRunningSame(command, tl) {
     if (this.running !== command) return false;
     let sn = tl.device.serialNum;
@@ -138,7 +141,6 @@ class Commander {
     return true;
   }
 
-  /** @private */
   async _execute(command, tl, reset) {
     if (reset) await tl.reset();
     let sn = tl.device.serialNum;
@@ -151,7 +153,6 @@ class Commander {
     return res;
   }
 
-  /** @private */
   _finishedExecution(command, tl) {
     let sn = tl.device.serialNum;
     let log = this.logger.log;
@@ -165,7 +166,6 @@ class Commander {
     }
   }
 
-  /** @private */
   _errorInExecution(command, tl, error) {
     let sn = tl.device.serialNum;
     let err = this.logger.error;
@@ -174,7 +174,6 @@ class Commander {
     err(error.message);
   }
 
-  /** @private */
   _resumeIfNeeded() {
     let command = this.suspended;
     if (!command) return;
@@ -182,7 +181,6 @@ class Commander {
     this.run(command, true); // no await
   }
 
-  /** @private */
   async _trafficLight() {
     let device = await this.manager.firstConnectedDevice();
     if (!device) return null;
@@ -190,7 +188,6 @@ class Commander {
     return device.trafficLight();
   }
 
-  /** @private */
   _registerDeviceIfNeeded(device) {
     let sn = device.serialNum;
     if (this.devicesBySerialNum[sn]) return;
@@ -203,6 +200,7 @@ class Commander {
   }
 
   /**
+   * Returns a list of supported command names.
    * @returns {string[]} List of supported command names.
    */
   commands() {

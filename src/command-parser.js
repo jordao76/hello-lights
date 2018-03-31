@@ -4,18 +4,30 @@ let parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
+/** Parses and executes commands on a traffic light. */
 class CommandParser {
 
+  /**
+   * @param {object} [commands] - Commands this parser recognizes.
+   */
   constructor(commands = baseCommands) {
     // clone base commands
     this.commands = commands === baseCommands  ? {...commands} : commands;
     this.ct = new Cancellable;
   }
 
+  /**
+   * Command names this parser recognizes.
+   * @type {string[]}
+   */
   get commandList() {
     return Object.keys(this.commands);
   }
 
+  /**
+   * Cancels any executing commands.
+   * @param {Cancellable} [ct] - Cancellation token.
+   */
   cancel(ct = this.ct) {
     if (ct.isCancelled) return;
     ct.cancel();
@@ -24,17 +36,37 @@ class CommandParser {
     }
   }
 
+  /**
+   * Executes a command.
+   * @param {string} commandStr - Command string to execute.
+   * @param {TrafficLight} tl - Traffic light to use.
+   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {object} [scope] - Scope for variables in the command.
+   * @returns {(Promise|object)} The command execution result.
+   */
   execute(commandStr, tl, ct = this.ct, scope = {}) {
     if (ct.isCancelled) return;
     var command = this.parse(commandStr);
     return command({tl, ct, scope}); // no await
   }
 
+  /**
+   * Parses a command.
+   * @param {string} commandStr - Command string to execute.
+   * @returns {function} A traffic light command.
+   */
   parse(commandStr) {
     let commandAst = parser.parse(commandStr);
     return new Generator(this).execute(commandAst);
   }
 
+  /**
+   * Defines a new command.
+   * @param {string} name - Command name.
+   * @param {function} command - A traffic light command.
+   * @param {string} [desc] - Command description.
+   * @returns {function} The newly defined command.
+   */
   define(name, command, desc = "") {
     if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
