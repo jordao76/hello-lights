@@ -55,7 +55,7 @@ class Commander {
   }
 
   /**
-   * Called to close this instance and to stop monitoring for devices with
+   * Called to close this instance and to stop monitoring for devices.
    * @see DeviceManager#stopMonitoring
    */
   close() {
@@ -105,7 +105,7 @@ class Commander {
    * If no command is running, executes the given command, optionally
    * resetting the traffic light based on the `reset` parameter.
    * If there's no connected device, stores the command for execution if
-   * a device is connected later.
+   * a device is connected later. Logs messages appropriately.
    * @param {string} command - Command to execute.
    * @param {boolean} [reset=false] - Whether to reset the traffic light
    *   before executing the command.

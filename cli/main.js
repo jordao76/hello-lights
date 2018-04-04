@@ -1,6 +1,7 @@
 // 🚦
 
 let device = process.argv[2] || 'cleware-switch1';
+let {Manager} = require('../src/devices/' + device);
 let {Commander} = require('../src/commander');
 
 ///////////////
@@ -19,7 +20,7 @@ let logger = {
 
 ///////////////
 
-let commander = new Commander({logger});
+let commander = new Commander({logger, manager: Manager});
 
 ///////////////
 

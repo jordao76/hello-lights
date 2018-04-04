@@ -1,6 +1,11 @@
 Start
-  =       _ command:Command _       { return command; }
-  / _ "(" _ command:Command _ ")" _ { return command; }
+  =       _ command:Command _       { return [command]; }
+  / Commands
+
+Commands
+  = _ "(" _ first:Command _ ")" _ rest:Commands? {
+    return [first, ...(rest || [])];
+  }
 
 Command
   = name:Identifier params:Parameters? {

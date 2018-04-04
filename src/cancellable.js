@@ -42,7 +42,6 @@ class Cancellable {
    * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
    * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
    * calling the related resolve functions.
-   * @package
    */
   cancel() {
     this.isCancelled = true;

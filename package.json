@@ -4,10 +4,14 @@
   "scripts": {
     "doc": "jsdoc src -r -d doc",
     "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
-    "test": "npm run peg && mocha --require coffeescript/register \"test/**/*.coffee\"",
-    "web": "npm run peg && browserify web/main.js -o web/bundle.js && opn web/index.html",
-    "cli": "npm run peg && node cli/main.js",
-    "cli-browser": "npm run peg && node cli/main.js Chromium"
+    "pretest": "npm run peg",
+    "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
+    "preweb": "npm run peg",
+    "web": "browserify web/main.js -o web/bundle.js && opn web/index.html",
+    "precli": "npm run peg",
+    "cli": "node cli/main.js",
+    "precli-browser": "npm run peg",
+    "cli-browser": "node cli/main.js Chromium"
   },
   "devDependencies": {
     "browserify": "^16.1.0",

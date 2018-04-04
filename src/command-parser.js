@@ -42,22 +42,31 @@ class CommandParser {
    * @param {TrafficLight} tl - Traffic light to use.
    * @param {Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
-   * @returns {(Promise|object)} The command execution result.
    */
-  execute(commandStr, tl, ct = this.ct, scope = {}) {
+  async execute(commandStr, tl, ct = this.ct, scope = {}) {
     if (ct.isCancelled) return;
-    var command = this.parse(commandStr);
-    return command({tl, ct, scope}); // no await
+    let asts = parser.parse(commandStr);
+    let generator = new Generator(this);
+    let res;
+    for (let i = 0; i < asts.length; ++i) {
+      let command = generator.execute(asts[i]);
+      res = await command({tl, ct, scope});
+    }
+    return res; // returns the last execution result
   }
 
   /**
-   * Parses a command.
+   * Parses a command string.
+   * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {function} A traffic light command.
+   * @returns {(function|function[])} One or many traffic light commands.
    */
   parse(commandStr) {
-    let commandAst = parser.parse(commandStr);
-    return new Generator(this).execute(commandAst);
+    let asts = parser.parse(commandStr);
+    let generator = new Generator(this);
+    let commands = asts.map(ast => generator.execute(ast));
+    if (commands.length === 1) return commands[0];
+    return commands;
   }
 
   /**
@@ -205,8 +214,10 @@ let Validator = {
   collect(command, args) {
     let badArity = (exp, act) =>
       `Bad number of arguments to "${commandName}"; it takes ${exp} but was given ${act}`;
-    let badValue = (i) =>
-      `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
+    let badValue = (i) => {
+      if (args[i] === undefined) return null;
+      return `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
+    }
 
     let commandName = command.doc ? command.doc.name : command.name;
     let pns = command.paramNames; // pns = Parameter NameS

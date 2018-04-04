@@ -62,6 +62,10 @@ class ChromiumDeviceManager extends DeviceManager {
     this.device = new ChromiumDevice();
   }
 
+  startMonitoring() {
+    this.device.open(); // no await
+  }
+
   allDevices() {
     if (!this.device.isConnected) {
       this.device.open(); // no await

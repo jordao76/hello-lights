@@ -14,98 +14,11 @@ describe 'Traffic light commands', () =>
     @ct = new Cancellable
     scope = {}
     @ctx = {@tl, @ct, scope}
-    # validation functions
-    isNumber = (n) -> typeof n is 'number'
-    isNumber.exp = 'a number'
-    @isDirection = (d) -> d is 'left' or d is 'right'
-    @isDirection.exp = '"left" or "right"'
-    # stubbed pause command
-    @pause = sinon.stub()
-    @pause.doc = name: 'pause'
-    @pause.paramNames = ['ms']
-    @pause.validation = [isNumber]
-    # move command
-    @move = sinon.stub()
-    @move.doc = name: 'move'
-    @move.paramNames = ['where']
-    @move.validation = [@isDirection]
-    @commands = {...baseCommands, @move}
-    @commands.pause = @pause # replace baseCommands.pause with the stub
     # parser
-    cp = new CommandParser(@commands)
-    defineCommands(cp); # parse and load "defined" commands
+    cp = new CommandParser()
+    defineCommands(cp); # load "defined" commands
+    @commands = cp.commands
     @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, tl, ct, scope)
-
-  describe 'defining', () => # TODO: belongs to test-base-commands
-
-    it 'define a new command', () =>
-      moveLeft = await @exec 'define moveLeft "Moves left." (move left)'
-      # check metadata
-      moveLeft.doc.name.should.equal 'moveLeft'
-      moveLeft.doc.desc.should.equal 'Moves left.'
-      moveLeft.paramNames.should.deep.equal []
-      # execute
-      await @exec 'moveLeft'
-      @move.calledOnceWith(@ctx, ['left']).should.be.true
-
-    it 'define with a variable', () =>
-      go = await @exec 'define go "Just go." (move :direction)'
-      # check metadata
-      go.doc.name.should.equal 'go'
-      go.doc.desc.should.equal 'Just go.'
-      go.paramNames.should.deep.equal ['direction']
-      #TODO go.validations.should.deep.equal [@isDirection]
-      # execute
-      await @exec 'go left'
-      @move.calledOnceWith(@ctx, ['left']).should.be.true
-
-    it 'define complex command', () =>
-      await @exec 'define left_and_right "Left and right." (run (move left) (pause 50) (move right))'
-      await @exec 'left_and_right'
-      @move.calledTwice.should.be.true
-      @move.calledWith(@ctx, ['left']).should.be.true
-      @move.calledWith(@ctx, ['right']).should.be.true
-      @pause.calledOnceWith(@ctx, [50]).should.be.true
-
-    it 'define complex command with variables', () =>
-      await @exec 'define move_pause_move "Move twice." (run (move :d1) (pause :ms) (move :d2))'
-      await @exec 'move_pause_move right 42 left'
-      @move.calledTwice.should.be.true
-      @move.calledWith(@ctx, ['right']).should.be.true
-      @move.calledWith(@ctx, ['left']).should.be.true
-      @pause.calledOnceWith(@ctx, [42]).should.be.true
-
-    it 'define complex command with shared variables', () =>
-      await @exec 'define move_pause_move_again "Move twice." (run (move :d) (pause :ms) (move :d))'
-      await @exec 'move_pause_move_again right 42'
-      @move.calledTwice.should.be.true
-      @move.getCall(0).calledWith(@ctx, ['right']).should.be.true
-      @move.getCall(1).calledWith(@ctx, ['right']).should.be.true
-      @pause.calledOnceWith(@ctx, [42]).should.be.true
-
-    xit 'define two commands at once, the second uses the first', () =>
-      await @exec '''
-        (define moveLeft
-          "Moves left."
-          (move left))
-        (define moveBack
-          "Moves back."
-          (run
-            (moveLeft) (moveLeft)))
-      '''
-      await @exec 'moveBack'
-      @move.calledTwiceWith(@ctx, ['left']).should.be.true
-
-    describe 'errors', () =>
-
-      it 'define a new command: error in the definition', () =>
-        exec = () => @exec 'define moveUp "Move up the radio." (move up)'
-        exec.should.throw 'Bad value "up" to "move" parameter 1 ("where"); must be: "left" or "right"'
-
-      it 'define a new command: error in the execution', () =>
-        await @exec 'define moveLeft "Move left." (move left)'
-        exec = () => @exec 'moveLeft 40'
-        exec.should.throw 'Bad number of arguments to "moveLeft"; it takes 0 but was given 1'
 
   describe 'lights', () =>
 
