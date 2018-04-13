@@ -3,3 +3,5 @@ web/bundle.js
 src/command-peg-parser.js
 temp
 doc
+.nyc_output
+coverage

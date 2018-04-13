@@ -2,10 +2,12 @@
   "name": "traffic-light-controller",
   "version": "0.0.1",
   "scripts": {
-    "doc": "jsdoc src -r -d doc",
+    "doc": "jsdoc src -r -d doc && opn doc/index.html",
     "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
     "pretest": "npm run peg",
     "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
+    "precoverage": "nyc npm run test",
+    "coverage": "nyc report --reporter=html && opn coverage/index.html",
     "preweb": "npm run peg",
     "web": "browserify web/main.js -o web/bundle.js && opn web/index.html",
     "precli": "npm run peg",
@@ -19,6 +21,7 @@
     "coffeescript": "^2.2.1",
     "jsdoc": "^3.5.5",
     "mocha": "^5.0.1",
+    "nyc": "^11.6.0",
     "opn-cli": "^3.1.0",
     "pegjs": "^0.10.0",
     "puppeteer": "^1.1.0",
@@ -27,5 +30,9 @@
   "dependencies": {
     "node-hid": "^0.7.2",
     "usb-detection": "^2.1.0"
+  },
+  "nyc": {
+    "exclude": ["src/command-peg-parser.js"],
+    "extension": [".cljs"]
   }
 }

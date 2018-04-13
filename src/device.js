@@ -28,6 +28,7 @@ class Device extends EventEmitter {
     this.isConnected = isConnected;
   }
 
+  /* istanbul ignore next */
   /**
    * Turns a light on or off.
    * @abstract
@@ -119,6 +120,7 @@ class DeviceManager extends EventEmitter {
     this.type = type;
   }
 
+  /* istanbul ignore next */
   /**
    * All devices being managed.
    * @abstract
