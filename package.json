@@ -1,6 +1,13 @@
 {
-  "name": "traffic-light-controller",
+  "name": "hello-lights",
   "version": "0.0.1",
+  "description": "Commands to control a traffic light",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jordao76/hello-lights.git"
+  },
+  "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
+  "license": "MIT",
   "scripts": {
     "doc": "jsdoc src -r -d doc && opn doc/index.html",
     "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
@@ -32,7 +39,6 @@
     "usb-detection": "^2.1.0"
   },
   "nyc": {
-    "exclude": ["src/command-peg-parser.js"],
-    "extension": [".cljs"]
+    "exclude": ["src/command-peg-parser.js"]
   }
 }
