@@ -2,6 +2,7 @@ node_modules
 web/bundle.js
 src/command-peg-parser.js
 temp
+lib
 doc
 .nyc_output
 coverage
