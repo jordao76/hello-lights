@@ -44,23 +44,18 @@ function listen() {
     if (!text);
     else if (text === 'cancel') {
       commander.cancel();
-    }
-    else if (text === 'help') {
+    } else if (text === 'help') {
       help();
-    }
-    else if (match = text.match(/^help\s+(\w+)/)) {
+    } else if (match = text.match(/^help\s+(\w+)/)) { // eslint-disable-line no-cond-assign
       help(match[1]);
-    }
-    else if (text === 'exit' || text === 'quit') {
+    } else if (text === 'exit' || text === 'quit') {
       commander.cancel();
       commander.close();
       log('Bye');
       process.exit(0);
-    }
-    else if (text === 'check device') {
+    } else if (text === 'check device') {
       commander.logDevicesInfo();
-    }
-    else {
+    } else {
       commander.run(text);
       return;
     }
@@ -72,7 +67,7 @@ function listen() {
 
 function help(commandName) {
   if (commandName === undefined) {
-    var commandList = commander.commands().map(c=>`    ${c}`);
+    var commandList = commander.commands().map(c => `    ${c}`);
     log([
       `Commands for the traffic light`,
       `> help`,
@@ -84,8 +79,7 @@ function help(commandName) {
       `  available commands:`,
       ...commandList
     ].join('\n'));
-  }
-  else {
+  } else {
     commander.help(commandName);
   }
 }

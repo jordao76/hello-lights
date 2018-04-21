@@ -12,7 +12,7 @@ class CommandParser {
    */
   constructor(commands = baseCommands) {
     // clone base commands
-    this.commands = commands === baseCommands  ? {...commands} : commands;
+    this.commands = commands === baseCommands ? {...commands} : commands;
     this.ct = new Cancellable;
   }
 
@@ -76,7 +76,7 @@ class CommandParser {
    * @param {string} [desc] - Command description.
    * @returns {function} The newly defined command.
    */
-  define(name, command, desc = "") {
+  define(name, command, desc = '') {
     if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
     let newCommand = ({tl, ct, scope = {}}, params = []) => {
@@ -147,8 +147,7 @@ class Generator {
 
       // validate the command arguments
       errors = Validator.collect(command, args);
-    }
-    else {
+    } else {
       // invalid command
       errors = [`Command not found: "${commandName}"`];
     }
@@ -217,7 +216,7 @@ let Validator = {
     let badValue = (i) => {
       if (args[i] === undefined) return null;
       return `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
-    }
+    };
 
     let commandName = command.doc ? command.doc.name : command.name;
     let pns = command.paramNames; // pns = Parameter NameS
@@ -235,6 +234,6 @@ let Validator = {
     return es;
   }
 
-}
+};
 
 module.exports = {CommandParser};

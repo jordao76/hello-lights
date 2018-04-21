@@ -28,23 +28,23 @@ class WebLight extends trafficlight.Light {
 
 window.cancel = function() {
   cp.cancel();
-}
+};
 
 var cp = new CommandParser(); defineCommands(cp);
 window.execute = async function(str, shouldCancel = true) {
-  if (shouldCancel) cancel();
+  if (shouldCancel) window.cancel();
   console.log(`Executing command '${str}'`);
   try {
-    return await cp.execute(str, tl);
+    return await cp.execute(str, window.tl);
   } catch (e) {
     console.error(`Error executing command '${str}'`);
     console.error(e.toString());
   }
-}
+};
 
 window.help = function(commandName) {
   if (commandName === undefined) {
-    var commandList = cp.commandList.map(c=>`    ${c}`);
+    var commandList = cp.commandList.map(c => `    ${c}`);
     console.log([
       `Commands for the traffic light`,
       `> help()`,
@@ -54,27 +54,26 @@ window.help = function(commandName) {
       `  available commands:`,
       ...commandList
     ].join('\n'));
-  }
-  else {
+  } else {
     var command = cp.commands[commandName];
     if (command === undefined) {
-      help();
+      window.help();
       return;
     }
-    let usage = (c) => `${c.doc.name} ${c.paramNames.map(n=>':'+n).join(' ')}`;
+    let usage = (c) => `${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}`;
     console.log([
       usage(command),
       command.doc.desc
     ].join('\n'));
   }
-}
+};
 
 function utter(str) {
   try {
     var synth = window.speechSynthesis;
     var utterance = new SpeechSynthesisUtterance(str);
     synth.speak(utterance);
-  } catch(e) {}
+  } catch (e) {}
 }
 
 ///////////////
@@ -83,10 +82,10 @@ async function main() {
   var r = new WebLight('#tl > .red');
   var y = new WebLight('#tl > .yellow');
   var g = new WebLight('#tl > .green');
-  window.tl = new trafficlight.TrafficLight(r,y,g);
-  help();
-  utter("Open the java script console");
-  execute('danger');
+  window.tl = new trafficlight.TrafficLight(r, y, g);
+  window.help();
+  utter('Open the java script console');
+  window.execute('danger');
 }
 
 if (document.readyState !== 'loading') {

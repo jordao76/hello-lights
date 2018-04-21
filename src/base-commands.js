@@ -25,7 +25,7 @@ let each = vf => {
   let v = a => Array.isArray(a) && a.every(e => vf(e));
   v.exp = `each is ${vf.exp}`;
   return v;
-}
+};
 
 //////////////////////////////////////////////////////////////////////////////
 // Every command takes 2 parameters:
@@ -70,7 +70,7 @@ define.doc = {
   desc: 'Defines a new command, where variables become parameters:\n' +
         '(define burst "Burst of light" (twinkle :light 50))'
 };
-define.paramNames = ["name", "desc", "command"];
+define.paramNames = ['name', 'desc', 'command'];
 define.validation = [isIdentifier, isString, isCommand];
 define.usesParser = true; // receives the cp (command parser) parameter
 
@@ -90,7 +90,7 @@ function pause(ctx, params) {
     let timeoutID = setTimeout(() => {
       ct.del(timeoutID);
       resolve();
-    }, ms)
+    }, ms);
     ct.add(timeoutID, resolve);
   });
 }
@@ -119,7 +119,7 @@ async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
   }
   return res;
 }
-timeout.paramNames = ["ms", "command"];
+timeout.paramNames = ['ms', 'command'];
 timeout.validation = [isPeriod, isCommand];
 timeout.doc = {
   name: 'timeout',
@@ -137,7 +137,7 @@ async function run({tl, ct = cancellable, scope = {}}, [commands]) {
   }
 }
 run.transformation = args => [args];
-run.paramNames = ["commands"];
+run.paramNames = ['commands'];
 run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
@@ -154,7 +154,7 @@ async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
   }
 }
 loop.transformation = args => [args];
-loop.paramNames = ["commands"];
+loop.paramNames = ['commands'];
 loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
@@ -171,7 +171,7 @@ async function repeat({tl, ct = cancellable, scope = {}}, [times, commands]) {
   }
 }
 repeat.transformation = args => [args[0], args.slice(1)];
-repeat.paramNames = ["times", "commands"];
+repeat.paramNames = ['times', 'commands'];
 repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
@@ -190,7 +190,7 @@ async function all({tl, ct = cancellable, scope = {}}, [commands]) {
   }));
 }
 all.transformation = args => [args];
-all.paramNames = ["commands"];
+all.paramNames = ['commands'];
 all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
@@ -206,7 +206,7 @@ let Easing = {
   linear: t => t,
   easeIn: t => t*t,
   easeOut: t => t*(2-t),
-  easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t
+  easeInOut: t => t<0.5 ? 2*t*t : -1+(4-2*t)*t
 };
 
 let isEasing = e => !!Easing[e];
@@ -237,7 +237,7 @@ async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from,
     await timeout({tl, ct, scope}, [max, command]);
   }
 }
-ease.paramNames = ["easing", "ms", "what", "from", "to", "command"];
+ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
 ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
 ease.doc = {
   name: 'ease',
@@ -280,7 +280,7 @@ function toggle({tl, ct = cancellable}, [light]) {
   if (ct.isCancelled) return;
   tl[light].toggle();
 }
-toggle.paramNames = ["light"];
+toggle.paramNames = ['light'];
 toggle.validation = [isLight];
 toggle.doc = {
   name: 'toggle',
@@ -293,7 +293,7 @@ function turn({tl, ct = cancellable}, [light, on]) {
   if (ct.isCancelled) return;
   turnLight(tl[light], on);
 }
-turn.paramNames = ["light", "state"];
+turn.paramNames = ['light', 'state'];
 turn.validation = [isLight, isState];
 turn.doc = {
   name: 'turn',

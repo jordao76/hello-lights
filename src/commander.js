@@ -159,8 +159,7 @@ class Commander {
     if (tl.device.isConnected) {
       this.suspended = null;
       log(`device ${sn}: finished '${command}'`);
-    }
-    else {
+    } else {
       this.suspended = command;
       log(`device ${sn}: disconnected, suspending '${command}'`);
     }

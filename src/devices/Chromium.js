@@ -37,7 +37,7 @@ class ChromiumDevice extends Device {
     try {
       await this.page.evaluate(
         (light, change) => {
-          document.getElementById(light).classList[change]('on')
+          document.getElementById(light).classList[change]('on');
         },
         light, change
       );

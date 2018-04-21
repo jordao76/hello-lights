@@ -45,7 +45,7 @@ class Cancellable {
    */
   cancel() {
     this.isCancelled = true;
-    for (let [_, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
+    for (let [, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
       this.del(timeoutID);
       clearTimeout(timeoutID);
       resolve();

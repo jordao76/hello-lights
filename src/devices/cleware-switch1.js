@@ -27,7 +27,7 @@ class ClewareSwitch1Device extends Device {
     if (!this.isConnected) return;
     try {
       this.hid.write([0, 0, 0x10 + lightID, onOff]);
-    } catch(e) {
+    } catch (e) {
       this.disconnect();
     }
   }
@@ -107,5 +107,5 @@ let Manager = new ClewareSwitch1DeviceManager();
 module.exports = {
   ClewareSwitch1DeviceManager,
   ClewareSwitch1Device,
-  Manager,
+  Manager
 };
