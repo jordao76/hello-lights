@@ -22,7 +22,7 @@
     "precli": "npm run peg",
     "cli": "node cli/main.js",
     "precli-browser": "npm run peg",
-    "cli-browser": "node cli/main.js Chromium",
+    "cli-browser": "node cli/main.js ./chromium",
     "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents"
   },
   "devDependencies": {

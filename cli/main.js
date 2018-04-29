@@ -1,7 +1,7 @@
 // 🚦
 
-let device = process.argv[2] || 'cleware-switch1';
-let {Manager} = require('../src/devices/' + device);
+let device = process.argv[2] || '../src/devices/cleware-switch1';
+let {Manager} = require(device);
 let {Commander} = require('../src/commander');
 
 ///////////////

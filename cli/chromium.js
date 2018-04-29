@@ -1,4 +1,4 @@
-let {Device, DeviceManager} = require('../device');
+let {Device, DeviceManager} = require('../src/device');
 let puppeteer = require('puppeteer');
 let path = require('path');
 
@@ -19,7 +19,7 @@ class ChromiumDevice extends Device {
         '--no-sandbox',
         '--disable-infobars', // https://chromium.googlesource.com/chromium/src/+/d869ab3350d8ebd95222b4a47adf87ce3d3214b1
         '--window-size=250,675',
-        'file://'+path.resolve('./src/devices/chromium-page/index.html')
+        'file://'+path.resolve('./cli/chromium-page/index.html')
       ]
     });
     this.serialNum = this.browser.wsEndpoint();
