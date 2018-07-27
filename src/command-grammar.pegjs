@@ -1,5 +1,5 @@
 Start
-  =       _ command:Command _       { return [command]; }
+  = _ command:Command _ { return [command]; }
   / Commands
 
 Commands

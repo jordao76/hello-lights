@@ -26,22 +26,22 @@
     "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents"
   },
   "devDependencies": {
-    "browserify": "^16.1.0",
+    "browserify": "^16.2.2",
     "chai": "^4.1.2",
-    "coffeescript": "^2.2.1",
-    "cpy-cli": "^1.0.1",
-    "eslint": "^4.19.1",
+    "coffeescript": "^2.3.1",
+    "cpy-cli": "^2.0.0",
+    "eslint": "^5.2.0",
     "jsdoc": "^3.5.5",
-    "mocha": "^5.0.1",
-    "nyc": "^11.6.0",
+    "mocha": "^5.2.0",
+    "nyc": "^13.0.1",
     "opn-cli": "^3.1.0",
     "pegjs": "^0.10.0",
-    "puppeteer": "^1.1.0",
-    "sinon": "^4.3.0"
+    "puppeteer": "^1.6.1",
+    "sinon": "^6.1.4"
   },
   "dependencies": {
-    "node-hid": "^0.7.2",
-    "usb-detection": "^2.1.0"
+    "node-hid": "^0.7.3",
+    "usb-detection": "^3.2.0"
   },
   "nyc": {
     "exclude": [

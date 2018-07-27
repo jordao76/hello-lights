@@ -31,9 +31,9 @@ class Light {
 class TrafficLight {
 
   /**
-   * @param {Light} red - Red light.
-   * @param {Light} yellow - Yellow light.
-   * @param {Light} green - Green light.
+   * @param {Light} [red] - Red light.
+   * @param {Light} [yellow] - Yellow light.
+   * @param {Light} [green] - Green light.
    */
   constructor(red, yellow, green) {
     /** The red light.
