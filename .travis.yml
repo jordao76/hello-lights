@@ -13,5 +13,8 @@ script:
 addons:
   apt:
     packages:
-      - libstdc++6
       - gcc-4.8
+      - libstdc++6
+      - libusb-1.0-0
+      - libusb-1.0-0-dev
+      - libudev-dev
