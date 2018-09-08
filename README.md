@@ -26,7 +26,7 @@ const {Commander} = require('hello-lights');
 let commander = new Commander();
 
 // keeps flashing the red light in 400ms intervals
-commander.run(`twinkle red 400`);
+commander.run('twinkle red 400');
 ```
 
 ## Commands
@@ -71,6 +71,12 @@ Flashes all lights together forever:
 
 ### heartbeat :light
 Heartbeat pattern: `heartbeat red`
+
+### pulse :light
+Single pulse pattern: `pulse red`
+
+### count :times :light
+Count a number of times repeatedly: `count 7 red`
 
 ### sos :light
 SOS distress signal morse code pattern:

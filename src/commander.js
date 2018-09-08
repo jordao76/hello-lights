@@ -58,6 +58,7 @@ class Commander {
 
   /**
    * Called to close this instance and to stop monitoring for devices.
+   * Should be done as the last operation before exiting the process.
    * @see DeviceManager#stopMonitoring
    */
   close() {

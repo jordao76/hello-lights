@@ -69,6 +69,24 @@
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
+(define pulse
+  "Single pulse pattern: (pulse red)"
+  (loop
+    (turn :light on)
+    (pause 300)
+    (turn :light off)
+    (pause 1500)))
+
+;`);cp.execute(`;-----------------------------------------------------------
+
+(define count
+  "Count a number of times repeatedly: (count 7 red)"
+  (loop
+    (blink :times :light 200)
+    (pause 800)))
+
+;`);cp.execute(`;-----------------------------------------------------------
+
 (define sos
   "SOS distress signal morse code pattern:
   (sos red)"
