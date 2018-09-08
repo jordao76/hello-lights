@@ -4,7 +4,7 @@ let EventEmitter = require('events');
 ///////////////
 
 /**
- * A physical device that can turn lights on of off.
+ * A physical device that can turn lights on or off.
  * @abstract
  */
 class Device extends EventEmitter {

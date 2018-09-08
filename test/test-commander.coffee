@@ -28,16 +28,22 @@ describe 'Commander', () =>
     beforeEach () =>
       @device = new Device('999999', true)
       @device.turn = sinon.stub() # abstract in Device
-      @manager.allDevices.returns [@device]
+      @device2 = new Device('888888', false) # device 2 is not connected
+      @device2.turn = sinon.stub() # abstract in Device
+      @manager.allDevices.returns [@device, @device2]
 
     describe 'devices info', () =>
 
       it 'devicesInfo', () =>
-        @cm.devicesInfo().should.deep.equal [{ type: 'stub', serialNum: '999999', status: 'connected' }]
+        @cm.devicesInfo().should.deep.equal [
+          { type: 'stub', serialNum: '999999', status: 'connected' }
+          { type: 'stub', serialNum: '888888', status: 'disconnected' }
+        ]
 
       it 'logDevicesInfo', () =>
         @cm.logDevicesInfo()
-        @logger.log.calledOnceWith('device 999999: connected').should.be.true
+        @logger.log.calledWith('device 999999: connected').should.be.true
+        @logger.log.calledWith('device 888888: disconnected').should.be.true
 
     describe 'run', () =>
 
@@ -168,7 +174,22 @@ describe 'Commander', () =>
                 sinon.assert.calledWith(@logger.log, "device 999999: connected")
                 done()
 
-    xdescribe 'disconnect and connect another device', () =>
+    describe 'disconnect and connect another device', () =>
+
+      it 'resumes the running command after disconnection in another device', (done) =>
+        @cm.run('infinite command')
+        yieldThen () =>
+          sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
+          @device.disconnect()
+          @resolve()
+          yieldThen () =>
+            sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
+            @device2.connect() # connect device 2
+            @manager.emit('added')
+            yieldThen () =>
+              @parser.execute.callCount.should.equal 2
+              sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
+              done()
 
   describe 'no device', () =>
 
