@@ -181,7 +181,7 @@ class Commander {
   }
 
   async _trafficLight() {
-    let device = await this.manager.firstConnectedDevice();
+    let device = await this.manager.firstAvailableDevice();
     if (!device) return null;
     this._registerDeviceIfNeeded(device);
     return device.trafficLight();

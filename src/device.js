@@ -104,6 +104,14 @@ class Device extends EventEmitter {
   }
 
   /**
+   * If the device is available: connected and not checked-out.
+   * @type {boolean}
+   */
+  get isAvailable() {
+    return this.isConnected && !this.isCheckedOut;
+  }
+
+  /**
    * Registers a callback to the connected event.
    * @param {function} cb - Callback to register.
    */
@@ -156,33 +164,23 @@ class DeviceManager extends EventEmitter {
   }
 
   /**
-   * All connected devices.
-   * @return {Device[]} Connected devices.
+   * All available devices: connected and not checked-out.
+   * @return {Device[]} Available devices.
    */
-  connectedDevices() {
+  availableDevices() {
     return this.allDevices()
-      .filter(device => device.isConnected);
+      .filter(device => device.isAvailable);
   }
 
   /**
-   * The first connected device.
-   * @return {Device} The first connected device, or null if there isn't one.
+   * The first available device: connected and not checked-out.
+   * @return {Device} The first available device, or null if there isn't one.
+   * @deprecated
    */
-  firstConnectedDevice() {
-    let connectedDevices = this.connectedDevices();
-    if (connectedDevices.length === 0) return null;
-    return connectedDevices[0];
-  }
-
-  /**
-   * The first traffic light associated with the first connected device.
-   * @returns {PhysicalTrafficLight} The physical traffic light associated
-   *   with the first connected device.
-   */
-  firstConnectedTrafficLight() {
-    let device = this.firstConnectedDevice();
-    if (!device) return null;
-    return device.trafficLight();
+  firstAvailableDevice() {
+    let availableDevices = this.availableDevices();
+    if (availableDevices.length === 0) return null;
+    return availableDevices[0];
   }
 
 }
