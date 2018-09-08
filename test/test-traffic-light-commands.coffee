@@ -100,6 +100,20 @@ describe 'Traffic light commands', () =>
       @commands.heartbeat.doc.desc.should.contain 'Heartbeat pattern'
       @commands.heartbeat.paramNames.should.deep.equal ['light']
 
+  describe 'pulse', () =>
+
+    it 'check the metadata', () =>
+      @commands.pulse.doc.name.should.equal 'pulse'
+      @commands.pulse.doc.desc.should.contain 'Single pulse pattern'
+      @commands.pulse.paramNames.should.deep.equal ['light']
+
+  describe 'count', () =>
+
+    it 'check the metadata', () =>
+      @commands.count.doc.name.should.equal 'count'
+      @commands.count.doc.desc.should.contain 'Count a number of times repeatedly'
+      @commands.count.paramNames.should.deep.equal ['times', 'light']
+
   describe 'sos', () =>
 
     it 'check the metadata', () =>
