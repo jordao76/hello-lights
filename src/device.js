@@ -26,6 +26,11 @@ class Device extends EventEmitter {
      * @type {boolean}
      */
     this.isConnected = isConnected;
+    /**
+     * If the device is checked-out or reserved.
+     * @type {boolean}
+     */
+    this.isCheckedOut = false;
   }
 
   /* istanbul ignore next */
@@ -76,6 +81,26 @@ class Device extends EventEmitter {
      * @event Device#disconnected
      */
     this.emit('disconnected');
+  }
+
+  /**
+   * Checks-out or reserve the device for exclusive usage, making it
+   * unavailable for other users.
+   * @see checkIn
+   * @returns {boolean} True if the device was successfully checked out.
+   *   False if the device was already checked out.
+   */
+  checkOut() {
+    if (this.isCheckedOut) return false;
+    return this.isCheckedOut = true;
+  }
+
+  /**
+   * Checks-in the device, making it available for checking out again.
+   * @see checkOut
+   */
+  checkIn() {
+    this.isCheckedOut = false;
   }
 
   /**
