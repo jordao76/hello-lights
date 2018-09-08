@@ -34,9 +34,11 @@ let Logger = {
 class Commander {
 
   /**
-   * Creates a new Commander instance. Only one is needed to control a
-   * traffic light. Right away starts monitoring for devices.
-   * Uses the first connected traffic light to issue commands.
+   * Creates a new Commander instance.
+   * Checks-out and uses the first available traffic light to issue commands.
+   * An available traffic light is a connected traffic light that hasn't
+   * been checked-out by another Commander instance.
+   * (Technically it's the device that gets checked-out/in.)
    * @see DeviceManager#startMonitoring
    * @param {Object} [options] - Commander options.
    * @param {Object} [options.logger] - A Console-like object for logging, with
@@ -111,7 +113,7 @@ class Commander {
    *   before executing the command.
    */
   async run(command, reset = false) {
-    let tl = await this._trafficLight();
+    let tl = await this._resolveTrafficLight();
     if (!tl) {
       this.suspended = command;
       this.logger.log(`no device available to run '${command}'`);
@@ -180,9 +182,12 @@ class Commander {
     this.run(command, true); // no await
   }
 
-  async _trafficLight() {
+  async _resolveTrafficLight() {
+    if (this._device) return this._device.trafficLight();
     let device = await this.manager.firstAvailableDevice();
     if (!device) return null;
+    this._device = device;
+    device.checkOut();
     this._registerDeviceIfNeeded(device);
     return device.trafficLight();
   }
@@ -191,11 +196,12 @@ class Commander {
     let sn = device.serialNum;
     if (this.devicesBySerialNum[sn]) return;
     this.devicesBySerialNum[sn] = device;
-    device.onConnected(() => {
-      device.trafficLight().sync(); // no await
-      this.logger.log(`device ${sn}: connected`);
+    device.onDisconnected(() => {
+      if (this._device !== device) return;
+      device.checkIn();
+      this._device = null;
+      this.cancel();
     });
-    device.onDisconnected(() => this.cancel());
   }
 
   /**

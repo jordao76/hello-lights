@@ -50,8 +50,9 @@ describe 'Cleware Switch1 device', ->
     it 'does NOT turn disconnected device', ->
       @HID_HID_write.throws()
       @device.disconnect()
+      currentCount = @HID_HID_write.callCount
       await @device.turn(GREEN, ON)
-      @HID_HID_write.callCount.should.equal 0
+      @HID_HID_write.callCount.should.equal currentCount # not increased
 
     it 'detects disconnected device reconnection when refreshing devices', ->
       @device.disconnect()

@@ -43,16 +43,24 @@ let usbDetect = require('usb-detection');
 class ClewareSwitch1DeviceManager extends DeviceManager {
 
   startMonitoring() {
-    usbDetect.startMonitoring();
+    if (this._monitoringCount === 0) {
+      usbDetect.startMonitoring();
+    }
+    ++this._monitoringCount;
   }
 
   stopMonitoring() {
-    usbDetect.stopMonitoring();
+    if (this._monitoringCount === 0) return;
+    --this._monitoringCount;
+    if (this._monitoringCount === 0) {
+      usbDetect.stopMonitoring();
+    }
   }
 
   constructor() {
     super('cleware-switch1');
     this._devicesBySerialNum = {}; // devices keyed by their serial numbers
+    this._monitoringCount = 0;
 
     this.refreshDevices();
     usbDetect.on(`add:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {

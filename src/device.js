@@ -62,6 +62,7 @@ class Device extends EventEmitter {
   connect() {
     if (this.isConnected) return;
     this.isConnected = true;
+    this.trafficLight().sync();
     /**
      * Connected event.
      * @event Device#connected

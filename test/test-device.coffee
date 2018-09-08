@@ -1,10 +1,12 @@
 {Device} = require '../src/device'
 require('chai').should()
+sinon = require('sinon')
 
 describe 'Device', ->
 
   createDevice = (connected) ->
     @device = new Device('1', connected) # 1 is the Serial Number
+    @device.turn = sinon.stub()
     @onConnectedCalled = false
     @onDisconnectedCalled = false
     @device.onConnected () => @onConnectedCalled = true

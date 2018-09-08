@@ -42,7 +42,6 @@ describe 'Commander', () =>
 
       it 'logDevicesInfo', () =>
         @cm.logDevicesInfo()
-        @logger.log.calledWith('device 999999: connected').should.be.true
         @logger.log.calledWith('device 888888: disconnected').should.be.true
 
     describe 'run', () =>
@@ -133,7 +132,6 @@ describe 'Commander', () =>
             @manager.emit('added')
             yieldThen () =>
               @parser.execute.callCount.should.equal 2
-              sinon.assert.calledWith(@logger.log, "device 999999: connected")
               sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
               done()
 
@@ -150,7 +148,6 @@ describe 'Commander', () =>
             @device.connect() # reconnect
             @manager.emit('add')
             yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: connected")
               @device.turn.callCount.should.equal 4 # called again for each light
               sinon.assert.calledWith(@device.turn, 0, 0) # red off
               sinon.assert.calledWith(@device.turn, 1, 1) # yellow on
@@ -171,7 +168,6 @@ describe 'Commander', () =>
               @manager.emit('add')
               yieldThen () =>
                 @parser.execute.callCount.should.equal 1
-                sinon.assert.calledWith(@logger.log, "device 999999: connected")
                 done()
 
     describe 'disconnect and connect another device', () =>
