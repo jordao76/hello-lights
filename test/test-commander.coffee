@@ -28,23 +28,26 @@ describe 'Commander', () =>
     beforeEach () =>
       @device = new Device('999999', true)
       @device.turn = sinon.stub() # abstract in Device
-      @device2 = new Device('888888', false) # device 2 is not connected
-      @device2.turn = sinon.stub() # abstract in Device
-      @manager.allDevices.returns [@device, @device2]
+      @manager.allDevices.returns [@device]
 
     describe 'devices info', () =>
 
       it 'devicesInfo', () =>
         @cm.devicesInfo().should.deep.equal [
           { type: 'stub', serialNum: '999999', status: 'connected' }
-          { type: 'stub', serialNum: '888888', status: 'disconnected' }
         ]
 
       it 'logDevicesInfo', () =>
         @cm.logDevicesInfo()
-        @logger.log.calledWith('device 888888: disconnected').should.be.true
+        @logger.log.calledWith('device 999999: connected').should.be.true
 
     describe 'run', () =>
+
+      it 'checks out the device', () =>
+        @device.isCheckedOut.should.be.false
+        @cm.run('infinite command')
+        yieldThen () =>
+          @device.isCheckedOut.should.be.true
 
       it 'if no command is running, run it (fast command)', (done) =>
         @cm.run('fast command')
@@ -109,6 +112,17 @@ describe 'Commander', () =>
               sinon.assert.calledWith(@logger.log, "device 999999: finished 'fast command'")
               done()
 
+      it 'checks in the device when disconnected', (done) =>
+        @cm.run('infinite command')
+        yieldThen () =>
+          @device.isCheckedOut.should.be.true
+          @device.disconnect()
+          yieldThen () =>
+            @resolve()
+            yieldThen () =>
+              @device.isCheckedOut.should.be.false
+              done()
+
       it 'cancels and suspends the command when disconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
@@ -126,14 +140,15 @@ describe 'Commander', () =>
         @cm.run('infinite command')
         yieldThen () =>
           @device.disconnect()
-          @resolve()
           yieldThen () =>
-            @device.connect() # reconnect
-            @manager.emit('added')
+            @resolve()
             yieldThen () =>
-              @parser.execute.callCount.should.equal 2
-              sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
-              done()
+              @device.connect() # reconnect
+              @manager.emit('added')
+              yieldThen () =>
+                @parser.execute.callCount.should.equal 2
+                sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
+                done()
 
       it 'reinstates the traffic light state when reconnected if not running a command', (done) =>
         @cm.run('fast command')
@@ -170,22 +185,69 @@ describe 'Commander', () =>
                 @parser.execute.callCount.should.equal 1
                 done()
 
+    describe 'multiple Commanders competing for a device', () =>
+
+      beforeEach () =>
+        @parser2 =
+          execute: sinon.stub().returns new Promise (resolve, reject) =>
+            @resolve2 = resolve
+            @reject2 = reject
+          cancel: sinon.stub()
+        @logger2 =
+          log: sinon.stub()
+          error: sinon.stub()
+        @cm2 = new Commander {parser: @parser2, @manager, logger: @logger2}
+
+      it 'second commander should NOT run', (done) =>
+        @cm.run('infinite command')
+        @cm2.run('infinite command')
+        yieldThen () =>
+          @parser.execute.callCount.should.equal 1
+          @parser2.execute.callCount.should.equal 0 # commander 2 not executed
+          done()
+
+      it 'only one Commander executes when the device is reconnected', (done) =>
+        @cm.run('infinite command')
+        @cm2.run('infinite command')
+        yieldThen () =>
+          @device.disconnect()
+          yieldThen () =>
+            @resolve()
+            yieldThen () =>
+              @device.connect() # reconnect
+              @manager.emit('added')
+              yieldThen () =>
+                # one of the Commanders should take control of the device
+                if @cm._device
+                  @parser.execute.callCount.should.equal 2
+                  @parser2.execute.callCount.should.equal 0
+                else
+                  @parser.execute.callCount.should.equal 1
+                  @parser2.execute.callCount.should.equal 1
+                done()
+
     describe 'disconnect and connect another device', () =>
+
+      beforeEach () =>
+        @device2 = new Device('888888', false) # device 2 is not connected
+        @device2.turn = sinon.stub() # abstract in Device
+        @manager.allDevices.returns [@device, @device2]
 
       it 'resumes the running command after disconnection in another device', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
           sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
           @device.disconnect()
-          @resolve()
           yieldThen () =>
-            sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
-            @device2.connect() # connect device 2
-            @manager.emit('added')
+            @resolve()
             yieldThen () =>
-              @parser.execute.callCount.should.equal 2
-              sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
-              done()
+              sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
+              @device2.connect() # connect device 2
+              @manager.emit('added')
+              yieldThen () =>
+                @parser.execute.callCount.should.equal 2
+                sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
+                done()
 
   describe 'no device', () =>
 

@@ -15,6 +15,7 @@
     "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
     "pretest": "npm run peg",
     "test": "mocha --require coffeescript/register \"test/**/*.coffee\"",
+    "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "precoverage": "nyc npm run test",
     "coverage": "nyc report --reporter=html && opn coverage/index.html",
     "preweb": "npm run peg",

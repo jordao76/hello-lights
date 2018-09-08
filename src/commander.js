@@ -185,9 +185,8 @@ class Commander {
   async _resolveTrafficLight() {
     if (this._device) return this._device.trafficLight();
     let device = await this.manager.firstAvailableDevice();
-    if (!device) return null;
+    if (!device || !device.checkOut()) return null;
     this._device = device;
-    device.checkOut();
     this._registerDeviceIfNeeded(device);
     return device.trafficLight();
   }
