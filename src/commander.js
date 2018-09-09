@@ -89,8 +89,14 @@ class Commander {
    * @see Commander#devicesInfo
    */
   logDevicesInfo() {
-    this.devicesInfo().forEach(info =>
-      this.logger.log(`device ${info.serialNum}: ${info.status}`));
+    let devicesInfo = this.devicesInfo();
+    if (devicesInfo.length === 0) {
+      this.logger.log('No devices found');
+    } else {
+      this.logger.log('Known devices:');
+      devicesInfo.forEach(info =>
+        this.logger.log(`device ${info.serialNum}: ${info.status}`));
+    }
   }
 
   /**
@@ -215,12 +221,14 @@ class Commander {
   /**
    * Logs the help info for the given command name.
    * @param {string} commandName - Name of the command to log help info.
-   *   If it's not one of the supported commands, does nothing.
-   *   @see Commander#commands
+   * @see Commander#commands
    */
   help(commandName) {
     let command = this.parser.commands[commandName];
-    if (!command) return;
+    if (!command) {
+      this.logger.error(`Command not found: "${commandName}"`);
+      return;
+    }
     let paramNames = command.paramNames, params = '';
     if (paramNames && paramNames.length > 0) {
       params = ' ' + paramNames.map(n => ':' + n).join(' ');

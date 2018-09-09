@@ -12,9 +12,11 @@ let reset = '\x1b[0m';
 let logger = {
   log: (...args) => {
     console.log(blue, ...args, reset);
+    prompt();
   },
   error: (...args) => {
     console.error(red, ...args, reset);
+    prompt();
   }
 };
 
@@ -41,12 +43,14 @@ function listen() {
   process.stdin.on('data', async (text) => {
     text = text.trim();
     let match;
-    if (!text);
-    else if (text === 'cancel') {
+    if (!text) {
+      prompt();
+    } else if (text === 'cancel') {
       commander.cancel();
+      prompt();
     } else if (text === 'help') {
       help();
-    } else if (match = text.match(/^help\s+(\w+)/)) { // eslint-disable-line no-cond-assign
+    } else if (match = text.match(/^help\s+(.+)/)) { // eslint-disable-line no-cond-assign
       help(match[1]);
     } else if (text === 'exit' || text === 'quit') {
       commander.cancel();
@@ -57,9 +61,8 @@ function listen() {
       commander.logDevicesInfo();
     } else {
       commander.run(text);
-      return;
+      prompt();
     }
-    prompt();
   });
 }
 
@@ -79,6 +82,7 @@ function help(commandName) {
       `  available commands:`,
       ...commandList
     ].join('\n'));
+    prompt();
   } else {
     commander.help(commandName);
   }
@@ -89,7 +93,6 @@ function help(commandName) {
 function main() {
   help();
   listen();
-  prompt();
 }
 
 ///////////////
