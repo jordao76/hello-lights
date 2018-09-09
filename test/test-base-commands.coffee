@@ -112,13 +112,13 @@ describe 'Commands', () =>
       @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, tl, ct, scope)
 
     it 'define a new command', () =>
-      moveLeft = await @exec 'define moveLeft "Moves left." (move left)'
+      moveLeft = await @exec 'define move-left "Moves left." (move left)'
       # check metadata
-      moveLeft.doc.name.should.equal 'moveLeft'
+      moveLeft.doc.name.should.equal 'move-left'
       moveLeft.doc.desc.should.equal 'Moves left.'
       moveLeft.paramNames.should.deep.equal []
       # execute
-      await @exec 'moveLeft'
+      await @exec 'move-left'
       @move.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define with a variable', () =>
@@ -133,24 +133,24 @@ describe 'Commands', () =>
       @move.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define complex command', () =>
-      await @exec 'define left_and_right "Left and right." (run (move left) (pause 50) (move right))'
-      await @exec 'left_and_right'
+      await @exec 'define left-and-right "Left and right." (run (move left) (pause 50) (move right))'
+      await @exec 'left-and-right'
       @move.calledTwice.should.be.true
       @move.calledWith(@ctx, ['left']).should.be.true
       @move.calledWith(@ctx, ['right']).should.be.true
       @pause.calledOnceWith(@ctx, [50]).should.be.true
 
     it 'define complex command with variables', () =>
-      await @exec 'define move_pause_move "Move twice." (run (move :d1) (pause :ms) (move :d2))'
-      await @exec 'move_pause_move right 42 left'
+      await @exec 'define move-pause-move "Move twice." (run (move :d1) (pause :ms) (move :d2))'
+      await @exec 'move-pause-move right 42 left'
       @move.calledTwice.should.be.true
       @move.calledWith(@ctx, ['right']).should.be.true
       @move.calledWith(@ctx, ['left']).should.be.true
       @pause.calledOnceWith(@ctx, [42]).should.be.true
 
     it 'define complex command with shared variables', () =>
-      await @exec 'define move_pause_move_again "Move twice." (run (move :d) (pause :ms) (move :d))'
-      await @exec 'move_pause_move_again right 42'
+      await @exec 'define move-pause-move-again "Move twice." (run (move :d) (pause :ms) (move :d))'
+      await @exec 'move-pause-move-again right 42'
       @move.calledTwice.should.be.true
       @move.getCall(0).calledWith(@ctx, ['right']).should.be.true
       @move.getCall(1).calledWith(@ctx, ['right']).should.be.true
@@ -159,17 +159,17 @@ describe 'Commands', () =>
     it 'define two commands at once, the second uses the first', () =>
       await @exec '''
 
-        (define moveLeft
+        (define move-left
           "Moves left."
           (move left))
 
-        (define moveBack
+        (define move-back
           "Moves back."
           (run
-            (moveLeft) (moveLeft)))
+            (move-left) (move-left)))
 
       '''
-      await @exec 'moveBack'
+      await @exec 'move-back'
       sinon.assert.calledTwice(@move)
       sinon.assert.calledWith(@move, @ctx, ['left'])
 
@@ -177,11 +177,11 @@ describe 'Commands', () =>
 
       it 'define a new command: error in the definition', () =>
         msg = 'Bad value "up" to "move" parameter 1 ("where"); must be: "left" or "right"'
-        @exec('define moveUp "Move up." (move up)').catch (e) =>
+        @exec('define move-up "Move up." (move up)').catch (e) =>
           e.message.should.equal msg
 
       it 'define a new command: error in the execution', () =>
-        await @exec('define moveLeft "Move left." (move left)')
-        msg = 'Bad number of arguments to "moveLeft"; it takes 0 but was given 1'
-        @exec('moveLeft 40').catch (e) =>
+        await @exec('define move-left "Move left." (move left)')
+        msg = 'Bad number of arguments to "move-left"; it takes 0 but was given 1'
+        @exec('move-left 40').catch (e) =>
           e.message.should.equal msg

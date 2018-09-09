@@ -8,7 +8,7 @@
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
-let isIdentifier = s => /^[a-z_][a-z_0-9]*$/i.test(s);
+let isIdentifier = s => /^[a-z_][a-z_0-9-]*$/i.test(s);
 isIdentifier.exp = 'a valid identifier';
 
 let isString = s => typeof s === 'string';
