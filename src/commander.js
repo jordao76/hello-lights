@@ -101,7 +101,7 @@ class Commander {
   }
 
   /**
-   * Executes a command.
+   * Executes a command asynchronously.
    * If the same command is already running, does nothing.
    * If another command is running, cancels it, resets the traffic light,
    * and runs the new command.
