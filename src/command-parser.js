@@ -86,6 +86,7 @@ class CommandParser {
     };
     newCommand.doc = {name, desc};
     newCommand.paramNames = paramNames;
+    newCommand.toString = () => `'${name}' command`;
     return this.commands[name] = newCommand;
   }
 
@@ -174,6 +175,7 @@ class Generator {
     //   'pause' will have [l1, ms]
     //   the second 'toggle' will have [l1, ms, l2]
     res.paramNames = this.variables; // variables become parameter names
+    res.toString = () => `'${commandName}' command`;
     return res;
   }
 
