@@ -148,6 +148,7 @@ run.doc = {
 //////////////////////////////////////////////////////////////////////////////
 
 async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
+  if (!commands || commands.length === 0) return;
   while (true) {
     if (ct.isCancelled) return;
     await run({tl, ct, scope}, [commands]);
