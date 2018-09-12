@@ -1,13 +1,42 @@
-.traffic-light {
-  background-color: #222;
-  border: 5px solid black;
-  margin-right: 2px;
-  width: 190px;
-  height: 520px;
-  float: left;
-  box-shadow: 0 0 5px rgba(0,0,0,.8);
+@import url(https://fonts.googleapis.com/css?family=Roboto);
+
+body {
+  font: 18px 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: whitesmoke;
 }
 
+.container {
+  display: grid;
+  grid-template-columns: auto 200px 450px auto;
+  grid-template-rows: auto 530px auto auto auto auto;
+  grid-template-areas:
+    ". header header ."
+    ". tl command ."
+    ". toolbar toolbar ."
+    ". messages messages ."
+    ". help help ."
+    ". footer footer .";
+}
+
+.header {
+  grid-area: header;
+  text-align: center;
+  background: #afafaf;
+  border-radius: 7px 7px 0px 0px;
+}
+
+.traffic-light {
+  grid-area: tl;
+  background-color: #222;
+  border: 5px solid black;
+  width: 190px;
+  height: 520px;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
 .light {
   border-radius: 50%;
   width: 130px;
@@ -20,7 +49,84 @@
 .on {
   opacity: 1;
 }
-
 .red { background-color: red; }
 .yellow { background-color: gold; }
 .green { background-color: #0f5; }
+
+.command {
+  grid-area: command;
+  background: #1f1f1f;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.toolbar {
+  grid-area: toolbar;
+  border-radius: 0px 0px 7px 7px;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.help {
+  grid-area: help;
+}
+
+textarea {
+  width: 95%;
+  height: 505px;
+  resize: none;
+  border: 0;
+  margin: 0;
+  background: transparent;
+  line-height: 21px;
+  font-size: 20px;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
+  padding: 10px;
+  color: #bbb529;
+}
+
+textarea:focus {
+  outline: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.buttons {
+  background: #afafaf;
+  padding-top: 4px;
+  padding-left: 10px;
+  padding-bottom: 4px;
+  border-radius: 0px 0px 7px 7px;
+}
+
+button {
+  width: 100px;
+  padding: 20px;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  background-color: #455;
+  font: 18px 'Roboto', sans-serif;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #988;
+}
+
+.error {
+  margin-top: 5px;
+  padding: 10px;
+  grid-area: messages;
+  border-radius: 7px;
+  color: #d8000c;
+  background-color: #ffbaba;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.footer {
+  grid-area: footer;
+  text-align: right;
+  margin-bottom: 10px;
+  font-size: 14px;
+}

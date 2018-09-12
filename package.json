@@ -20,6 +20,7 @@
     "coverage": "nyc report --reporter=html && opn coverage/index.html",
     "preweb": "npm run peg",
     "web": "browserify web/main.js -o web/bundle.js && opn web/index.html",
+    "browserify": "browserify web/main.js -o web/bundle.js",
     "precli": "npm run peg",
     "cli": "node cli/main.js",
     "precli-browser": "npm run peg",

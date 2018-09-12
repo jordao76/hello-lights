@@ -9,11 +9,47 @@
 </head>
 
 <body>
-  <div id="tl" class="traffic-light">
-    <div class="red light"></div>
-    <div class="yellow light"></div>
-    <div class="green light"></div>
+
+  <div class="container">
+
+    <div class="header">
+      <h2>Traffic Light Playground</h2>
+    </div>
+
+    <div id="tl" class="traffic-light">
+      <div class="red light"></div>
+      <div class="yellow light"></div>
+      <div class="green light"></div>
+    </div>
+
+    <div class="command">
+      <div>
+        <a name="top"></a>
+        <textarea id="command" name="command"></textarea>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="buttons">
+        <button id="run">Run</button>
+        <button id="cancel">Cancel</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+
+    <div class="error">
+      <span id="error"></span>
+    </div>
+
+    <div id="help" class="help"></div>
+
+    <div class="footer">
+      By <a href="https://github.com/jordao76">Jordão</a>.
+      Check it out on <a href="https://github.com/jordao76/hello-lights">GitHub</a>.
+    </div>
+
   </div>
+
 </body>
 
 </html>
