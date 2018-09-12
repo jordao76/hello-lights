@@ -128,16 +128,30 @@ describe 'Traffic light commands', () =>
       @commands.danger.doc.desc.should.contain 'Twinkle red'
       @commands.danger.paramNames.should.deep.equal []
 
+  describe 'up', () =>
+
+    it 'check the metadata', () =>
+      @commands.up.doc.name.should.equal 'up'
+      @commands.up.doc.desc.should.contain 'Go up with the given duration'
+      @commands.up.paramNames.should.deep.equal ['ms']
+
+  describe 'down', () =>
+
+    it 'check the metadata', () =>
+      @commands.down.doc.name.should.equal 'down'
+      @commands.down.doc.desc.should.contain 'Go down with the given duration'
+      @commands.down.paramNames.should.deep.equal ['ms']
+
   describe 'bounce', () =>
 
     it 'check the metadata', () =>
       @commands.bounce.doc.name.should.equal 'bounce'
-      @commands.bounce.doc.desc.should.contain 'Bounces through the lights'
+      @commands.bounce.doc.desc.should.contain 'Bounce with the given duration'
       @commands.bounce.paramNames.should.deep.equal ['ms']
 
   describe 'soundbar', () =>
 
     it 'check the metadata', () =>
       @commands.soundbar.doc.name.should.equal 'soundbar'
-      @commands.soundbar.doc.desc.should.contain 'Just like a sound bar'
+      @commands.soundbar.doc.desc.should.contain 'Like a sound bar with the given duration'
       @commands.soundbar.paramNames.should.deep.equal ['ms']
