@@ -53,8 +53,9 @@ var cp = new CommandParser(); defineCommands(cp);
 
 async function execute(commandStr) {
   clearError();
-  cp.cancel();
   info(`Executing command '${commandStr}'`);
+  cp.cancel();
+  await cp.execute('reset', window.tl);
   try {
     await cp.execute(commandStr, window.tl);
     info(`Finished command '${commandStr}'`);
@@ -103,16 +104,16 @@ function setUpButtons() {
 function setUpSamples() {
   let txtSamples = document.querySelectorAll('.sample');
   txtSamples.forEach(txtSample =>
-    txtSample.addEventListener('click', () => runCommand(txtSample.innerText)));
+    txtSample.addEventListener('click', () =>
+      runCommand(txtSample.innerText)));
 }
 
 ///////////////
 
-function runCommand(command) {
-  execute('reset');
+async function runCommand(command) {
   let txtCommand = document.querySelector('#command');
   txtCommand.value = command;
-  execute(command);
+  await execute(command);
 }
 
 ///////////////
