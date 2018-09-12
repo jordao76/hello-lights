@@ -24,7 +24,9 @@ body {
 
 .header {
   grid-area: header;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
   text-align: center;
+  letter-spacing: 10px;
   background: #afafaf;
   border-radius: 7px 7px 0px 0px;
   box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
