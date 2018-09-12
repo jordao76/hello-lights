@@ -72,9 +72,9 @@
 (define pulse
   "Single pulse pattern: (pulse red)"
   (loop
-    (turn :light on)
+    (toggle :light)
     (pause 300)
-    (turn :light off)
+    (toggle :light)
     (pause 1500)))
 
 ;`);cp.execute(`;-----------------------------------------------------------
@@ -108,8 +108,28 @@
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
+(define up
+  "Go up with the given duration:
+  (up 200)"
+  (run
+    (toggle green)  (pause :ms) (toggle green)
+    (toggle yellow) (pause :ms) (toggle yellow)
+    (toggle red)    (pause :ms) (toggle red)))
+
+;`);cp.execute(`;-----------------------------------------------------------
+
+(define down
+  "Go down with the given duration:
+  (down 200)"
+  (run
+    (toggle red)    (pause :ms) (toggle red)
+    (toggle yellow) (pause :ms) (toggle yellow)
+    (toggle green)  (pause :ms) (toggle green)))
+
+;`);cp.execute(`;-----------------------------------------------------------
+
 (define bounce
-  "Bounces through the lights with the given duration between them:
+  "Bounce with the given duration:
   (bounce 500)"
   (loop
     (toggle green)  (pause :ms) (toggle green)
@@ -120,7 +140,7 @@
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define soundbar
-  "Just like a sound bar with the given duration:
+  "Like a sound bar with the given duration:
   (soundbar 500)"
   (loop
     (toggle green)  (pause :ms)
