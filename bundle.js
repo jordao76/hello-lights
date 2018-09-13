@@ -1090,7 +1090,7 @@ function peg$parse(input, options) {
     var s0, s1, s2, s3;
 
     s0 = peg$currPos;
-    s1 = peg$parse__();
+    s1 = peg$parse_();
     if (s1 !== peg$FAILED) {
       s2 = peg$parseParameter();
       if (s2 !== peg$FAILED) {
@@ -1383,23 +1383,6 @@ function peg$parse(input, options) {
     while (s1 !== peg$FAILED) {
       s0.push(s1);
       s1 = peg$parseFiller();
-    }
-
-    return s0;
-  }
-
-  function peg$parse__() {
-    var s0, s1;
-
-    s0 = [];
-    s1 = peg$parseFiller();
-    if (s1 !== peg$FAILED) {
-      while (s1 !== peg$FAILED) {
-        s0.push(s1);
-        s1 = peg$parseFiller();
-      }
-    } else {
-      s0 = peg$FAILED;
     }
 
     return s0;
@@ -1918,7 +1901,13 @@ async function main() {
   setUpTrafficLight();
   showHelp();
   setUpButtons();
-  runCommand('pulse green');
+  runCommand(`
+    loop
+      (up 70)
+      (pause 500)
+      (down 70)
+      (pause 500)
+  `.trim().replace(/^\s{4}/gm, '')); // trim per-line indentation
 }
 
 ///////////////
