@@ -131,7 +131,13 @@ async function main() {
   setUpTrafficLight();
   showHelp();
   setUpButtons();
-  runCommand('pulse green');
+  runCommand(`
+    loop
+      (up 70)
+      (pause 500)
+      (down 70)
+      (pause 500)
+  `.trim().replace(/^\s{4}/gm, '')); // trim per-line indentation
 }
 
 ///////////////
