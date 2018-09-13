@@ -13,7 +13,7 @@ Command
   }
 
 Parameters
-  = __ head:Parameter tail:Parameters? { return [head, ...(tail || [])]; }
+  = _ head:Parameter tail:Parameters? { return [head, ...(tail || [])]; }
 
 Parameter
   = name:Variable     { return { type: 'variable', name }; }
@@ -36,9 +36,6 @@ String
 
 _
   = Filler*
-
-__
-  = Filler+
 
 Filler
   = [ \t\r\n]             // whitespace

@@ -15,10 +15,10 @@ describe 'Traffic light commands', () =>
     scope = {}
     @ctx = {@tl, @ct, scope}
     # parser
-    cp = new CommandParser()
-    defineCommands(cp); # load "defined" commands
-    @commands = cp.commands
-    @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, tl, ct, scope)
+    @cp = new CommandParser()
+    defineCommands(@cp); # load "defined" commands
+    @commands = @cp.commands
+    @exec = (cmd, tl=@tl, ct=@ct) => @cp.execute(cmd, tl, ct, scope)
 
   describe 'lights', () =>
 
@@ -155,3 +155,21 @@ describe 'Traffic light commands', () =>
       @commands.soundbar.doc.name.should.equal 'soundbar'
       @commands.soundbar.doc.desc.should.contain 'Like a sound bar with the given duration'
       @commands.soundbar.paramNames.should.deep.equal ['ms']
+
+  describe 'CommandParser', () =>
+
+    # parse throws when it fails
+
+    it 'parse two commands with no space between them', () =>
+      @cp.parse """
+        (toggle green)(pause 300) ; no space between commands
+      """
+
+    it 'parse two commands used as parameters with no space between them', () =>
+      @cp.parse """
+        loop
+          (toggle green)(pause 300) ; no space between commands
+      """
+
+    it 'parse a command name with no space to its parameter-command', () =>
+      @cp.parse 'run(toggle green)'
