@@ -71,17 +71,23 @@ async function execute(commandStr) {
 
 function showHelp() {
   let divHelp = document.querySelector('#help');
-  divHelp.innerHTML = '<h2>Commands</h2>';
+  divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
   for (let i = 0; i < cp.commandList.length; ++i) {
     let commandName = cp.commandList[i];
     let command = cp.commands[commandName];
-    let usage = (c) => `<hr /><h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
+    let usage = (c) => `<h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
     divHelp.innerHTML += [
       usage(command),
-      command.doc.desc.replace(/:(\s*\(.+\)\s*)$/, `:<br /><code><a href="#top" class="sample">$1</a></code>`)
+      command.doc.desc
+        .replace(/:(\s*\(.+\)\s*)$/s,
+          (_, sample) => {
+            sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
+            return `:<br /><br /><div class="sample">${sample}</div>`;
+          }
+        )
+        .replace(/\n/g, '<br />\n')
     ].join('');
   }
-  divHelp.innerHTML += '<hr />';
   setUpSamples();
 };
 
@@ -104,8 +110,14 @@ function setUpButtons() {
 function setUpSamples() {
   let txtSamples = document.querySelectorAll('.sample');
   txtSamples.forEach(txtSample =>
-    txtSample.addEventListener('click', () =>
-      runCommand(txtSample.innerText)));
+    txtSample.addEventListener('click', () => {
+      location.hash = '#top';
+      runCommand(txtSample.innerHTML
+        .replace(/<br\s*\/?>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim());
+      location.hash = '#_';
+    }));
 }
 
 ///////////////
