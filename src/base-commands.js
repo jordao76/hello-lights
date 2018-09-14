@@ -67,8 +67,8 @@ function define({cp}, [name, desc, command]) {
 }
 define.doc = {
   name: 'define',
-  desc: 'Defines a new command, where variables become parameters:\n' +
-        '(define burst "Burst of light" (twinkle :light 50))'
+  desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
+        '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
 };
 define.paramNames = ['name', 'desc', 'command'];
 define.validation = [isIdentifier, isString, isCommand];
@@ -142,7 +142,7 @@ run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
   desc: 'Executes the given commands in sequence:\n' +
-        '(run (toggle red) (pause 1000) (toggle red))'
+        '(run\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
   desc: 'Executes the given commands in sequence, starting over forever:\n' +
-        '(loop (toggle green) (pause 400) (toggle red) (pause 400))'
+        '(loop\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -177,7 +177,7 @@ repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
   desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
-        '(repeat 5 (toggle green) (pause 400) (toggle red) (pause 400))'
+        '(repeat 5\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -196,7 +196,7 @@ all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
   desc: 'Executes the given commands in parallel, all at the same time:\n' +
-        '(all (twinkle green 700) (twinkle yellow 300))'
+        '(all\n  (twinkle green 700)\n  (twinkle yellow 300))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -244,7 +244,7 @@ ease.doc = {
   name: 'ease',
   desc: 'Ease the `what` variable to `command`.\n' +
         'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
-        '(ease linear 10000 ms 50 200 (flash yellow :ms))'
+        '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
 };
 
 //////////////////////////////////////////////////////////////////////////////

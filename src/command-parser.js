@@ -74,14 +74,13 @@ class CommandParser {
   }
 
   /**
-   * Defines a new command.
+   * Defines a new command or redefines an existing one.
    * @param {string} name - Command name.
    * @param {function} command - A traffic light command.
    * @param {string} [desc] - Command description.
    * @returns {function} The newly defined command.
    */
   define(name, command, desc = '') {
-    if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
     let newCommand = ({tl, ct, scope = {}}, params = []) => {
       Validator.validate(newCommand, params);
