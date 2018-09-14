@@ -72,6 +72,14 @@ body {
   grid-area: help;
 }
 
+#help-title {
+  border-bottom: 1px solid #c9cacc;
+}
+
+h3 {
+  border-bottom: 1px solid #eaecef;
+}
+
 textarea {
   width: 95%;
   height: 505px;
@@ -127,9 +135,26 @@ button:focus {
   box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
 }
 
+.sample {
+  background: #d6d6d6;
+  border-radius: 13px;
+  padding: 10px;
+  display: inline-block;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
+  font-weight: bold;
+  color: #556682;
+  cursor: pointer;
+}
+
+.sample:hover {
+  background: #bababa;
+}
+
 .footer {
+  border-top: 1px solid #c9cacc;
   grid-area: footer;
   text-align: right;
+  margin-top: 30px;
   margin-bottom: 10px;
   font-size: 14px;
 }

@@ -68,8 +68,8 @@ function define({cp}, [name, desc, command]) {
 }
 define.doc = {
   name: 'define',
-  desc: 'Defines a new command, where variables become parameters:\n' +
-        '(define burst "Burst of light" (twinkle :light 50))'
+  desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
+        '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
 };
 define.paramNames = ['name', 'desc', 'command'];
 define.validation = [isIdentifier, isString, isCommand];
@@ -143,7 +143,7 @@ run.validation = [each(isCommand)];
 run.doc = {
   name: 'run',
   desc: 'Executes the given commands in sequence:\n' +
-        '(run (toggle red) (pause 1000) (toggle red))'
+        '(run\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -161,7 +161,7 @@ loop.validation = [each(isCommand)];
 loop.doc = {
   name: 'loop',
   desc: 'Executes the given commands in sequence, starting over forever:\n' +
-        '(loop (toggle green) (pause 400) (toggle red) (pause 400))'
+        '(loop\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ repeat.validation = [isNumber, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
   desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
-        '(repeat 5 (toggle green) (pause 400) (toggle red) (pause 400))'
+        '(repeat 5\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -197,7 +197,7 @@ all.validation = [each(isCommand)];
 all.doc = {
   name: 'all',
   desc: 'Executes the given commands in parallel, all at the same time:\n' +
-        '(all (twinkle green 700) (twinkle yellow 300))'
+        '(all\n  (twinkle green 700)\n  (twinkle yellow 300))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -245,7 +245,7 @@ ease.doc = {
   name: 'ease',
   desc: 'Ease the `what` variable to `command`.\n' +
         'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
-        '(ease linear 10000 ms 50 200 (flash yellow :ms))'
+        '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -463,14 +463,13 @@ class CommandParser {
   }
 
   /**
-   * Defines a new command.
+   * Defines a new command or redefines an existing one.
    * @param {string} name - Command name.
    * @param {function} command - A traffic light command.
    * @param {string} [desc] - Command description.
    * @returns {function} The newly defined command.
    */
   define(name, command, desc = '') {
-    if (this.commands[name]) throw new Error(`Command "${name}" already exists`);
     let paramNames = command.paramNames || [];
     let newCommand = ({tl, ct, scope = {}}, params = []) => {
       Validator.validate(newCommand, params);
@@ -1841,17 +1840,23 @@ async function execute(commandStr) {
 
 function showHelp() {
   let divHelp = document.querySelector('#help');
-  divHelp.innerHTML = '<h2>Commands</h2>';
+  divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
   for (let i = 0; i < cp.commandList.length; ++i) {
     let commandName = cp.commandList[i];
     let command = cp.commands[commandName];
-    let usage = (c) => `<hr /><h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
+    let usage = (c) => `<h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
     divHelp.innerHTML += [
       usage(command),
-      command.doc.desc.replace(/:(\s*\(.+\)\s*)$/, `:<br /><code><a href="#top" class="sample">$1</a></code>`)
+      command.doc.desc
+        .replace(/:(\s*\(.+\)\s*)$/s,
+          (_, sample) => {
+            sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
+            return `:<br /><br /><div class="sample">${sample}</div>`;
+          }
+        )
+        .replace(/\n/g, '<br />\n')
     ].join('');
   }
-  divHelp.innerHTML += '<hr />';
   setUpSamples();
 };
 
@@ -1874,8 +1879,14 @@ function setUpButtons() {
 function setUpSamples() {
   let txtSamples = document.querySelectorAll('.sample');
   txtSamples.forEach(txtSample =>
-    txtSample.addEventListener('click', () =>
-      runCommand(txtSample.innerText)));
+    txtSample.addEventListener('click', () => {
+      location.hash = '#top';
+      runCommand(txtSample.innerHTML
+        .replace(/<br\s*\/?>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim());
+      location.hash = '#_';
+    }));
 }
 
 ///////////////
