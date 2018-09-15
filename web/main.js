@@ -57,11 +57,11 @@ async function execute(commandStr) {
   cp.cancel();
   await cp.execute('reset', window.tl);
   try {
+    if (commandStr.match(/define/)) {
+      setTimeout(showHelp, 0);
+    }
     await cp.execute(commandStr, window.tl);
     info(`Finished command '${commandStr}'`);
-    if (commandStr.match(/define/)) {
-      showHelp();
-    }
   } catch (e) {
     error(`Error executing command.\n${e}`);
   }
