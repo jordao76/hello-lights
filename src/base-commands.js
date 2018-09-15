@@ -8,7 +8,12 @@
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
-let isIdentifier = s => /^[a-z_][a-z_0-9-]*$/i.test(s);
+// A negative look behind to check for a string that does NOT end with a dash
+// is only supported on node 8.9.4 with the --harmony flag
+// https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
+// /^[a-z_][a-z_0-9-]*(?<!-)$/i
+let isIdentifier = s =>
+  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
 isIdentifier.exp = 'a valid identifier';
 
 let isString = s => typeof s === 'string';
