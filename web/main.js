@@ -81,10 +81,12 @@ function showHelp() {
       command.doc.desc
         .replace(/:(\s*\(.+\)\s*)$/s,
           (_, sample) => {
-            sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
+            sample = sample.trim()
+              .replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
             return `:<br /><br /><div class="sample">${sample}</div>`;
           }
         )
+        .replace(/'([^']+)'/g, '<code class="variable">$1</code>')
         .replace(/\n/g, '<br />\n')
     ].join('');
   }
