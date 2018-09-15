@@ -135,6 +135,13 @@ button:focus {
   box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
 }
 
+.variable {
+  background: #d6d6d6;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-radius: 7px;
+}
+
 .sample {
   background: #d6d6d6;
   border-radius: 13px;

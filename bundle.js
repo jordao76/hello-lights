@@ -248,8 +248,8 @@ ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
 ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
 ease.doc = {
   name: 'ease',
-  desc: 'Ease the `what` variable to `command`.\n' +
-        'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
+  desc: "Ease the 'what' variable to 'command'.\n" +
+        "In the duration 'ms', go from 'from' to 'to' using the 'easing' function:\n" +
         '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
 };
 
@@ -1704,6 +1704,26 @@ module.exports = {
     (toggle yellow) (pause :ms)
     (toggle green)  (pause :ms)))
 
+;`);cp.execute(`;-----------------------------------------------------------
+
+(define activity
+  "Time an activity from green (go) to yellow (attention) to red (stop).
+  Blinks green before starting for 5 seconds, keeps green on for the 'green-ms'
+  duration, turns yellow on for the 'yellow-ms' duration, then blinks yellow
+  for 'attention-ms' duration before turning on red (stop).
+  E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
+  then yellow blinking for 10s:
+  (activity 40000 10000 10000)"
+  (run
+    (blink 4 green 500)
+    (turn green on)
+    (pause :green-ms)
+    (lights off on off)
+    (pause :yellow-ms)
+    (turn yellow off)
+    (timeout :attention-ms (twinkle yellow 500))
+    (lights on off off)))
+
 ;`); }//--------------------------------------------------------------------
 
 },{}],6:[function(require,module,exports){
@@ -1855,10 +1875,12 @@ function showHelp() {
       command.doc.desc
         .replace(/:(\s*\(.+\)\s*)$/s,
           (_, sample) => {
-            sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
+            sample = sample.trim()
+              .replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
             return `:<br /><br /><div class="sample">${sample}</div>`;
           }
         )
+        .replace(/'([^']+)'/g, '<code class="variable">$1</code>')
         .replace(/\n/g, '<br />\n')
     ].join('');
   }
