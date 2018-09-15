@@ -150,4 +150,24 @@
     (toggle yellow) (pause :ms)
     (toggle green)  (pause :ms)))
 
+;`);cp.execute(`;-----------------------------------------------------------
+
+(define activity
+  "Time an activity from green (go) to yellow (attention) to red (stop).
+  Blinks green before starting for 5 seconds, keeps green on for the 'green-ms'
+  duration, turns yellow on for the 'yellow-ms' duration, then blinks yellow
+  for 'attention-ms' duration before turning on red (stop).
+  E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
+  then yellow blinking for 10s:
+  (activity 40000 10000 10000)"
+  (run
+    (blink 4 green 500)
+    (turn green on)
+    (pause :green-ms)
+    (lights off on off)
+    (pause :yellow-ms)
+    (turn yellow off)
+    (timeout :attention-ms (twinkle yellow 500))
+    (lights on off off)))
+
 ;`); }//--------------------------------------------------------------------

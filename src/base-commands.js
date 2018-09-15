@@ -247,8 +247,8 @@ ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
 ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
 ease.doc = {
   name: 'ease',
-  desc: 'Ease the `what` variable to `command`.\n' +
-        'In the duration `ms`, go from `from` to `to` using the `easing` function:\n' +
+  desc: "Ease the 'what' variable to 'command'.\n" +
+        "In the duration 'ms', go from 'from' to 'to' using the 'easing' function:\n" +
         '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
 };
 
