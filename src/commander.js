@@ -73,13 +73,11 @@ class Commander {
    */
   devicesInfo() {
     let devices = this.manager.allDevices();
-    return devices.map(d => {
-      return {
-        type: this.manager.type,
-        serialNum: d.serialNum,
-        status: d.isConnected ? 'connected' : 'disconnected'
-      };
-    });
+    return devices.map(d => ({
+      type: this.manager.type,
+      serialNum: d.serialNum,
+      status: d.isConnected ? 'connected' : 'disconnected'
+    }));
   }
 
   /**
