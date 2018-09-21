@@ -249,6 +249,30 @@ describe 'Commander', () =>
                 sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
                 done()
 
+    describe 'device specific Commander', () =>
+
+      beforeEach () =>
+        @cm = new Commander {@parser, @manager, @logger, serialNum: '999998'}
+
+      it 'wrong device connected, should not run a command', (done) =>
+        @cm.run('fast command')
+        yieldThen () =>
+          @parser.execute.callCount.should.equal 0
+          sinon.assert.calledWith(@logger.log, "no device available to run 'fast command'")
+          done()
+
+      it 'right device connected, should run a command', (done) =>
+        @device2 = new Device('999998') # right device
+        @device2.turn = sinon.stub() # abstract in Device
+        @manager.allDevices.returns [@device, @device2]
+        @cm.run('fast command')
+        @resolve()
+        yieldThen () =>
+          @parser.execute.calledOnceWith('fast command', @device2.trafficLight()).should.be.true
+          @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
+          @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
+          done()
+
   describe 'no device', () =>
 
     it 'should not run a command', (done) =>

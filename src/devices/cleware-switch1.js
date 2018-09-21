@@ -59,7 +59,7 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
 
   constructor() {
     super('cleware-switch1');
-    this._devicesBySerialNum = {}; // devices keyed by their serial numbers
+    this._devicesBySerialNum = {};
     this._monitoringCount = 0;
 
     this.refreshDevices();
@@ -80,7 +80,7 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
 
   refreshDevices() {
     let deviceInfos = HID.devices(VENDOR_ID, SWITCH1_DEVICE)
-      .filter(d => d.serialNumber); // has a serial number
+      .filter(d => !!d.serialNumber); // has a serial number
     let ds = this._devicesBySerialNum, serialNums = [];
     for (let i = 0; i < deviceInfos.length; ++i) {
       let deviceInfo = deviceInfos[i];

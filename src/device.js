@@ -173,17 +173,6 @@ class DeviceManager extends EventEmitter {
       .filter(device => device.isAvailable);
   }
 
-  /**
-   * The first available device: connected and not checked-out.
-   * @return {Device} The first available device, or null if there isn't one.
-   * @deprecated
-   */
-  firstAvailableDevice() {
-    let availableDevices = this.availableDevices();
-    if (availableDevices.length === 0) return null;
-    return availableDevices[0];
-  }
-
 }
 
 /**

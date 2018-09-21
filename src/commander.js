@@ -10,12 +10,6 @@ defineCommands(Parser);
 // the default device manager
 let {Manager} = require('./devices/cleware-switch1');
 
-// the default logger
-let Logger = {
-  log: console.log,
-  error: console.error
-};
-
 ////////////////////////////////////////////////
 
 /**
@@ -35,23 +29,32 @@ class Commander {
 
   /**
    * Creates a new Commander instance.
-   * Checks-out and uses the first available traffic light to issue commands.
+   * Checks-out and uses a specific traffic light or the first available one
+   * to issue commands.
    * An available traffic light is a connected traffic light that hasn't
    * been checked-out by another Commander instance.
-   * (Technically it's the device that gets checked-out/in.)
    * @see DeviceManager#startMonitoring
    * @param {Object} [options] - Commander options.
-   * @param {Object} [options.logger] - A Console-like object for logging, with
-   *   a log and an error function.
+   * @param {Object} [options.logger=console] - A Console-like object for logging,
+   *   with a log and an error function.
    * @param {DeviceManager} [options.manager] - The Device Manager to use.
    * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {string|number} [options.serialNum] - The serial number of the
+   *   traffic light to use, if available. Cleware USB traffic lights have
+   *   a numeric serial number.
    */
-  constructor({parser = Parser, manager = Manager, logger = Logger} = {}) {
+  constructor({
+    parser = Parser,
+    manager = Manager,
+    logger = console,
+    serialNum = null
+  } = {}) {
     this.parser = parser;
     this.manager = manager;
     this.logger = logger;
+    this.serialNum = serialNum;
 
-    this.devicesBySerialNum = {}; // known devices by their serial numbers
+    this.devicesBySerialNum = {};
     this.manager.startMonitoring();
     this.manager.on('added', () => this._resumeIfNeeded());
   }
@@ -111,8 +114,8 @@ class Commander {
    * and runs the new command.
    * If no command is running, executes the given command, optionally
    * resetting the traffic light based on the `reset` parameter.
-   * If there's no connected device, stores the command for execution if
-   * a device is connected later. Logs messages appropriately.
+   * If there's no device to run the command, stores it for later when
+   * a suitable device is connected. Logs messages appropriately.
    * @param {string} command - Command to execute.
    * @param {boolean} [reset=false] - Whether to reset the traffic light
    *   before executing the command.
@@ -189,7 +192,10 @@ class Commander {
 
   async _resolveTrafficLight() {
     if (this._device) return this._device.trafficLight();
-    let device = await this.manager.firstAvailableDevice();
+    let devices = await this.manager.availableDevices();
+    let device = this.serialNum
+      ? devices.filter(d => d.serialNum == this.serialNum)[0] // eslint-disable-line eqeqeq
+      : devices[0];
     if (!device || !device.checkOut()) return null;
     this._device = device;
     this._registerDeviceIfNeeded(device);
