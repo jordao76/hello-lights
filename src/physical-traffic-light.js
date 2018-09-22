@@ -88,6 +88,7 @@ class PhysicalTrafficLight extends TrafficLight {
   }
 
   async reset() {
+    if (!this.device.isConnected) return;
     await Promise.all([
       this.red.turnOff(),
       this.yellow.turnOff(),
