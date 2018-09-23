@@ -22,7 +22,7 @@ class ChromiumDevice extends Device {
         'file://'+path.resolve('./cli/chromium-page/index.html')
       ]
     });
-    this.serialNum = this.browser.wsEndpoint();
+    this.serialNum = this.browser.wsEndpoint().replace(/^.+\//, '');
     this.browser.on('disconnected', () => this.disconnect());
     let pages = await this.browser.pages();
     this.page = pages[0];
@@ -47,6 +47,7 @@ class ChromiumDevice extends Device {
   }
 
   async close() {
+    if (!this.browser) return;
     await this.browser.close();
     this.disconnect();
   }
@@ -59,18 +60,18 @@ class ChromiumDeviceManager extends DeviceManager {
 
   constructor() {
     super('chromium');
-    this.device = new ChromiumDevice();
-  }
-
-  startMonitoring() {
-    this.device.open(); // no await
+    this.devices = [];
+    this.newDevice();
   }
 
   allDevices() {
-    if (!this.device.isConnected) {
-      this.device.open(); // no await
-    }
-    return [this.device];
+    return this.devices;
+  }
+
+  newDevice() {
+    let device = new ChromiumDevice();
+    this.devices.push(device);
+    device.open(); // no await
   }
 
 }
