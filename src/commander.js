@@ -23,7 +23,7 @@ let {Manager} = require('./devices/cleware-switch1');
 ////////////////////////////////////////////////
 
 /**
- * Issues commands to control a connected traffic light.
+ * Issues commands to control a traffic light.
  */
 class Commander {
 
@@ -31,8 +31,6 @@ class Commander {
    * Creates a new Commander instance.
    * Checks-out and uses a specific traffic light or the first available one
    * to issue commands.
-   * An available traffic light is a connected traffic light that hasn't
-   * been checked-out by another Commander instance.
    * @see DeviceManager#startMonitoring
    * @param {Object} [options] - Commander options.
    * @param {Object} [options.logger=console] - A Console-like object for logging,
@@ -114,8 +112,8 @@ class Commander {
    * and runs the new command.
    * If no command is running, executes the given command, optionally
    * resetting the traffic light based on the `reset` parameter.
-   * If there's no device to run the command, stores it for later when
-   * a suitable device is connected. Logs messages appropriately.
+   * If there's no traffic light to run the command, stores it for later when
+   * one becomes available. Logs messages appropriately.
    * @param {string} command - Command to execute.
    * @param {boolean} [reset=false] - Whether to reset the traffic light
    *   before executing the command.
@@ -124,7 +122,7 @@ class Commander {
     let tl = await this._resolveTrafficLight();
     if (!tl) {
       this.suspended = command;
-      this.logger.log(`no device available to run '${command}'`);
+      this.logger.log(`no traffic light available to run '${command}'`);
       return;
     }
     try {
@@ -138,24 +136,21 @@ class Commander {
 
   async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
-    let sn = tl.device.serialNum;
-    this.logger.log(`device ${sn}: cancel '${this.running}'`);
+    this.logger.log(`${tl}: cancel '${this.running}'`);
     this.parser.cancel();
     await tl.reset();
   }
 
   _skipIfRunningSame(command, tl) {
     if (this.running !== command) return false;
-    let sn = tl.device.serialNum;
-    this.logger.log(`device ${sn}: skip '${command}'`);
+    this.logger.log(`${tl}: skip '${command}'`);
     return true;
   }
 
   async _execute(command, tl, reset) {
     if (reset) await tl.reset();
-    let sn = tl.device.serialNum;
     let log = this.logger.log;
-    log(`device ${sn}: running '${command}'`);
+    log(`${tl}: running '${command}'`);
     this.running = command;
     let res = await this.parser.execute(command, tl);
     this.running = null;
@@ -164,22 +159,20 @@ class Commander {
   }
 
   _finishedExecution(command, tl) {
-    let sn = tl.device.serialNum;
     let log = this.logger.log;
-    if (tl.device.isConnected) {
+    if (tl.isEnabled) {
       this.suspended = null;
-      log(`device ${sn}: finished '${command}'`);
+      log(`${tl}: finished '${command}'`);
     } else {
       this.suspended = command;
-      log(`device ${sn}: disconnected, suspending '${command}'`);
+      log(`${tl}: disabled, suspending '${command}'`);
     }
   }
 
   _errorInExecution(command, tl, error) {
-    let sn = tl.device.serialNum;
     let err = this.logger.error;
     this.running = null;
-    err(`device ${sn}: error in '${command}'`);
+    err(`${tl}: error in '${command}'`);
     err(error.message);
   }
 
@@ -191,15 +184,15 @@ class Commander {
   }
 
   async _resolveTrafficLight() {
-    if (this._device) return this._device.trafficLight();
-    let devices = await this.manager.availableDevices();
+    if (this._device) return this._device.trafficLight;
+    let devices = await this.manager.allDevices().filter(d => d.trafficLight.isAvailable);
     let device = this.serialNum
       ? devices.filter(d => d.serialNum == this.serialNum)[0] // eslint-disable-line eqeqeq
       : devices[0];
-    if (!device || !device.checkOut()) return null;
+    if (!device || !device.trafficLight.checkOut()) return null;
     this._device = device;
     this._registerDeviceIfNeeded(device);
-    return device.trafficLight();
+    return device.trafficLight;
   }
 
   _registerDeviceIfNeeded(device) {
@@ -208,7 +201,7 @@ class Commander {
     this.devicesBySerialNum[sn] = device;
     device.onDisconnected(() => {
       if (this._device !== device) return;
-      device.checkIn();
+      device.trafficLight.checkIn();
       this._device = null;
       this.cancel();
     });

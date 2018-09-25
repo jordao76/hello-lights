@@ -53,26 +53,3 @@ describe 'Device', ->
         @device.isConnected.should.be.true
       it 'should raise "connected"', ->
         @onConnectedCalled.should.be.true
-
-  describe 'check-out, check-in', ->
-
-    beforeEach () -> createDevice.call @, true
-
-    it 'should check out a device', () ->
-      @device.isCheckedOut.should.be.false
-      checkedOut = @device.checkOut()
-      checkedOut.should.be.true
-      @device.isCheckedOut.should.be.true
-
-    it 'should not check out a device already checked out', () ->
-      @device.checkOut()
-      @device.isCheckedOut.should.be.true
-      checkedOut = @device.checkOut()
-      checkedOut.should.be.false
-      @device.isCheckedOut.should.be.true
-
-    it 'should check in device', () ->
-      @device.checkOut()
-      @device.isCheckedOut.should.be.true
-      @device.checkIn()
-      @device.isCheckedOut.should.be.false

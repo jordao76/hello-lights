@@ -4,6 +4,7 @@ const {Light, TrafficLight} = require('./traffic-light');
 
 /**
  * A composite light that combines all composed lights.
+ * @extends Light
  */
 class MultiLight extends Light {
 
@@ -13,7 +14,8 @@ class MultiLight extends Light {
   constructor(lights) {
     super();
     this.lights = lights;
-    // this.on might not reflect the underlying lights, just what the multi-light has been through
+    // this.on and this.off might not reflect the underlying lights,
+    // just what the multi-light has been through
   }
 
   /** Toggles the lights. */
@@ -40,6 +42,7 @@ class MultiLight extends Light {
 
 /**
  * A composite traffic light that combines all composed traffic lights.
+ * @extends TrafficLight
  */
 class MultiTrafficLight extends TrafficLight {
 
@@ -51,6 +54,15 @@ class MultiTrafficLight extends TrafficLight {
       new MultiLight(trafficLights.map(tl => tl.red)),
       new MultiLight(trafficLights.map(tl => tl.yellow)),
       new MultiLight(trafficLights.map(tl => tl.green)));
+    this.trafficLights = trafficLights;
+  }
+
+  /**
+   * If any of the composed traffic lights is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.trafficLights.some(tl => tl.isEnabled);
   }
 
 }
@@ -60,7 +72,8 @@ class MultiTrafficLight extends TrafficLight {
 /**
  * A composite traffic light with a flexible way to select which composed
  * traffic lights are active.
- * @see use
+ * @extends TrafficLight
+ * @see FlexMultiTrafficLight#use
  */
 class FlexMultiTrafficLight extends TrafficLight {
 
@@ -75,7 +88,7 @@ class FlexMultiTrafficLight extends TrafficLight {
       trafficLights[0].yellow,
       trafficLights[0].green);
     this.tls = trafficLights;
-    this.indexes = [0];
+    this.use([0]);
   }
 
   /**
@@ -87,10 +100,10 @@ class FlexMultiTrafficLight extends TrafficLight {
   use(indexes) {
     this.indexes = indexes.map(i => i % this.tls.length);
     let tls = this.indexes.map(i => this.tls[i]); // chosen traffic lights
-    let tl = tls.length === 1 ? tls[0] : new MultiTrafficLight(tls);
-    this.red = tl.red;
-    this.yellow = tl.yellow;
-    this.green = tl.green;
+    this.tl = tls.length === 1 ? tls[0] : new MultiTrafficLight(tls);
+    this.red = this.tl.red;
+    this.yellow = this.tl.yellow;
+    this.green = this.tl.green;
   }
 
   /**
@@ -115,6 +128,14 @@ class FlexMultiTrafficLight extends TrafficLight {
   reset() {
     this.tls.forEach(tl => tl.reset());
     this.use([0]);
+  }
+
+  /**
+   * If the active traffic light is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.tl.isEnabled;
   }
 
 }

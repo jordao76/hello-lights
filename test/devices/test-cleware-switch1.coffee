@@ -68,7 +68,7 @@ describe 'Cleware Switch1 device', ->
   describe 'PhysicalLight', ->
 
     beforeEach () ->
-      @light = @device.trafficLight().yellow
+      @light = @device.trafficLight.yellow
 
     it 'starts as off', ->
       @light.on.should.be.false
@@ -98,7 +98,7 @@ describe 'Cleware Switch1 device', ->
   describe 'PhysicalTrafficLight', ->
 
     beforeEach () ->
-      @tl = @device.trafficLight()
+      @tl = @device.trafficLight
 
     it 'reset turns all lights off', ->
       @tl.red.turnOn()

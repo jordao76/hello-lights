@@ -36,7 +36,7 @@ Check out the available commands [here](https://jordao76.github.io/hello-lights)
 <a name="Commander"></a>
 
 ## Commander
-Issues commands to control a connected traffic light.
+Issues commands to control a traffic light.
 
 **Kind**: global class  
 
@@ -56,8 +56,6 @@ Issues commands to control a connected traffic light.
 Creates a new Commander instance.
 Checks-out and uses a specific traffic light or the first available one
 to issue commands.
-An available traffic light is a connected traffic light that hasn't
-been checked-out by another Commander instance.
 
 
 | Param | Type | Default | Description |
@@ -107,8 +105,8 @@ If another command is running, cancels it, resets the traffic light,
 and runs the new command.
 If no command is running, executes the given command, optionally
 resetting the traffic light based on the `reset` parameter.
-If there's no device to run the command, stores it for later when
-a suitable device is connected. Logs messages appropriately.
+If there's no traffic light to run the command, stores it for later when
+one becomes available. Logs messages appropriately.
 
 **Kind**: instance method of [<code>Commander</code>](#Commander)  
 
@@ -134,7 +132,7 @@ Logs the help info for the given command name.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| commandName | <code>string</code> | Name of the command to log help info.   If it's not one of the supported commands, does nothing. |
+| commandName | <code>string</code> | Name of the command to log help info. |
 
 <a name="DeviceInfo"></a>
 

@@ -6,6 +6,7 @@ let EventEmitter = require('events');
 /**
  * A physical device that can turn lights on or off.
  * @abstract
+ * @extends EventEmitter
  */
 class Device extends EventEmitter {
 
@@ -26,11 +27,6 @@ class Device extends EventEmitter {
      * @type {boolean}
      */
     this.isConnected = isConnected;
-    /**
-     * If the device is checked-out or reserved.
-     * @type {boolean}
-     */
-    this.isCheckedOut = false;
   }
 
   /* istanbul ignore next */
@@ -46,13 +42,12 @@ class Device extends EventEmitter {
   }
 
   /**
-   * The physical traffic light that uses this device.
-   * @returns {PhysicalTrafficLight} The physical traffic light that uses
-   *   this device.
+   * The physical traffic light associated with this device.
+   * @type {PhysicalTrafficLight}
    */
-  trafficLight() {
-    if (this.tl) return this.tl;
-    return this.tl = new PhysicalTrafficLight(this);
+  get trafficLight() {
+    if (this._tl) return this._tl;
+    return this._tl = new PhysicalTrafficLight(this);
   }
 
   /**
@@ -62,7 +57,7 @@ class Device extends EventEmitter {
   connect() {
     if (this.isConnected) return;
     this.isConnected = true;
-    this.trafficLight().sync();
+    this.trafficLight.sync();
     /**
      * Connected event.
      * @event Device#connected
@@ -78,38 +73,10 @@ class Device extends EventEmitter {
     if (!this.isConnected) return;
     this.isConnected = false;
     /**
-     * Connected event.
+     * Disconnected event.
      * @event Device#disconnected
      */
     this.emit('disconnected');
-  }
-
-  /**
-   * Checks-out or reserve the device for exclusive usage, making it
-   * unavailable for other users.
-   * @see checkIn
-   * @returns {boolean} True if the device was successfully checked out.
-   *   False if the device was already checked out.
-   */
-  checkOut() {
-    if (this.isCheckedOut) return false;
-    return this.isCheckedOut = true;
-  }
-
-  /**
-   * Checks-in the device, making it available for checking out again.
-   * @see checkOut
-   */
-  checkIn() {
-    this.isCheckedOut = false;
-  }
-
-  /**
-   * If the device is available: connected and not checked-out.
-   * @type {boolean}
-   */
-  get isAvailable() {
-    return this.isConnected && !this.isCheckedOut;
   }
 
   /**
@@ -131,6 +98,7 @@ class Device extends EventEmitter {
 /**
  * A Device Manager.
  * @abstract
+ * @extends EventEmitter
  */
 class DeviceManager extends EventEmitter {
 
@@ -162,15 +130,6 @@ class DeviceManager extends EventEmitter {
    */
   allDevices() {
     throw new Error('DeviceManager#allDevices is abstract');
-  }
-
-  /**
-   * All available devices: connected and not checked-out.
-   * @return {Device[]} Available devices.
-   */
-  availableDevices() {
-    return this.allDevices()
-      .filter(device => device.isAvailable);
   }
 
 }

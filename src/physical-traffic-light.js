@@ -82,8 +82,7 @@ class PhysicalTrafficLight extends TrafficLight {
     super(
       red || new PhysicalLight(RED, device),
       yellow || new PhysicalLight(YELLOW, device),
-      green || new PhysicalLight(GREEN, device)
-    );
+      green || new PhysicalLight(GREEN, device));
     this.device = device;
   }
 
@@ -106,6 +105,30 @@ class PhysicalTrafficLight extends TrafficLight {
       this.yellow.sync(),
       this.green.sync()
     ]);
+  }
+
+  /**
+   * If the traffic light is enabled and ready to use.
+   * Checks if the traffic light's device is connected.
+   * @see PhysicalTrafficLight#isConnected
+   * @see Device#isConnected
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.isConnected;
+  }
+
+  /**
+   * If the traffic light's device is connected.
+   * @see Device#isConnected
+   * @type {boolean}
+   */
+  get isConnected() {
+    return this.device.isConnected;
+  }
+
+  toString() {
+    return `device ${this.device.serialNum}`;
   }
 
 }

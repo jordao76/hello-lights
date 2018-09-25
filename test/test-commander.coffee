@@ -43,17 +43,17 @@ describe 'Commander', () =>
 
     describe 'run', () =>
 
-      it 'checks out the device', () =>
-        @device.isCheckedOut.should.be.false
+      it 'checks out the traffic light', () =>
+        @device.trafficLight.isCheckedOut.should.be.false
         @cm.run('infinite command')
         yieldThen () =>
-          @device.isCheckedOut.should.be.true
+          @device.trafficLight.isCheckedOut.should.be.true
 
       it 'if no command is running, run it (fast command)', (done) =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', @device.trafficLight()).should.be.true
+          @parser.execute.calledOnceWith('fast command', @device.trafficLight).should.be.true
           @logger.log.calledWith("device 999999: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999999: finished 'fast command'").should.be.true
           done()
@@ -61,7 +61,7 @@ describe 'Commander', () =>
       it 'if no command is running, run it (infinite command)', (done) =>
         @cm.run('infinite command') # never resolved
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', @device.trafficLight()).should.be.true
+          @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'infinite command'").should.be.true
           done()
 
@@ -70,7 +70,7 @@ describe 'Commander', () =>
         error = new Error('bad command!')
         @reject error
         yieldThen () =>
-          @parser.execute.calledOnceWith('error command', @device.trafficLight()).should.be.true
+          @parser.execute.calledOnceWith('error command', @device.trafficLight).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
           @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
           @logger.error.calledWith(error.message).should.be.true
@@ -81,7 +81,7 @@ describe 'Commander', () =>
         yieldThen () =>
           @cm.run('infinite command') # same command
           yieldThen () =>
-            @parser.execute.calledOnceWith('infinite command', @device.trafficLight()).should.be.true
+            @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
             @logger.log.calledWith("device 999999: skip 'infinite command'").should.be.true
             done()
 
@@ -100,7 +100,7 @@ describe 'Commander', () =>
         @cm.run('infinite command')
         yieldThen () =>
           sinon.assert.calledOnce(@parser.execute)
-          sinon.assert.calledWith(@parser.execute, 'infinite command', @device.trafficLight())
+          sinon.assert.calledWith(@parser.execute, 'infinite command', @device.trafficLight)
           @cm.run('fast command') # different command
           yieldThen () =>
             sinon.assert.calledWith(@parser.cancel)
@@ -112,28 +112,28 @@ describe 'Commander', () =>
               sinon.assert.calledWith(@logger.log, "device 999999: finished 'fast command'")
               done()
 
-      it 'checks in the device when disconnected', (done) =>
+      it 'checks in the traffic light when disconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
-          @device.isCheckedOut.should.be.true
+          @device.trafficLight.isCheckedOut.should.be.true
           @device.disconnect()
           yieldThen () =>
             @resolve()
             yieldThen () =>
-              @device.isCheckedOut.should.be.false
+              @device.trafficLight.isCheckedOut.should.be.false
               done()
 
       it 'cancels and suspends the command when disconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', @device.trafficLight()).should.be.true
+          @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
           sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
           @device.disconnect()
           yieldThen () =>
             sinon.assert.calledWith(@parser.cancel)
             @resolve() # cancel resolves the command
             yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
+              sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
               done()
 
       it 'resumes the running command when reconnected', (done) =>
@@ -153,7 +153,7 @@ describe 'Commander', () =>
       it 'reinstates the traffic light state when reconnected if not running a command', (done) =>
         @cm.run('fast command')
         @resolve()
-        tl = @device.trafficLight() # simulates a command that ended with the yellow light on
+        tl = @device.trafficLight # simulates a command that ended with the yellow light on
         tl.yellow.turnOn()
         @device.turn.callCount.should.equal 1
         sinon.assert.calledWith(@device.turn, 1, 1) # yellow on
@@ -241,7 +241,7 @@ describe 'Commander', () =>
           yieldThen () =>
             @resolve()
             yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: disconnected, suspending 'infinite command'")
+              sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
               @device2.connect() # connect device 2
               @manager.emit('added')
               yieldThen () =>
@@ -258,7 +258,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         yieldThen () =>
           @parser.execute.callCount.should.equal 0
-          sinon.assert.calledWith(@logger.log, "no device available to run 'fast command'")
+          sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
           done()
 
       it 'right device connected, should run a command', (done) =>
@@ -268,7 +268,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', @device2.trafficLight()).should.be.true
+          @parser.execute.calledOnceWith('fast command', @device2.trafficLight).should.be.true
           @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
           done()
@@ -279,7 +279,7 @@ describe 'Commander', () =>
       @cm.run('fast command')
       yieldThen () =>
         @parser.execute.callCount.should.equal 0
-        sinon.assert.calledWith(@logger.log, "no device available to run 'fast command'")
+        sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
         done()
 
     it 'runs the command when a device is connected', (done) =>
@@ -291,7 +291,7 @@ describe 'Commander', () =>
         @manager.emit('added') # new device added (detected)
         yieldThen () =>
           @parser.execute.calledOnce.should.be.true
-          sinon.assert.calledWith(@parser.execute, 'fast command', @device.trafficLight())
+          sinon.assert.calledWith(@parser.execute, 'fast command', @device.trafficLight)
           done()
 
   describe 'command help', () =>

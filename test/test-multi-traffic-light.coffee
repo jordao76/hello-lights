@@ -2,6 +2,9 @@
 {MultiLight, MultiTrafficLight, FlexMultiTrafficLight} = require '../src/multi-traffic-light'
 require('chai').should()
 
+TrafficLight::setEnabled = (v) ->
+  Object.defineProperty @, 'isEnabled', { value: v, configurable: true }
+
 describe 'MultiLight', () ->
 
   beforeEach () ->
@@ -35,6 +38,16 @@ describe 'MultiTrafficLight', () ->
     @tl1 = new TrafficLight
     @tl2 = new TrafficLight
     @mtl = new MultiTrafficLight [@tl1, @tl2]
+
+  it 'should be enabled as long as one composed traffic light is enabled', () ->
+    @mtl.isEnabled.should.be.true
+    @tl1.setEnabled false
+    @tl1.isEnabled.should.be.false
+    @mtl.isEnabled.should.be.true
+    @tl2.setEnabled false
+    @mtl.isEnabled.should.be.false
+    @tl1.setEnabled true
+    @mtl.isEnabled.should.be.true
 
   it 'should reset all lights to off', () ->
     @mtl.red.toggle()
@@ -148,3 +161,12 @@ describe 'FlexMultiTrafficLight', () ->
     @mtl.red.toggle()
     @tl1.red.on.should.be.true # only using the 1st
     @tl2.red.on.should.be.false
+
+  it 'should be enabled as long as the active traffic light (which can be a composite) is enabled', () ->
+    @mtl.isEnabled.should.be.true
+    @tl1.setEnabled false
+    @mtl.isEnabled.should.be.false # since it starts of using only the first traffic light
+    @mtl.use([1]) # use the second (index 1) traffic light
+    @mtl.isEnabled.should.be.true
+    @mtl.useAll() # use both
+    @mtl.isEnabled.should.be.true

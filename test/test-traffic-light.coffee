@@ -49,3 +49,27 @@ describe 'TrafficLight', () ->
     tl.red.on.should.be.false
     tl.yellow.on.should.be.false
     tl.green.on.should.be.false
+
+  describe 'check-out, check-in', ->
+
+    beforeEach () ->
+      @tl = new TrafficLight
+
+    it 'should check out a traffic light', () ->
+      @tl.isCheckedOut.should.be.false
+      checkedOut = @tl.checkOut()
+      checkedOut.should.be.true
+      @tl.isCheckedOut.should.be.true
+
+    it 'should not check out a traffic light already checked out', () ->
+      @tl.checkOut()
+      @tl.isCheckedOut.should.be.true
+      checkedOut = @tl.checkOut()
+      checkedOut.should.be.false
+      @tl.isCheckedOut.should.be.true
+
+    it 'should check in traffic light', () ->
+      @tl.checkOut()
+      @tl.isCheckedOut.should.be.true
+      @tl.checkIn()
+      @tl.isCheckedOut.should.be.false

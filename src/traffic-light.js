@@ -37,14 +37,24 @@ class TrafficLight {
    */
   constructor(red, yellow, green) {
     /** The red light.
-      * @type {Light}  */
+      * @type {Light}
+      */
     this.red = red || new Light;
     /** The yellow light.
-     * @type {Light}  */
+     * @type {Light}
+     */
     this.yellow = yellow || new Light;
     /** The green light.
-     * @type {Light}  */
+     * @type {Light}
+     */
     this.green = green || new Light;
+    /**
+     * If the traffic light is checked-out or reserved.
+     * @type {boolean}
+     * @see TrafficLight#checkOut
+     * @see TrafficLight#checkIn
+     */
+    this.isCheckedOut = false;
   }
 
   /** Sets all lights to off. */
@@ -52,6 +62,46 @@ class TrafficLight {
     this.red.turnOff();
     this.yellow.turnOff();
     this.green.turnOff();
+  }
+
+  /**
+   * If the traffic light is enabled and ready to use.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return true;
+  }
+
+  /**
+   * Checks-out or reserve the traffic light for exclusive usage, making it
+   * unavailable for other users.
+   * @see TrafficLight#isCheckedOut
+   * @see TrafficLight#checkIn
+   * @returns {boolean} True if the traffic light was successfully checked out.
+   *   False if it was already checked out.
+   */
+  checkOut() {
+    if (this.isCheckedOut) return false;
+    return this.isCheckedOut = true;
+  }
+
+  /**
+   * Checks-in the traffic light, making it available for checking out again.
+   * @see TrafficLight#isCheckedOut
+   * @see TrafficLight#checkOut
+   */
+  checkIn() {
+    this.isCheckedOut = false;
+  }
+
+  /**
+   * If the traffic light is available: enabled and not checked-out.
+   * @type {boolean}
+   * @see TrafficLight#isEnabled
+   * @see TrafficLight#isCheckedOut
+   */
+  get isAvailable() {
+    return this.isEnabled && !this.isCheckedOut;
   }
 
 }
