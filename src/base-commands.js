@@ -109,10 +109,10 @@ async function timeout(ctx, [ms, command]) {
   // race the cancellable-command against the timeout
   let res = await Promise.race([command({...ctx, ct: timeoutC, scope}), timeoutP]);
   // check if the timeout was reached
-  // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
-  let value = await Promise.race([timeoutP, 42]);
-  if (value !== 42 || ct.isCancelled) {
-    // the timeout was reached (value !== 42) OR the timeout was cancelled
+  let racer = {}; // arbitrary object to race against the timeout
+  let value = await Promise.race([timeoutP, racer]);
+  if (value !== racer || ct.isCancelled) {
+    // the timeout was reached (value !== racer) OR the timeout was cancelled
     timeoutC.cancel();
   }
   return res;
