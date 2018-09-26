@@ -4,11 +4,35 @@ let parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Parses and executes commands on a traffic light. */
+/**
+ * A function that implements a command.
+ * @typedef {function} CommandParser~CommandFunction
+ * @param {object} ctx - Context to execute the command.
+ * @param {CommandParser} [ctx.cp] - The command parser (on demand).
+ * @param {Cancellable} ctx.ct - A cancellation token.
+ * @param {object} ctx.scope - Variable bindings for nested commands.
+ * @param {...object} [ctx....] - Extra context objects needed for the command,
+ *   like the objects that the command manipulates.
+ * @param {object[]} [params] - The command parameters.
+ * @property {object} doc - Name and description of the command.
+ * @property {string} doc.name - Command name.
+ * @property {string} doc.desc - Command description.
+ * @property {function} [transformation] - Transforms the parameters of the command.
+ * @property {string[]} [paramNames] - Parameter names for the command.
+ * @property {function[]} [validation] - Validation functions for each parameter
+ *   after transformation.
+ * @property {boolean} [usesParser] - If true passes cp (the command parser) to
+ *   the command.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+
+/** Parses and executes commands. */
 class CommandParser {
 
   /**
-   * @param {object} [commands] - Commands this parser recognizes.
+   * @param {object.<string, CommandParser~CommandFunction>} [commands] -
+   *   Commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
     // clone base commands
@@ -39,18 +63,21 @@ class CommandParser {
   /**
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
-   * @param {TrafficLight} tl - Traffic light to use.
+   * @param {Object} [ctx] - Context object to be passed as part of the executed
+   *   commands context, togeher with the cancellation token and the scope.
+   *   This context cannot have keys 'ct' and 'scope', since they would be
+   *   overwritten anyway.
    * @param {Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
    */
-  async execute(commandStr, tl, ct = this.ct, scope = {}) {
+  async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
     if (ct.isCancelled) return;
     let asts = parser.parse(commandStr);
     let generator = new Generator(this);
     let res;
     for (let i = 0; i < asts.length; ++i) {
       let command = generator.execute(asts[i]);
-      res = await command({tl, ct, scope});
+      res = await command({...ctx, ct, scope});
     }
     if (ct === this.ct && ct.isCancelled) {
       // the command 'cancel' was executed on this.ct, so re-instantiate it
@@ -63,7 +90,8 @@ class CommandParser {
    * Parses a command string.
    * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {(function|function[])} One or many traffic light commands.
+   * @returns {(CommandParser~CommandFunction|CommandParser~CommandFunction[])}
+   *   One or many command functions.
    */
   parse(commandStr) {
     let asts = parser.parse(commandStr);
@@ -76,16 +104,17 @@ class CommandParser {
   /**
    * Defines a new command or redefines an existing one.
    * @param {string} name - Command name.
-   * @param {function} command - A traffic light command.
+   * @param {function} command - A command function.
    * @param {string} [desc] - Command description.
-   * @returns {function} The newly defined command.
+   * @returns {CommandParser~CommandFunction} The newly defined command.
    */
   define(name, command, desc = '') {
     let paramNames = command.paramNames || [];
-    let newCommand = ({tl, ct, scope = {}}, params = []) => {
+    let newCommand = (ctx, params = []) => {
+      let {scope = {}} = ctx;
       Validator.validate(newCommand, params);
       params.forEach((p, i) => scope[paramNames[i]] = p);
-      return command({tl, ct, scope});
+      return command({...ctx, scope});
     };
     newCommand.doc = {name, desc};
     newCommand.paramNames = paramNames;
@@ -162,11 +191,11 @@ class Generator {
       return;
     }
 
-    // return a command that takes (in an object) a traffic light (tl),
-    // a cancellation token (ct) and an optional scope with variable bindings
+    // return a command that takes a context including an
+    // optional scope with variable bindings
     let vars = new Vars(args);
-    let res = ({tl, ct, scope={}}) => {
-      let ctx = {tl, ct, scope};
+    let res = (ctx) => {
+      let {scope = {}} = ctx;
       if (command.usesParser) ctx.cp = this.parser; // cp = command-parser
       let params = vars.resolve(scope);
       Validator.validate(command, params);

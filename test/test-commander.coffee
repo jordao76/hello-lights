@@ -53,7 +53,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', @device.trafficLight).should.be.true
+          @parser.execute.calledOnceWith('fast command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledWith("device 999999: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999999: finished 'fast command'").should.be.true
           done()
@@ -61,7 +61,7 @@ describe 'Commander', () =>
       it 'if no command is running, run it (infinite command)', (done) =>
         @cm.run('infinite command') # never resolved
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
+          @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'infinite command'").should.be.true
           done()
 
@@ -70,7 +70,7 @@ describe 'Commander', () =>
         error = new Error('bad command!')
         @reject error
         yieldThen () =>
-          @parser.execute.calledOnceWith('error command', @device.trafficLight).should.be.true
+          @parser.execute.calledOnceWith('error command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
           @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
           @logger.error.calledWith(error.message).should.be.true
@@ -81,7 +81,7 @@ describe 'Commander', () =>
         yieldThen () =>
           @cm.run('infinite command') # same command
           yieldThen () =>
-            @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
+            @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
             @logger.log.calledWith("device 999999: skip 'infinite command'").should.be.true
             done()
 
@@ -100,7 +100,7 @@ describe 'Commander', () =>
         @cm.run('infinite command')
         yieldThen () =>
           sinon.assert.calledOnce(@parser.execute)
-          sinon.assert.calledWith(@parser.execute, 'infinite command', @device.trafficLight)
+          sinon.assert.calledWith(@parser.execute, 'infinite command', {tl:@device.trafficLight})
           @cm.run('fast command') # different command
           yieldThen () =>
             sinon.assert.calledWith(@parser.cancel)
@@ -126,7 +126,7 @@ describe 'Commander', () =>
       it 'cancels and suspends the command when disconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', @device.trafficLight).should.be.true
+          @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
           sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
           @device.disconnect()
           yieldThen () =>
@@ -268,7 +268,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', @device2.trafficLight).should.be.true
+          @parser.execute.calledOnceWith('fast command', {tl:@device2.trafficLight}).should.be.true
           @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
           done()
@@ -291,7 +291,7 @@ describe 'Commander', () =>
         @manager.emit('added') # new device added (detected)
         yieldThen () =>
           @parser.execute.calledOnce.should.be.true
-          sinon.assert.calledWith(@parser.execute, 'fast command', @device.trafficLight)
+          sinon.assert.calledWith(@parser.execute, 'fast command', {tl:@device.trafficLight})
           done()
 
   describe 'command help', () =>

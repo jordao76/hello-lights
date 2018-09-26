@@ -33,15 +33,7 @@ let each = vf => {
 };
 
 //////////////////////////////////////////////////////////////////////////////
-// Every command takes 2 parameters:
-//   1. context = { cp, tl, ct, scope }
-//   where
-//      cp is the command parser (on demand)
-//      tl is a traffic light
-//      ct is a cancellation token
-//      scope are the variable bindings for nested commands
-//   2. params = [v1, v2, ..., vn]
-//      v1...vn are the values of the command parameters
+// Base commands
 //////////////////////////////////////////////////////////////////////////////
 
 let {Cancellable} = require('./cancellable');
@@ -110,11 +102,12 @@ pause.doc = {
 //////////////////////////////////////////////////////////////////////////////
 
 // Executes a command with a timeout
-async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
+async function timeout(ctx, [ms, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
   let timeoutC = new Cancellable;
   let timeoutP = pause({ct}, [ms]);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([command({tl, ct: timeoutC, scope}), timeoutP]);
+  let res = await Promise.race([command({...ctx, ct: timeoutC, scope}), timeoutP]);
   // check if the timeout was reached
   // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
   let value = await Promise.race([timeoutP, 42]);
@@ -134,11 +127,12 @@ timeout.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function run({tl, ct = cancellable, scope = {}}, [commands]) {
+async function run(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
     let command = commands[i];
-    await command({tl, ct, scope});
+    await command({...ctx, ct, scope});
   }
 }
 run.transformation = args => [args];
@@ -152,11 +146,12 @@ run.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
+async function loop(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   if (!commands || commands.length === 0) return;
   while (true) {
     if (ct.isCancelled) return;
-    await run({tl, ct, scope}, [commands]);
+    await run({...ctx, ct, scope}, [commands]);
   }
 }
 loop.transformation = args => [args];
@@ -170,10 +165,11 @@ loop.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function repeat({tl, ct = cancellable, scope = {}}, [times, commands]) {
+async function repeat(ctx, [times, commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   while (times-- > 0) {
     if (ct.isCancelled) return;
-    await run({tl, ct, scope}, [commands]);
+    await run({...ctx, ct, scope}, [commands]);
   }
 }
 repeat.transformation = args => [args[0], args.slice(1)];
@@ -187,12 +183,13 @@ repeat.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function all({tl, ct = cancellable, scope = {}}, [commands]) {
+async function all(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   if (ct.isCancelled) return;
   await Promise.all(commands.map(command => {
     // since the commands run in parallel, they must
     // have separate scopes so as not to step in each other's toes
-    return command({tl, ct, scope: {...scope}});
+    return command({...ctx, ct, scope: {...scope}});
   }));
 }
 all.transformation = args => [args];
@@ -220,7 +217,8 @@ isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
+async function ease(ctx, [easing, ms, what, from, to, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
   let start = Date.now();
   let end = start + ms;
   let next = () => {
@@ -240,7 +238,7 @@ async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from,
     let now = Date.now();
     let max = end - now;
     if (max <= 0) break;
-    await timeout({tl, ct, scope}, [max, command]);
+    await timeout({...ctx, ct, scope}, [max, command]);
   }
 }
 ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];

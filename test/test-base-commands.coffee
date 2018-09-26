@@ -109,7 +109,7 @@ describe 'Commands', () =>
       # parser
       cp = new CommandParser(@commands)
       defineCommands(cp); # load "defined" commands
-      @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, tl, ct, scope)
+      @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, {tl}, ct, scope)
 
     it 'define a new command', () =>
       moveLeft = await @exec 'define move-left "Moves left." (move left)'

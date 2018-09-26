@@ -13,16 +13,6 @@ let {Manager} = require('./devices/cleware-switch1');
 ////////////////////////////////////////////////
 
 /**
- * @typedef {Object} DeviceInfo
- * @property {string} type - The type of the device.
- * @property {(string|number)} serialNum - The serial number of the device.
- * @property {string} status - The status of the device, either
- *   'connected' or 'disconnected'.
- */
-
-////////////////////////////////////////////////
-
-/**
  * Issues commands to control a traffic light.
  */
 class Commander {
@@ -70,7 +60,7 @@ class Commander {
    * Returns information about known devices.
    * Known devices are either connected devices or
    * devices that were once connected and then got disconnected.
-   * @returns {DeviceInfo[]} Device info list.
+   * @returns {Commander~DeviceInfo[]} Device info list.
    */
   devicesInfo() {
     let devices = this.manager.allDevices();
@@ -152,7 +142,7 @@ class Commander {
     let log = this.logger.log;
     log(`${tl}: running '${command}'`);
     this.running = command;
-    let res = await this.parser.execute(command, tl);
+    let res = await this.parser.execute(command, {tl});
     this.running = null;
     this._finishedExecution(command, tl);
     return res;
@@ -235,6 +225,16 @@ class Commander {
   }
 
 }
+
+////////////////////////////////////////////////
+
+/**
+ * @typedef {object} Commander~DeviceInfo
+ * @property {string} type - The type of the device.
+ * @property {(string|number)} serialNum - The serial number of the device.
+ * @property {string} status - The status of the device, either
+ *   'connected' or 'disconnected'.
+ */
 
 ////////////////////////////////////////////////
 

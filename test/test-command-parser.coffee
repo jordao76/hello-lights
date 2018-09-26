@@ -11,7 +11,7 @@ describe 'CommandParser', () ->
     @tl = red:32, yellow:33, green:34
     @ct = new Cancellable
     @scope = {}
-    @exec = (commandStr) => @cp.execute(commandStr, @tl, @ct, @scope)
+    @exec = (commandStr) => @cp.execute(commandStr, {@tl}, @ct, @scope)
 
   it 'should execute a parameterless command', () =>
     @commands.cycle = sinon.stub().returns 96
