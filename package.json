@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "doc": "jsdoc src -r -d doc && opn doc/index.html",
-    "lint": "eslint src web cli",
+    "lint": "coffeelint -f coffeelint.json test && eslint src web cli",
     "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "pretest": "npm run peg",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "browserify": "^16.2.2",
     "chai": "^4.1.2",
+    "coffeelint": "^2.1.0",
     "coffeescript": "^2.3.1",
     "cpy-cli": "^2.0.0",
     "eslint": "^5.6.0",

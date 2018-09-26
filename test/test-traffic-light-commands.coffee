@@ -16,7 +16,7 @@ describe 'Traffic light commands', () =>
     @ctx = {@tl, @ct, scope}
     # parser
     @cp = new CommandParser()
-    defineCommands(@cp); # load "defined" commands
+    defineCommands(@cp) # load "defined" commands
     @commands = @cp.commands
     @exec = (cmd, tl=@tl, ct=@ct) => @cp.execute(cmd, {tl}, ct, scope)
 

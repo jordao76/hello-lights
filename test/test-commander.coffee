@@ -2,7 +2,7 @@
 {Device, DeviceManager} = require '../src/device'
 require('chai').should()
 sinon = require('sinon')
-yieldThen = (fn) => setTimeout(fn, 0)
+yieldThen = (fn) -> setTimeout(fn, 0)
 
 DEBUG_STUB = (stub) ->
   console.log 'STUB callCount', stub.callCount

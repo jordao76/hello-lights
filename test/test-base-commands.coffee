@@ -6,7 +6,7 @@ defineCommands = require '../src/traffic-light-commands.cljs'
 require('chai').should()
 sinon = require 'sinon'
 nativeSetTimeout = setTimeout
-yieldThen = (fn) => nativeSetTimeout(fn, 0)
+yieldThen = (fn) -> nativeSetTimeout(fn, 0)
 
 describe 'Commands', () =>
 
@@ -18,22 +18,22 @@ describe 'Commands', () =>
     describe 'pause', () =>
 
       it 'should pause for 500ms', (done) =>
-          paused = false
-          run = () =>
-            await c.pause [500]
-            paused = true
-          run().then () =>
-            paused.should.be.true
-            done()
-          paused.should.be.false
-          @clock.tick 500
+        paused = false
+        run = () ->
+          await c.pause [500]
+          paused = true
+        run().then () ->
+          paused.should.be.true
+          done()
+        paused.should.be.false
+        @clock.tick 500
 
       it 'should be cancellable', (done) =>
         paused = false
-        run = () =>
+        run = () ->
           await c.pause [5000]
           paused = true
-        run().then () =>
+        run().then () ->
           paused.should.be.true
           done()
         paused.should.be.false
@@ -108,7 +108,7 @@ describe 'Commands', () =>
       @commands.pause = @pause # replace c.pause with the stub
       # parser
       cp = new CommandParser(@commands)
-      defineCommands(cp); # load "defined" commands
+      defineCommands(cp) # load "defined" commands
       @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, {tl}, ct, scope)
 
     it 'define a new command', () =>
@@ -177,11 +177,11 @@ describe 'Commands', () =>
 
       it 'define a new command: error in the definition', () =>
         msg = 'Bad value "up" to "move" parameter 1 ("where"); must be: "left" or "right"'
-        @exec('define move-up "Move up." (move up)').catch (e) =>
+        @exec('define move-up "Move up." (move up)').catch (e) ->
           e.message.should.equal msg
 
       it 'define a new command: error in the execution', () =>
         await @exec('define move-left "Move left." (move left)')
         msg = 'Bad number of arguments to "move-left"; it takes 0 but was given 1'
-        @exec('move-left 40').catch (e) =>
+        @exec('move-left 40').catch (e) ->
           e.message.should.equal msg

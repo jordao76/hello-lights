@@ -1,6 +1,6 @@
 {RED, YELLOW, GREEN, ON, OFF, PhysicalLight, PhysicalTrafficLight} =
   require('../../src/physical-traffic-light')
-{Manager} = require("../../src/devices/cleware-switch1");
+{Manager} = require("../../src/devices/cleware-switch1")
 require('chai').should()
 HID = require('node-hid')
 sinon = require('sinon')
@@ -102,7 +102,7 @@ describe 'Cleware Switch1 device', ->
 
     it 'reset turns all lights off', ->
       @tl.red.turnOn()
-      @tl.reset();
+      @tl.reset()
       @tl.red.on.should.be.false
       # reset turns off all lights even if they are off,
       # since in the physical device they might actually be on,

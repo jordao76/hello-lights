@@ -46,7 +46,7 @@ describe 'CommandParser', () ->
     res.should.equal 97
 
   it 'should throw an error for an invalid command name', () =>
-    @exec('invalid red').catch (e) =>
+    @exec('invalid red').catch (e) ->
       e.message.should.equal 'Command not found: "invalid"'
 
   describe 'transformation', () =>
@@ -72,7 +72,7 @@ describe 'CommandParser', () ->
   describe 'validation', () =>
 
     beforeEach () =>
-      @commands.run = (ctx, [c1, c2]) -> c1(ctx); c2(ctx);
+      @commands.run = (ctx, [c1, c2]) -> c1(ctx); c2(ctx)
       @commands.run.doc = name: 'run'
       @commands.run.paramNames = ['c1','c2']
       @isValid = sinon.stub()
@@ -90,17 +90,17 @@ describe 'CommandParser', () ->
 
     it 'should throw a validation error for an invalid argument', () =>
       @isValid.returns no
-      @exec('turnOn blue').catch (e) =>
+      @exec('turnOn blue').catch (e) ->
         e.message.should.equal 'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
 
     it 'should throw a validation error for a missing parameter (bad arity)', () =>
       @isValid.returns yes
-      @exec('turnOn').catch (e) =>
+      @exec('turnOn').catch (e) ->
         e.message.should.equal 'Bad number of arguments to "turnOn"; it takes 1 but was given 0'
 
     it 'should throw a validation error for an extra parameter', () =>
       @isValid.returns yes
-      @exec('turnOn red 1').catch (e) =>
+      @exec('turnOn red 1').catch (e) ->
         e.message.should.equal 'Bad number of arguments to "turnOn"; it takes 1 but was given 2'
 
     it 'should validate the 1st argument even when more arguments are provided', () =>
@@ -109,7 +109,7 @@ describe 'CommandParser', () ->
         'Bad number of arguments to "turnOn"; it takes 1 but was given 2',
         'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
       ].join '\n'
-      @exec('turnOn blue 1').catch (e) =>
+      @exec('turnOn blue 1').catch (e) ->
         e.message.should.equal msg
 
     it 'should validate nested commands with 2 bad arguments', () =>
@@ -118,7 +118,7 @@ describe 'CommandParser', () ->
         'Bad value "blue" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"',
         'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
       ].join '\n'
-      @exec('run (turnOn blue) (turnOn cyan)').catch (e) =>
+      @exec('run (turnOn blue) (turnOn cyan)').catch (e) ->
         e.message.should.equal msg
 
     it 'should validate nested commands with 1 bad arity and 1 bad argument', () =>
@@ -127,7 +127,7 @@ describe 'CommandParser', () ->
         'Bad number of arguments to "turnOn"; it takes 1 but was given 0',
         'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
       ].join '\n'
-      @exec('run (turnOn) (turnOn cyan)').catch (e) =>
+      @exec('run (turnOn) (turnOn cyan)').catch (e) ->
         e.message.should.equal msg
 
     it 'should validate nested commands with 1 bad argument and 1 bad command', () =>
@@ -136,7 +136,7 @@ describe 'CommandParser', () ->
         'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"',
         'Command not found: "turnBlue"'
       ].join '\n'
-      @exec('run (turnOn cyan) (turnBlue)').catch (e) =>
+      @exec('run (turnOn cyan) (turnBlue)').catch (e) ->
         e.message.should.equal msg
 
     it 'validation should work for variables', () =>
@@ -151,7 +151,7 @@ describe 'CommandParser', () ->
       @isValid.returns no
       @scope = light: 'cyan'
       msg = 'Bad value "cyan" to "turnOn" parameter 1 ("light"); must be: "red", "yellow" or "green"'
-      @exec('turnOn :light').catch (e) =>
+      @exec('turnOn :light').catch (e) ->
         e.message.should.equal msg
 
   describe 'variables', () =>
