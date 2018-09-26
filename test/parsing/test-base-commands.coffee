@@ -1,8 +1,7 @@
-{Light, TrafficLight} = require '../src/traffic-light'
-{CommandParser} = require '../src/command-parser'
-{Cancellable} = require '../src/cancellable'
-c = require '../src/base-commands'
-defineCommands = require '../src/traffic-light-commands.cljs'
+require '../setup-unhandled-rejection'
+{CommandParser} = require '../../src/parsing/command-parser'
+{Cancellable} = require '../../src/parsing/cancellable'
+c = require '../../src/parsing/base-commands'
 require('chai').should()
 sinon = require 'sinon'
 nativeSetTimeout = setTimeout
@@ -43,8 +42,6 @@ describe 'Commands', () =>
     describe 'timeout', () =>
 
       beforeEach () =>
-        @tl = new TrafficLight
-        @light = @tl.red
         @token = null
 
       it 'should cancel when the timeout is reached', (done) =>
@@ -52,7 +49,7 @@ describe 'Commands', () =>
           command = ({tl, ct}) =>
             @token = ct
             c.pause {ct}, [25000]
-          await c.timeout {@tl}, [5000, command]
+          await c.timeout {}, [5000, command]
         run().then () =>
           @token.isCancelled.should.be.true
           done()
@@ -63,7 +60,7 @@ describe 'Commands', () =>
           command = ({tl, ct}) =>
             @token = ct
             c.pause {ct}, [25000]
-          await c.timeout {@tl}, [5000, command]
+          await c.timeout {}, [5000, command]
         run().then () =>
           @token.isCancelled.should.be.true
           done()
@@ -74,7 +71,7 @@ describe 'Commands', () =>
           command = ({tl, ct}) =>
             @token = ct
             c.pause {ct}, [250]
-          await c.timeout {@tl}, [5000, command]
+          await c.timeout {}, [5000, command]
         run().then () =>
           @token.isCancelled.should.be.false
           done()
@@ -85,10 +82,9 @@ describe 'Commands', () =>
 
     beforeEach () =>
       # context for execution
-      @tl = new TrafficLight
       @ct = new Cancellable
       scope = {}
-      @ctx = {@tl, @ct, scope}
+      @ctx = {@ct, scope}
       # validation functions
       isNumber = (n) -> typeof n is 'number'
       isNumber.exp = 'a number'
@@ -108,8 +104,7 @@ describe 'Commands', () =>
       @commands.pause = @pause # replace c.pause with the stub
       # parser
       cp = new CommandParser(@commands)
-      defineCommands(cp) # load "defined" commands
-      @exec = (cmd, tl=@tl, ct=@ct) => cp.execute(cmd, {tl}, ct, scope)
+      @exec = (cmd) => cp.execute(cmd, {}, @ct, scope)
 
     it 'define a new command', () =>
       moveLeft = await @exec 'define move-left "Moves left." (move left)'

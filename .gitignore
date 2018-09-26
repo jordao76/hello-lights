@@ -1,6 +1,6 @@
 node_modules
 web/bundle.js
-src/command-peg-parser.js
+src/parsing/command-peg-parser.js
 temp
 lib
 doc

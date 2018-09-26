@@ -1,8 +1,8 @@
+require './setup-unhandled-rejection'
 {Light, TrafficLight} = require '../src/traffic-light'
-{CommandParser} = require '../src/command-parser'
-{Cancellable} = require '../src/cancellable'
-baseCommands = require '../src/base-commands'
-defineCommands = require '../src/traffic-light-commands.cljs'
+{CommandParser} = require '../src/parsing/command-parser'
+{Cancellable} = require '../src/parsing/cancellable'
+{defineCommands} = require '../src/traffic-light-commands'
 require('chai').should()
 sinon = require('sinon')
 
@@ -16,7 +16,7 @@ describe 'Traffic light commands', () =>
     @ctx = {@tl, @ct, scope}
     # parser
     @cp = new CommandParser()
-    defineCommands(@cp) # load "defined" commands
+    defineCommands(@cp)
     @commands = @cp.commands
     @exec = (cmd, tl=@tl, ct=@ct) => @cp.execute(cmd, {tl}, ct, scope)
 

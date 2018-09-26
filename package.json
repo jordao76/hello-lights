@@ -12,7 +12,7 @@
   "scripts": {
     "doc": "jsdoc src -r -d doc && opn doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web cli",
-    "peg": "pegjs -o src/command-peg-parser.js src/command-grammar.pegjs",
+    "peg": "pegjs -o src/parsing/command-peg-parser.js src/parsing/command-grammar.pegjs",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "pretest": "npm run peg",
     "test": "npm run mocha",
@@ -51,7 +51,7 @@
   },
   "nyc": {
     "exclude": [
-      "src/command-peg-parser.js"
+      "src/parsing/command-peg-parser.js"
     ]
   }
 }

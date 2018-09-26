@@ -1,3 +1,4 @@
+require '../setup-unhandled-rejection'
 {RED, YELLOW, GREEN, ON, OFF, PhysicalLight, PhysicalTrafficLight} =
   require('../../src/physical-traffic-light')
 {Manager} = require("../../src/devices/cleware-switch1")

@@ -1,5 +1,6 @@
-{CommandParser} = require '../src/command-parser'
-{Cancellable} = require '../src/cancellable'
+require '../setup-unhandled-rejection'
+{CommandParser} = require '../../src/parsing/command-parser'
+{Cancellable} = require '../../src/parsing/cancellable'
 require('chai').should()
 sinon = require('sinon')
 
@@ -210,38 +211,3 @@ describe 'CommandParser', () ->
       sinon.assert.calledWith(@commands.pause, {@tl, @ct, @scope}, [150])
       sinon.assert.calledWith(@commands.toggle, {@tl, @ct, @scope}, ['red'])
       sinon.assert.calledTwice(@commands.toggle)
-
-  describe 'define', () =>
-
-    it 'should define a new command', () =>
-      @commands.stub = sinon.stub()
-      @commands.stub.paramNames = ['v']
-      @cp.define('fake', @cp.parse('stub 42')) # fake calls stub
-      res = await @exec('fake')
-      sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
-
-    it 'should define a new command with a variable', () =>
-      @commands.stub = sinon.stub()
-      @commands.stub.paramNames = ['v']
-      fake = @cp.define('fake', @cp.parse('stub :var'))
-      # check metadata
-      fake.doc.name.should.equal 'fake'
-      fake.paramNames.should.deep.equal ['var']
-      # execute
-      res = await @exec('fake 42')
-      sinon.assert.calledWith(@commands.stub, {@tl, @ct, @scope}, [42])
-
-    it 'should define a new command with validation', () =>
-      isRed = (c) -> c is 'red'
-      isNumber = (n) -> typeof n is 'number'
-      @commands.twinkle = sinon.stub()
-      @commands.twinkle.paramNames = ['color', 'n']
-      @commands.twinkle.validation = [isRed, isNumber]
-      burst = @cp.define('burst', @cp.parse('twinkle :light 50'))
-      # check metadata
-      burst.doc.name.should.equal 'burst'
-      burst.paramNames.should.deep.equal ['light']
-      #TODO burst.validation.should.deep.equal [isRed]
-      # execute
-      res = await @exec('burst red')
-      sinon.assert.calledWith(@commands.twinkle, {@tl, @ct, @scope}, ['red', 50])

@@ -1,3 +1,4 @@
+require './setup-unhandled-rejection'
 {Device} = require '../src/device'
 require('chai').should()
 sinon = require('sinon')

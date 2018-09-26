@@ -1,5 +1,5 @@
-let {CommandParser} = require('./command-parser');
-let defineCommands = require('./traffic-light-commands.cljs');
+let {CommandParser} = require('./parsing/command-parser');
+let {defineCommands} = require('./traffic-light-commands');
 
 ////////////////////////////////////////////////
 

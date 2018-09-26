@@ -1,3 +1,4 @@
+require './setup-unhandled-rejection'
 {Commander} = require '../src/commander'
 {Device, DeviceManager} = require '../src/device'
 require('chai').should()

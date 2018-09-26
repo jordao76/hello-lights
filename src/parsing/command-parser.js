@@ -1,6 +1,6 @@
-let baseCommands = require('./base-commands');
-let {Cancellable} = require('./cancellable');
-let parser = require('./command-peg-parser');
+const baseCommands = require('./base-commands');
+const {Cancellable} = require('./cancellable');
+const parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -8,7 +8,6 @@ let parser = require('./command-peg-parser');
  * A function that implements a command.
  * @typedef {function} CommandParser~CommandFunction
  * @param {object} ctx - Context to execute the command.
- * @param {CommandParser} [ctx.cp] - The command parser (on demand).
  * @param {Cancellable} ctx.ct - A cancellation token.
  * @param {object} ctx.scope - Variable bindings for nested commands.
  * @param {...object} [ctx....] - Extra context objects needed for the command,
@@ -21,8 +20,6 @@ let parser = require('./command-peg-parser');
  * @property {string[]} [paramNames] - Parameter names for the command.
  * @property {function[]} [validation] - Validation functions for each parameter
  *   after transformation.
- * @property {boolean} [usesParser] - If true passes cp (the command parser) to
- *   the command.
  */
 
 //////////////////////////////////////////////////////////////////////////////
@@ -32,11 +29,16 @@ class CommandParser {
 
   /**
    * @param {object.<string, CommandParser~CommandFunction>} [commands] -
-   *   Commands this parser recognizes.
+   *   Base commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
-    // clone base commands
-    this.commands = commands === baseCommands ? {...commands} : commands;
+    if (commands === baseCommands) {
+      // clone base-commands so it's not changed if new commands are added
+      this.commands = {...commands};
+    } else {
+      this.commands = commands;
+    }
+    this._addDefine();
     this.ct = new Cancellable;
   }
 
@@ -102,13 +104,17 @@ class CommandParser {
   }
 
   /**
-   * Defines a new command or redefines an existing one.
-   * @param {string} name - Command name.
-   * @param {function} command - A command function.
-   * @param {string} [desc] - Command description.
-   * @returns {CommandParser~CommandFunction} The newly defined command.
+   * Adds a new command or redefines an existing one.
+   * @param {string} name - The command name.
+   * @param {CommandParser~CommandFunction} command - The command function.
    */
-  define(name, command, desc = '') {
+  add(name, command) {
+    this.commands[name] = command;
+  }
+
+  // Defines a new command or redefines an existing one.
+  // Used by the 'define' command.
+  _define(name, command, desc = '') {
     let paramNames = command.paramNames || [];
     let newCommand = (ctx, params = []) => {
       let {scope = {}} = ctx;
@@ -120,6 +126,20 @@ class CommandParser {
     newCommand.paramNames = paramNames;
     newCommand.toString = () => `'${name}' command`;
     return this.commands[name] = newCommand;
+  }
+
+  _addDefine() {
+    // add the 'define' command, which is intrinsic to the CommandParser
+    const {isIdentifier, isString, isCommand} = require('./validation');
+    let define = (ctx, [name, desc, command]) => this._define(name, command, desc);
+    define.doc = {
+      name: 'define',
+      desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
+            '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
+    };
+    define.paramNames = ['name', 'desc', 'command'];
+    define.validation = [isIdentifier, isString, isCommand];
+    this.add('define', define);
   }
 
 }
@@ -196,7 +216,6 @@ class Generator {
     let vars = new Vars(args);
     let res = (ctx) => {
       let {scope = {}} = ctx;
-      if (command.usesParser) ctx.cp = this.parser; // cp = command-parser
       let params = vars.resolve(scope);
       Validator.validate(command, params);
       return command(ctx, params);

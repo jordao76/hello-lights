@@ -4,33 +4,13 @@
 // Cancellation Tokens are instances of Cancellable.
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-// A negative look behind to check for a string that does NOT end with a dash
-// is only supported on node 8.9.4 with the --harmony flag
-// https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
-// /^[a-z_][a-z_0-9-]*(?<!-)$/i
-let isIdentifier = s =>
-  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
-isIdentifier.exp = 'a valid identifier';
-
-let isString = s => typeof s === 'string';
-isString.exp = 'a string';
-
-let isNumber = n => typeof n === 'number';
-isNumber.exp = 'a number';
-let isPeriod = isNumber;
-
-let isCommand = f => typeof f === 'function';
-isCommand.exp = 'a command';
-
-let each = vf => {
-  let v = a => Array.isArray(a) && a.every(e => vf(e));
-  v.exp = `each is ${vf.exp}`;
-  return v;
-};
+const {
+  isIdentifier,
+  isNumber,
+  isPeriod,
+  isCommand,
+  each
+} = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
 // Base commands
@@ -56,20 +36,6 @@ cancel.doc = {
   name: 'cancel',
   desc: 'Cancels all executing commands.'
 };
-
-//////////////////////////////////////////////////////////////////////////////
-
-function define({cp}, [name, desc, command]) {
-  return cp.define(name, command, desc);
-}
-define.doc = {
-  name: 'define',
-  desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
-        '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
-};
-define.paramNames = ['name', 'desc', 'command'];
-define.validation = [isIdentifier, isString, isCommand];
-define.usesParser = true; // receives the cp (command parser) parameter
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -254,77 +220,8 @@ ease.doc = {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Defines base commands to control a Traffic Light.
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-
-let turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
-
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
-
-let isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
-
-//////////////////////////////////////////////////////////////////////////////
-
-function toggle({tl, ct = cancellable}, [light]) {
-  if (ct.isCancelled) return;
-  tl[light].toggle();
-}
-toggle.paramNames = ['light'];
-toggle.validation = [isLight];
-toggle.doc = {
-  name: 'toggle',
-  desc: 'Toggles the given light:\n(toggle green)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function turn({tl, ct = cancellable}, [light, on]) {
-  if (ct.isCancelled) return;
-  turnLight(tl[light], on);
-}
-turn.paramNames = ['light', 'state'];
-turn.validation = [isLight, isState];
-turn.doc = {
-  name: 'turn',
-  desc: 'Turns the given light on or off:\n' +
-        '(turn green on)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function reset({tl, ct = cancellable}) {
-  if (ct.isCancelled) return;
-  await tl.reset();
-}
-reset.paramNames = []; // no parameters
-reset.validation = []; // validates number of parameters (zero)
-reset.doc = {
-  name: 'reset',
-  desc: 'Sets all lights to off.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
 module.exports = {
-  // base commands
-  cancel, define,
+  cancel,
   pause, timeout,
-  run, loop, repeat, all, ease,
-  // base traffic light commands
-  toggle, turn, reset
+  run, loop, repeat, all, ease
 };

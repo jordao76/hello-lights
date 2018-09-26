@@ -1,3 +1,4 @@
+require './setup-unhandled-rejection'
 {Light, TrafficLight} = require '../src/traffic-light'
 require('chai').should()
 

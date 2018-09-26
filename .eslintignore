@@ -1,2 +1,2 @@
-src/command-peg-parser.js
+src/parsing/command-peg-parser.js
 web/bundle.js

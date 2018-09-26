@@ -1,6 +1,6 @@
 var trafficlight = require('../src/traffic-light.js');
-var {CommandParser} = require('../src/command-parser.js');
-let defineCommands = require('../src/traffic-light-commands.cljs');
+var {CommandParser} = require('../src/parsing/command-parser.js');
+let {defineCommands} = require('../src/traffic-light-commands');
 
 ///////////////
 
