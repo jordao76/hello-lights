@@ -68,10 +68,33 @@ class ChromiumDeviceManager extends DeviceManager {
     return this.devices;
   }
 
-  newDevice() {
+  async newDevice() {
     let device = new ChromiumDevice();
     this.devices.push(device);
-    device.open(); // no await
+    device.onDisconnected(() => this.emit('removed'));
+    await device.open();
+    this.emit('added');
+  }
+
+  // TODO NOT USED!
+  defineCommands(cp) {
+    this._defineNewDevice(cp);
+  }
+
+  _defineNewDevice(cp) {
+    // Note: if the last device is closed, 'new-device' can't run,
+    // because commands need a connected device to run, even if they don't use it.
+    // Same thing with 'define'.
+    // The Manager could have its own CommandParser and separate commands from
+    // the traffic lights.
+    let newDevice = ctx => this.newDevice();
+    newDevice.doc = {
+      name: 'new-device',
+      desc: 'Opens a new chromium device.'
+    };
+    newDevice.paramNames = [];
+    newDevice.validation = [];
+    cp.add('new-device', newDevice);
   }
 
 }

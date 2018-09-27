@@ -156,6 +156,7 @@ class Commander {
     } else {
       this.suspended = command;
       log(`${tl}: disabled, suspending '${command}'`);
+      this._resumeIfNeeded(); // try to resume in another traffic light
     }
   }
 

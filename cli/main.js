@@ -59,6 +59,8 @@ function listen() {
       process.exit(0);
     } else if (text === 'check device') {
       commander.logDevicesInfo();
+    } else if (Manager.newDevice && text === 'new device') {
+      Manager.newDevice();
     } else {
       commander.run(text);
       prompt();
@@ -77,7 +79,7 @@ function help(commandName) {
       `> help [command name]`,
       `> [command]`,
       `> cancel`,
-      `> check device`,
+      `> check device` + (Manager.newDevice ? '\n> new device' : ''),
       `> exit | quit`,
       `  available commands:`,
       ...commandList

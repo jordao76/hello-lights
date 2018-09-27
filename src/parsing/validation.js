@@ -20,7 +20,7 @@ const isGreaterThan = n => {
   let v = x => isNumber(x) && x > n;
   v.exp = `a number (> ${n})`;
   return v;
-}
+};
 
 const isGreaterThanZero = isGreaterThan(0);
 
