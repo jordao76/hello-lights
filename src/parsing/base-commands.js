@@ -7,6 +7,7 @@
 const {
   isIdentifier,
   isNumber,
+  isGreaterThanZero,
   isPeriod,
   isCommand,
   each
@@ -140,7 +141,7 @@ async function repeat(ctx, [times, commands]) {
 }
 repeat.transformation = args => [args[0], args.slice(1)];
 repeat.paramNames = ['times', 'commands'];
-repeat.validation = [isNumber, each(isCommand)];
+repeat.validation = [isGreaterThanZero, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
   desc: 'Executes the commands in sequence, repeating the given number of times:\n' +

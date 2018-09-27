@@ -66,9 +66,9 @@ reset.doc = {
 
 function defineCommands(cp) {
   // add base commands
-  cp.commands.toggle = toggle;
-  cp.commands.turn = turn;
-  cp.commands.reset = reset;
+  cp.add('toggle', toggle);
+  cp.add('turn', turn);
+  cp.add('reset', reset);
   // add higher-level commands
   require('./traffic-light-commands.cljs')(cp);
 }
