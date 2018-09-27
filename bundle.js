@@ -5,44 +5,17 @@
 // Cancellation Tokens are instances of Cancellable.
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-// A negative look behind to check for a string that does NOT end with a dash
-// is only supported on node 8.9.4 with the --harmony flag
-// https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
-// /^[a-z_][a-z_0-9-]*(?<!-)$/i
-let isIdentifier = s =>
-  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
-isIdentifier.exp = 'a valid identifier';
-
-let isString = s => typeof s === 'string';
-isString.exp = 'a string';
-
-let isNumber = n => typeof n === 'number';
-isNumber.exp = 'a number';
-let isPeriod = isNumber;
-
-let isCommand = f => typeof f === 'function';
-isCommand.exp = 'a command';
-
-let each = vf => {
-  let v = a => Array.isArray(a) && a.every(e => vf(e));
-  v.exp = `each is ${vf.exp}`;
-  return v;
-};
+const {
+  isIdentifier,
+  isNumber,
+  isGreaterThanZero,
+  isPeriod,
+  isCommand,
+  each
+} = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
-// Every command takes 2 parameters:
-//   1. context = { cp, tl, ct, scope }
-//   where
-//      cp is the command parser (on demand)
-//      tl is a traffic light
-//      ct is a cancellation token
-//      scope are the variable bindings for nested commands
-//   2. params = [v1, v2, ..., vn]
-//      v1...vn are the values of the command parameters
+// Base commands
 //////////////////////////////////////////////////////////////////////////////
 
 let {Cancellable} = require('./cancellable');
@@ -65,20 +38,6 @@ cancel.doc = {
   name: 'cancel',
   desc: 'Cancels all executing commands.'
 };
-
-//////////////////////////////////////////////////////////////////////////////
-
-function define({cp}, [name, desc, command]) {
-  return cp.define(name, command, desc);
-}
-define.doc = {
-  name: 'define',
-  desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
-        '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
-};
-define.paramNames = ['name', 'desc', 'command'];
-define.validation = [isIdentifier, isString, isCommand];
-define.usesParser = true; // receives the cp (command parser) parameter
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -111,16 +70,17 @@ pause.doc = {
 //////////////////////////////////////////////////////////////////////////////
 
 // Executes a command with a timeout
-async function timeout({tl, ct = cancellable, scope = {}}, [ms, command]) {
+async function timeout(ctx, [ms, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
   let timeoutC = new Cancellable;
   let timeoutP = pause({ct}, [ms]);
   // race the cancellable-command against the timeout
-  let res = await Promise.race([command({tl, ct: timeoutC, scope}), timeoutP]);
+  let res = await Promise.race([command({...ctx, ct: timeoutC, scope}), timeoutP]);
   // check if the timeout was reached
-  // 42 is arbitrary, but it CAN'T be the value returned by timeoutP
-  let value = await Promise.race([timeoutP, 42]);
-  if (value !== 42 || ct.isCancelled) {
-    // the timeout was reached (value !== 42) OR the timeout was cancelled
+  let racer = {}; // arbitrary object to race against the timeout
+  let value = await Promise.race([timeoutP, racer]);
+  if (value !== racer || ct.isCancelled) {
+    // the timeout was reached (value !== racer) OR the timeout was cancelled
     timeoutC.cancel();
   }
   return res;
@@ -135,11 +95,12 @@ timeout.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function run({tl, ct = cancellable, scope = {}}, [commands]) {
+async function run(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
     let command = commands[i];
-    await command({tl, ct, scope});
+    await command({...ctx, ct, scope});
   }
 }
 run.transformation = args => [args];
@@ -153,11 +114,12 @@ run.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop({tl, ct = cancellable, scope = {}}, [commands]) {
+async function loop(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   if (!commands || commands.length === 0) return;
   while (true) {
     if (ct.isCancelled) return;
-    await run({tl, ct, scope}, [commands]);
+    await run({...ctx, ct, scope}, [commands]);
   }
 }
 loop.transformation = args => [args];
@@ -171,15 +133,16 @@ loop.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function repeat({tl, ct = cancellable, scope = {}}, [times, commands]) {
+async function repeat(ctx, [times, commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   while (times-- > 0) {
     if (ct.isCancelled) return;
-    await run({tl, ct, scope}, [commands]);
+    await run({...ctx, ct, scope}, [commands]);
   }
 }
 repeat.transformation = args => [args[0], args.slice(1)];
 repeat.paramNames = ['times', 'commands'];
-repeat.validation = [isNumber, each(isCommand)];
+repeat.validation = [isGreaterThanZero, each(isCommand)];
 repeat.doc = {
   name: 'repeat',
   desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
@@ -188,12 +151,13 @@ repeat.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function all({tl, ct = cancellable, scope = {}}, [commands]) {
+async function all(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
   if (ct.isCancelled) return;
   await Promise.all(commands.map(command => {
     // since the commands run in parallel, they must
     // have separate scopes so as not to step in each other's toes
-    return command({tl, ct, scope: {...scope}});
+    return command({...ctx, ct, scope: {...scope}});
   }));
 }
 all.transformation = args => [args];
@@ -221,7 +185,8 @@ isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from, to, command]) {
+async function ease(ctx, [easing, ms, what, from, to, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
   let start = Date.now();
   let end = start + ms;
   let next = () => {
@@ -241,7 +206,7 @@ async function ease({tl, ct = cancellable, scope = {}}, [easing, ms, what, from,
     let now = Date.now();
     let max = end - now;
     if (max <= 0) break;
-    await timeout({tl, ct, scope}, [max, command]);
+    await timeout({...ctx, ct, scope}, [max, command]);
   }
 }
 ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
@@ -257,82 +222,13 @@ ease.doc = {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Defines base commands to control a Traffic Light.
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-
-let turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
-
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-let isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
-
-let isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
-
-//////////////////////////////////////////////////////////////////////////////
-
-function toggle({tl, ct = cancellable}, [light]) {
-  if (ct.isCancelled) return;
-  tl[light].toggle();
-}
-toggle.paramNames = ['light'];
-toggle.validation = [isLight];
-toggle.doc = {
-  name: 'toggle',
-  desc: 'Toggles the given light:\n(toggle green)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function turn({tl, ct = cancellable}, [light, on]) {
-  if (ct.isCancelled) return;
-  turnLight(tl[light], on);
-}
-turn.paramNames = ['light', 'state'];
-turn.validation = [isLight, isState];
-turn.doc = {
-  name: 'turn',
-  desc: 'Turns the given light on or off:\n' +
-        '(turn green on)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function reset({tl, ct = cancellable}) {
-  if (ct.isCancelled) return;
-  await tl.reset();
-}
-reset.paramNames = []; // no parameters
-reset.validation = []; // validates number of parameters (zero)
-reset.doc = {
-  name: 'reset',
-  desc: 'Sets all lights to off.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
 module.exports = {
-  // base commands
-  cancel, define,
+  cancel,
   pause, timeout,
-  run, loop, repeat, all, ease,
-  // base traffic light commands
-  toggle, turn, reset
+  run, loop, repeat, all, ease
 };
 
-},{"./cancellable":2}],2:[function(require,module,exports){
+},{"./cancellable":2,"./validation":5}],2:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
  * Commands should regularly check for the {@link Cancellable#isCancelled}
@@ -392,21 +288,47 @@ class Cancellable {
 module.exports = {Cancellable};
 
 },{}],3:[function(require,module,exports){
-let baseCommands = require('./base-commands');
-let {Cancellable} = require('./cancellable');
-let parser = require('./command-peg-parser');
+const baseCommands = require('./base-commands');
+const {Cancellable} = require('./cancellable');
+const parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Parses and executes commands on a traffic light. */
+/**
+ * A function that implements a command.
+ * @typedef {function} CommandParser~CommandFunction
+ * @param {object} ctx - Context to execute the command.
+ * @param {Cancellable} ctx.ct - A cancellation token.
+ * @param {object} ctx.scope - Variable bindings for nested commands.
+ * @param {...object} [ctx....] - Extra context objects needed for the command,
+ *   like the objects that the command manipulates.
+ * @param {object[]} [params] - The command parameters.
+ * @property {object} doc - Name and description of the command.
+ * @property {string} doc.name - Command name.
+ * @property {string} doc.desc - Command description.
+ * @property {function} [transformation] - Transforms the parameters of the command.
+ * @property {string[]} [paramNames] - Parameter names for the command.
+ * @property {function[]} [validation] - Validation functions for each parameter
+ *   after transformation.
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+
+/** Parses and executes commands. */
 class CommandParser {
 
   /**
-   * @param {object} [commands] - Commands this parser recognizes.
+   * @param {object.<string, CommandParser~CommandFunction>} [commands] -
+   *   Base commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
-    // clone base commands
-    this.commands = commands === baseCommands ? {...commands} : commands;
+    if (commands === baseCommands) {
+      // clone base-commands so it's not changed if new commands are added
+      this.commands = {...commands};
+    } else {
+      this.commands = commands;
+    }
+    this._addDefine();
     this.ct = new Cancellable;
   }
 
@@ -433,18 +355,21 @@ class CommandParser {
   /**
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
-   * @param {TrafficLight} tl - Traffic light to use.
+   * @param {Object} [ctx] - Context object to be passed as part of the executed
+   *   commands context, togeher with the cancellation token and the scope.
+   *   This context cannot have keys 'ct' and 'scope', since they would be
+   *   overwritten anyway.
    * @param {Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
    */
-  async execute(commandStr, tl, ct = this.ct, scope = {}) {
+  async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
     if (ct.isCancelled) return;
     let asts = parser.parse(commandStr);
     let generator = new Generator(this);
     let res;
     for (let i = 0; i < asts.length; ++i) {
       let command = generator.execute(asts[i]);
-      res = await command({tl, ct, scope});
+      res = await command({...ctx, ct, scope});
     }
     if (ct === this.ct && ct.isCancelled) {
       // the command 'cancel' was executed on this.ct, so re-instantiate it
@@ -457,7 +382,8 @@ class CommandParser {
    * Parses a command string.
    * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {(function|function[])} One or many traffic light commands.
+   * @returns {(CommandParser~CommandFunction|CommandParser~CommandFunction[])}
+   *   One or many command functions.
    */
   parse(commandStr) {
     let asts = parser.parse(commandStr);
@@ -468,23 +394,42 @@ class CommandParser {
   }
 
   /**
-   * Defines a new command or redefines an existing one.
-   * @param {string} name - Command name.
-   * @param {function} command - A traffic light command.
-   * @param {string} [desc] - Command description.
-   * @returns {function} The newly defined command.
+   * Adds a new command or redefines an existing one.
+   * @param {string} name - The command name.
+   * @param {CommandParser~CommandFunction} command - The command function.
    */
-  define(name, command, desc = '') {
+  add(name, command) {
+    this.commands[name] = command;
+  }
+
+  // Defines a new command or redefines an existing one.
+  // Used by the 'define' command.
+  _define(name, command, desc = '') {
     let paramNames = command.paramNames || [];
-    let newCommand = ({tl, ct, scope = {}}, params = []) => {
+    let newCommand = (ctx, params = []) => {
+      let {scope = {}} = ctx;
       Validator.validate(newCommand, params);
       params.forEach((p, i) => scope[paramNames[i]] = p);
-      return command({tl, ct, scope});
+      return command({...ctx, scope});
     };
     newCommand.doc = {name, desc};
     newCommand.paramNames = paramNames;
     newCommand.toString = () => `'${name}' command`;
     return this.commands[name] = newCommand;
+  }
+
+  _addDefine() {
+    // add the 'define' command, which is intrinsic to the CommandParser
+    const {isIdentifier, isString, isCommand} = require('./validation');
+    let define = (ctx, [name, desc, command]) => this._define(name, command, desc);
+    define.doc = {
+      name: 'define',
+      desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
+            '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
+    };
+    define.paramNames = ['name', 'desc', 'command'];
+    define.validation = [isIdentifier, isString, isCommand];
+    this.add('define', define);
   }
 
 }
@@ -556,12 +501,11 @@ class Generator {
       return;
     }
 
-    // return a command that takes (in an object) a traffic light (tl),
-    // a cancellation token (ct) and an optional scope with variable bindings
+    // return a command that takes a context including an
+    // optional scope with variable bindings
     let vars = new Vars(args);
-    let res = ({tl, ct, scope={}}) => {
-      let ctx = {tl, ct, scope};
-      if (command.usesParser) ctx.cp = this.parser; // cp = command-parser
+    let res = (ctx) => {
+      let {scope = {}} = ctx;
       let params = vars.resolve(scope);
       Validator.validate(command, params);
       return command(ctx, params);
@@ -635,9 +579,11 @@ let Validator = {
 
 };
 
+//////////////////////////////////////////////////////////////////////////////
+
 module.exports = {CommandParser};
 
-},{"./base-commands":1,"./cancellable":2,"./command-peg-parser":4}],4:[function(require,module,exports){
+},{"./base-commands":1,"./cancellable":2,"./command-peg-parser":4,"./validation":5}],4:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -1552,6 +1498,57 @@ module.exports = {
 };
 
 },{}],5:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+//////////////////////////////////////////////////////////////////////////////
+
+// A negative look behind to check for a string that does NOT end with a dash
+// is only supported on node 8.9.4 with the --harmony flag
+// https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
+// /^[a-z_][a-z_0-9-]*(?<!-)$/i
+const isIdentifier = s =>
+  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
+isIdentifier.exp = 'a valid identifier';
+
+const isString = s => typeof s === 'string';
+isString.exp = 'a string';
+
+const isNumber = n => typeof n === 'number';
+isNumber.exp = 'a number';
+
+const isGreaterThan = n => {
+  let v = x => isNumber(x) && x > n;
+  v.exp = `a number (> ${n})`;
+  return v;
+};
+
+const isGreaterThanZero = isGreaterThan(0);
+
+const isPeriod = isGreaterThanZero;
+
+const isCommand = f => typeof f === 'function';
+isCommand.exp = 'a command';
+
+const each = vf => {
+  let v = a => Array.isArray(a) && a.length > 0 && a.every(e => vf(e));
+  v.exp = `each is ${vf.exp} (and at least 1)`;
+  return v;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  isIdentifier,
+  isString,
+  isNumber,
+  isGreaterThan,
+  isGreaterThanZero,
+  isPeriod,
+  isCommand,
+  each
+};
+
+},{}],6:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -1726,7 +1723,90 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Defines base commands to control a Traffic Light.
+//////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////
+// Utility functions
+//////////////////////////////////////////////////////////////////////////////
+
+const isOn = state =>
+  (state === 'off' || state === 'false') ? false : !!state;
+
+const turnLight = (oLight, state) =>
+  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+//////////////////////////////////////////////////////////////////////////////
+
+const isLight = l => l === 'red' || l === 'yellow' || l === 'green';
+isLight.exp = '"red", "yellow" or "green"';
+
+const isState = s => s === 'on' || s === 'off';
+isState.exp = '"on" or "off"';
+
+//////////////////////////////////////////////////////////////////////////////
+
+function toggle({tl, ct}, [light]) {
+  if (ct.isCancelled) return;
+  tl[light].toggle();
+}
+toggle.paramNames = ['light'];
+toggle.validation = [isLight];
+toggle.doc = {
+  name: 'toggle',
+  desc: 'Toggles the given light:\n(toggle green)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function turn({tl, ct}, [light, on]) {
+  if (ct.isCancelled) return;
+  turnLight(tl[light], on);
+}
+turn.paramNames = ['light', 'state'];
+turn.validation = [isLight, isState];
+turn.doc = {
+  name: 'turn',
+  desc: 'Turns the given light on or off:\n' +
+        '(turn green on)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function reset({tl, ct}) {
+  if (ct.isCancelled) return;
+  await tl.reset();
+}
+reset.paramNames = []; // no parameters
+reset.validation = []; // validates number of parameters (zero)
+reset.doc = {
+  name: 'reset',
+  desc: 'Sets all lights to off.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function defineCommands(cp) {
+  // add base commands
+  cp.add('toggle', toggle);
+  cp.add('turn', turn);
+  cp.add('reset', reset);
+  // add higher-level commands
+  require('./traffic-light-commands.cljs')(cp);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  toggle, turn, reset,
+  defineCommands
+};
+
+},{"./traffic-light-commands.cljs":6}],8:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /** A Light in a traffic light. */
@@ -1766,14 +1846,24 @@ class TrafficLight {
    */
   constructor(red, yellow, green) {
     /** The red light.
-      * @type {Light}  */
+      * @type {Light}
+      */
     this.red = red || new Light;
     /** The yellow light.
-     * @type {Light}  */
+     * @type {Light}
+     */
     this.yellow = yellow || new Light;
     /** The green light.
-     * @type {Light}  */
+     * @type {Light}
+     */
     this.green = green || new Light;
+    /**
+     * If the traffic light is checked-out or reserved.
+     * @type {boolean}
+     * @see TrafficLight#checkOut
+     * @see TrafficLight#checkIn
+     */
+    this.isCheckedOut = false;
   }
 
   /** Sets all lights to off. */
@@ -1781,6 +1871,46 @@ class TrafficLight {
     this.red.turnOff();
     this.yellow.turnOff();
     this.green.turnOff();
+  }
+
+  /**
+   * If the traffic light is enabled and ready to use.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return true;
+  }
+
+  /**
+   * Checks-out or reserve the traffic light for exclusive usage, making it
+   * unavailable for other users.
+   * @see TrafficLight#isCheckedOut
+   * @see TrafficLight#checkIn
+   * @returns {boolean} True if the traffic light was successfully checked out.
+   *   False if it was already checked out.
+   */
+  checkOut() {
+    if (this.isCheckedOut) return false;
+    return this.isCheckedOut = true;
+  }
+
+  /**
+   * Checks-in the traffic light, making it available for checking out again.
+   * @see TrafficLight#isCheckedOut
+   * @see TrafficLight#checkOut
+   */
+  checkIn() {
+    this.isCheckedOut = false;
+  }
+
+  /**
+   * If the traffic light is available: enabled and not checked-out.
+   * @type {boolean}
+   * @see TrafficLight#isEnabled
+   * @see TrafficLight#isCheckedOut
+   */
+  get isAvailable() {
+    return this.isEnabled && !this.isCheckedOut;
   }
 
 }
@@ -1791,10 +1921,10 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{}],7:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var trafficlight = require('../src/traffic-light.js');
-var {CommandParser} = require('../src/command-parser.js');
-let defineCommands = require('../src/traffic-light-commands.cljs');
+var {CommandParser} = require('../src/parsing/command-parser.js');
+let {defineCommands} = require('../src/traffic-light-commands');
 
 ///////////////
 
@@ -1849,12 +1979,12 @@ async function execute(commandStr) {
   clearError();
   info(`Executing command '${commandStr}'`);
   cp.cancel();
-  await cp.execute('reset', window.tl);
+  await cp.execute('reset', {tl: window.tl});
   try {
     if (commandStr.match(/define/)) {
       setTimeout(showHelp, 0);
     }
-    await cp.execute(commandStr, window.tl);
+    await cp.execute(commandStr, {tl: window.tl});
     info(`Finished command '${commandStr}'`);
   } catch (e) {
     error(`Error executing command.\n${e}`);
@@ -1956,4 +2086,4 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/command-parser.js":3,"../src/traffic-light-commands.cljs":5,"../src/traffic-light.js":6}]},{},[7]);
+},{"../src/parsing/command-parser.js":3,"../src/traffic-light-commands":7,"../src/traffic-light.js":8}]},{},[9]);
