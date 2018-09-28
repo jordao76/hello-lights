@@ -43,53 +43,31 @@ Issues commands to control a traffic light.
 * [Commander](#Commander)
     * [new Commander([options])](#new_Commander_new)
     * [.close()](#Commander+close)
-    * [.devicesInfo()](#Commander+devicesInfo) ⇒ [<code>Array.&lt;DeviceInfo&gt;</code>](#DeviceInfo)
-    * [.logDevicesInfo()](#Commander+logDevicesInfo)
     * [.cancel()](#Commander+cancel)
     * [.run(command, [reset])](#Commander+run)
     * [.commands()](#Commander+commands) ⇒ <code>Array.&lt;string&gt;</code>
     * [.help(commandName)](#Commander+help)
+    * [.logInfo()](#Commander+logInfo)
 
 <a name="new_Commander_new"></a>
 
 ### new Commander([options])
 Creates a new Commander instance.
-Checks-out and uses a specific traffic light or the first available one
-to issue commands.
 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | [options] | <code>Object</code> |  | Commander options. |
 | [options.logger] | <code>Object</code> | <code>console</code> | A Console-like object for logging,   with a log and an error function. |
-| [options.serialNum] | <code>string</code> / <code>number</code> |  | The serial number of the   traffic light to use, if available. Cleware USB traffic lights have a numeric serial number. |
+| [options.serialNum] | <code>string</code> &#124; <code>number</code> |  | The serial number of the   traffic light to use, if available. Cleware USB traffic lights have   a numeric serial number. |
 
 <a name="Commander+close"></a>
 
 ### commander.close()
-Called to close this instance and to stop monitoring for devices.
+Called to close this instance.
 Should be done as the last operation before exiting the process.
 
 **Kind**: instance method of [<code>Commander</code>](#Commander)  
-
-<a name="Commander+devicesInfo"></a>
-
-### commander.devicesInfo() ⇒ [<code>Array.&lt;DeviceInfo&gt;</code>](#DeviceInfo)
-Returns information about known devices.
-Known devices are either connected devices or
-devices that were once connected and then got disconnected.
-
-**Kind**: instance method of [<code>Commander</code>](#Commander)  
-**Returns**: [<code>Array.&lt;DeviceInfo&gt;</code>](#DeviceInfo) - Device info list.  
-<a name="Commander+logDevicesInfo"></a>
-
-### commander.logDevicesInfo()
-Logs information about known devices.
-Known devices are either connected devices or
-devices that were once connected and then got disconnected.
-
-**Kind**: instance method of [<code>Commander</code>](#Commander)  
-**See**: Commander#devicesInfo  
 <a name="Commander+cancel"></a>
 
 ### commander.cancel()
@@ -134,17 +112,12 @@ Logs the help info for the given command name.
 | --- | --- | --- |
 | commandName | <code>string</code> | Name of the command to log help info. |
 
-<a name="DeviceInfo"></a>
+<a name="Commander+logInfo"></a>
 
-## DeviceInfo : <code>Object</code>
-**Kind**: global typedef  
-**Properties**
+### commander.logInfo()
+Logs information about known traffic lights.
 
-| Name | Type | Description |
-| --- | --- | --- |
-| type | <code>string</code> | The type of the device. |
-| serialNum | <code>string</code> / <code>number</code> | The serial number of the device. |
-| status | <code>string</code> | The status of the device, either   'connected' or 'disconnected'. |
+**Kind**: instance method of [<code>Commander</code>](#Commander)  
 
 ## License
 

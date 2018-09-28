@@ -31,15 +31,10 @@ describe 'Commander', () =>
       @device.turn = sinon.stub() # abstract in Device
       @manager.allDevices.returns [@device]
 
-    describe 'devices info', () =>
+    describe 'traffic lights info', () =>
 
-      it 'devicesInfo', () =>
-        @cm.devicesInfo().should.deep.equal [
-          { type: 'stub', serialNum: '999999', status: 'connected' }
-        ]
-
-      it 'logDevicesInfo', () =>
-        @cm.logDevicesInfo()
+      it 'logInfo', () =>
+        @cm.logInfo()
         @logger.log.calledWith('device 999999: connected').should.be.true
 
     describe 'run', () =>
@@ -219,7 +214,7 @@ describe 'Commander', () =>
               @manager.emit('added')
               yieldThen () =>
                 # one of the Commanders should take control of the device
-                if @cm._device
+                if @cm.selector._device
                   @parser.execute.callCount.should.equal 2
                   @parser2.execute.callCount.should.equal 0
                 else

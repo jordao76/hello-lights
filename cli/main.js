@@ -58,7 +58,7 @@ function listen() {
       log('Bye');
       process.exit(0);
     } else if (text === 'check device') {
-      commander.logDevicesInfo();
+      commander.logInfo();
     } else if (Manager.newDevice && text === 'new device') {
       Manager.newDevice();
     } else {

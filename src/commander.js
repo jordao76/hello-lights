@@ -1,14 +1,14 @@
-let {CommandParser} = require('./parsing/command-parser');
-let {defineCommands} = require('./traffic-light-commands');
+////////////////////////////////////////////////
+
+const {PhysicalTrafficLightSelector} = require('./physical-traffic-light-selector');
 
 ////////////////////////////////////////////////
 
+const {CommandParser} = require('./parsing/command-parser');
+const {defineCommands} = require('./traffic-light-commands');
 // the default command parser
-let Parser = new CommandParser();
+const Parser = new CommandParser();
 defineCommands(Parser);
-
-// the default device manager
-let {Manager} = require('./devices/cleware-switch1');
 
 ////////////////////////////////////////////////
 
@@ -19,73 +19,34 @@ class Commander {
 
   /**
    * Creates a new Commander instance.
-   * Checks-out and uses a specific traffic light or the first available one
-   * to issue commands.
-   * @see DeviceManager#startMonitoring
    * @param {Object} [options] - Commander options.
    * @param {Object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {DeviceManager} [options.manager] - The Device Manager to use.
    * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {DeviceManager} [options.manager] - The Device Manager to use.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
    *   a numeric serial number.
    */
-  constructor({
-    parser = Parser,
-    manager = Manager,
-    logger = console,
-    serialNum = null
-  } = {}) {
-    this.parser = parser;
-    this.manager = manager;
+  constructor(options = {}) {
+    let {
+      logger = console,
+      parser = Parser
+    } = options;
     this.logger = logger;
-    this.serialNum = serialNum;
+    this.parser = parser;
 
-    this.devicesBySerialNum = {};
-    this.manager.startMonitoring();
-    this.manager.on('added', () => this._resumeIfNeeded());
+    this.selector = new PhysicalTrafficLightSelector(options);
+    this.selector.on('enabled', () => this._resumeIfNeeded());
+    this.selector.on('disabled', () => this.cancel());
   }
 
   /**
-   * Called to close this instance and to stop monitoring for devices.
+   * Called to close this instance.
    * Should be done as the last operation before exiting the process.
-   * @see DeviceManager#stopMonitoring
    */
   close() {
-    this.manager.stopMonitoring();
-  }
-
-  /**
-   * Returns information about known devices.
-   * Known devices are either connected devices or
-   * devices that were once connected and then got disconnected.
-   * @returns {Commander~DeviceInfo[]} Device info list.
-   */
-  devicesInfo() {
-    let devices = this.manager.allDevices();
-    return devices.map(d => ({
-      type: this.manager.type,
-      serialNum: d.serialNum,
-      status: d.isConnected ? 'connected' : 'disconnected'
-    }));
-  }
-
-  /**
-   * Logs information about known devices.
-   * Known devices are either connected devices or
-   * devices that were once connected and then got disconnected.
-   * @see Commander#devicesInfo
-   */
-  logDevicesInfo() {
-    let devicesInfo = this.devicesInfo();
-    if (devicesInfo.length === 0) {
-      this.logger.log('No devices found');
-    } else {
-      this.logger.log('Known devices:');
-      devicesInfo.forEach(info =>
-        this.logger.log(`device ${info.serialNum}: ${info.status}`));
-    }
+    this.selector.close();
   }
 
   /**
@@ -109,7 +70,7 @@ class Commander {
    *   before executing the command.
    */
   async run(command, reset = false) {
-    let tl = await this._resolveTrafficLight();
+    let tl = this.selector.resolveTrafficLight();
     if (!tl) {
       this.suspended = command;
       this.logger.log(`no traffic light available to run '${command}'`);
@@ -139,8 +100,7 @@ class Commander {
 
   async _execute(command, tl, reset) {
     if (reset) await tl.reset();
-    let log = this.logger.log;
-    log(`${tl}: running '${command}'`);
+    this.logger.log(`${tl}: running '${command}'`);
     this.running = command;
     let res = await this.parser.execute(command, {tl});
     this.running = null;
@@ -149,22 +109,20 @@ class Commander {
   }
 
   _finishedExecution(command, tl) {
-    let log = this.logger.log;
     if (tl.isEnabled) {
       this.suspended = null;
-      log(`${tl}: finished '${command}'`);
+      this.logger.log(`${tl}: finished '${command}'`);
     } else {
       this.suspended = command;
-      log(`${tl}: disabled, suspending '${command}'`);
+      this.logger.log(`${tl}: disabled, suspending '${command}'`);
       this._resumeIfNeeded(); // try to resume in another traffic light
     }
   }
 
   _errorInExecution(command, tl, error) {
-    let err = this.logger.error;
     this.running = null;
-    err(`${tl}: error in '${command}'`);
-    err(error.message);
+    this.logger.error(`${tl}: error in '${command}'`);
+    this.logger.error(error.message);
   }
 
   _resumeIfNeeded() {
@@ -172,30 +130,6 @@ class Commander {
     if (!command) return;
     this.suspended = null;
     this.run(command, true); // no await
-  }
-
-  async _resolveTrafficLight() {
-    if (this._device) return this._device.trafficLight;
-    let devices = await this.manager.allDevices().filter(d => d.trafficLight.isAvailable);
-    let device = this.serialNum
-      ? devices.filter(d => d.serialNum == this.serialNum)[0] // eslint-disable-line eqeqeq
-      : devices[0];
-    if (!device || !device.trafficLight.checkOut()) return null;
-    this._device = device;
-    this._registerDeviceIfNeeded(device);
-    return device.trafficLight;
-  }
-
-  _registerDeviceIfNeeded(device) {
-    let sn = device.serialNum;
-    if (this.devicesBySerialNum[sn]) return;
-    this.devicesBySerialNum[sn] = device;
-    device.onDisconnected(() => {
-      if (this._device !== device) return;
-      device.trafficLight.checkIn();
-      this._device = null;
-      this.cancel();
-    });
   }
 
   /**
@@ -225,17 +159,14 @@ class Commander {
     this.logger.log(command.doc.desc);
   }
 
+  /**
+   * Logs information about known traffic lights.
+   */
+  logInfo() {
+    this.selector.logInfo(this.logger);
+  }
+
 }
-
-////////////////////////////////////////////////
-
-/**
- * @typedef {object} Commander~DeviceInfo
- * @property {string} type - The type of the device.
- * @property {(string|number)} serialNum - The serial number of the device.
- * @property {string} status - The status of the device, either
- *   'connected' or 'disconnected'.
- */
 
 ////////////////////////////////////////////////
 
