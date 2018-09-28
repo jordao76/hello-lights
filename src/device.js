@@ -1,5 +1,5 @@
-let {PhysicalTrafficLight} = require('./physical-traffic-light');
-let EventEmitter = require('events');
+const {PhysicalTrafficLight} = require('./physical-traffic-light');
+const EventEmitter = require('events');
 
 ///////////////
 
@@ -78,18 +78,6 @@ class Device extends EventEmitter {
      */
     this.emit('disconnected');
   }
-
-  /**
-   * Registers a callback to the connected event.
-   * @param {function} cb - Callback to register.
-   */
-  onConnected(cb) { this.on('connected', cb); }
-
-  /**
-   * Registers a callback to the disconnected event.
-   * @param {function} cb - Callback to register.
-   */
-  onDisconnected(cb) { this.on('disconnected', cb); }
 
 }
 

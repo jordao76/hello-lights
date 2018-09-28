@@ -10,8 +10,8 @@ describe 'Device', ->
     @device.turn = sinon.stub()
     @onConnectedCalled = false
     @onDisconnectedCalled = false
-    @device.onConnected () => @onConnectedCalled = true
-    @device.onDisconnected () => @onDisconnectedCalled = true
+    @device.on 'connected', () => @onConnectedCalled = true
+    @device.on 'disconnected', () => @onDisconnectedCalled = true
 
   describe 'connected device', ->
 

@@ -84,6 +84,8 @@ class PhysicalTrafficLight extends TrafficLight {
       yellow || new PhysicalLight(YELLOW, device),
       green || new PhysicalLight(GREEN, device));
     this.device = device;
+    this.device.on('connected', () => this.emit('enabled'));
+    this.device.on('disconnected', () => this.emit('disabled'));
   }
 
   async reset() {

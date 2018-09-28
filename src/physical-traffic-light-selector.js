@@ -77,7 +77,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
     let sn = device.serialNum;
     if (this.devicesBySerialNum[sn]) return;
     this.devicesBySerialNum[sn] = device;
-    device.onDisconnected(() => {
+    device.on('disconnected', () => {
       if (this._device !== device) return;
       device.trafficLight.checkIn();
       this._device = null;

@@ -71,7 +71,7 @@ class ChromiumDeviceManager extends DeviceManager {
   async newDevice() {
     let device = new ChromiumDevice();
     this.devices.push(device);
-    device.onDisconnected(() => this.emit('removed'));
+    device.on('disconnected', () => this.emit('removed'));
     await device.open();
     this.emit('added');
   }

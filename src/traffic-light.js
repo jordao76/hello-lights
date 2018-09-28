@@ -27,8 +27,15 @@ class Light {
 
 ///////////////////////////////////////////////////////////////////
 
-/** A Traffic Light with red, yellow and green lights. */
-class TrafficLight {
+const EventEmitter = require('events');
+
+///////////////////////////////////////////////////////////////////
+
+/**
+ * A Traffic Light with red, yellow and green lights.
+ * @extends EventEmitter
+ */
+class TrafficLight extends EventEmitter {
 
   /**
    * @param {Light} [red] - Red light.
@@ -36,6 +43,7 @@ class TrafficLight {
    * @param {Light} [green] - Green light.
    */
   constructor(red, yellow, green) {
+    super();
     /** The red light.
       * @type {Light}
       */
@@ -105,6 +113,18 @@ class TrafficLight {
   }
 
 }
+
+///////////////////////////////////////////////////////////////////
+
+/**
+ * Traffic light enabled event.
+ * @event TrafficLight#enabled
+ */
+
+/**
+ * Traffic light disabled event.
+ * @event TrafficLight#disabled
+ */
 
 ///////////////////////////////////////////////////////////////////
 
