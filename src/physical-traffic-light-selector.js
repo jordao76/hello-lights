@@ -136,4 +136,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
 
 ////////////////////////////////////////////////
 
-module.exports = {PhysicalTrafficLightSelector};
+module.exports = {
+  PhysicalTrafficLightSelector,
+  SelectorCtor: PhysicalTrafficLightSelector
+};

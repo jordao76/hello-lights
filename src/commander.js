@@ -1,6 +1,22 @@
 ////////////////////////////////////////////////
 
-const {PhysicalTrafficLightSelector} = require('./physical-traffic-light-selector');
+const tryRequire = (path) => {
+  try {
+    return require(path);
+  } catch (e) {
+    return {};
+  }
+};
+
+////////////////////////////////////////////////
+
+// The default Selector constructor.
+// This is an optional requirement since when used in a web context
+// it would fail because of further USB-related dependencies.
+// Browserify won't pick it up since the `require` call is encapsulated in
+// `tryRequire`.
+// If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
+const {SelectorCtor} = tryRequire('./physical-traffic-light-selector');
 
 ////////////////////////////////////////////////
 
@@ -23,20 +39,29 @@ class Commander {
    * @param {Object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
    * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {object} [options.selector] - The traffic light selector to use.
+   *   Takes precedence over `options.selectorCtor`.
+   * @param {function} [options.selectorCtor] - The constructor of a traffic
+   *   light selector to use. Will be passed the entire `options` object.
+   *   Ignored if `options.selector` is set.
    * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   *   This is an option for the default `options.selectorCtor`.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
    *   a numeric serial number.
+   *   This is an option for the default `options.selectorCtor`.
    */
   constructor(options = {}) {
     let {
       logger = console,
-      parser = Parser
+      parser = Parser,
+      selector = null,
+      selectorCtor = SelectorCtor
     } = options;
     this.logger = logger;
     this.parser = parser;
 
-    this.selector = new PhysicalTrafficLightSelector(options);
+    this.selector = selector || new selectorCtor(options); // eslint-disable-line new-cap
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
   }
