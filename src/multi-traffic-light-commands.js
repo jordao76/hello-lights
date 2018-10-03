@@ -17,7 +17,7 @@ function use({tl, ct}, [indexes]) {
 }
 use.transformation = args => [args];
 use.paramNames = ['indexes'];
-use.validation = [each(isGreaterThanZero)]; // TODO: each is greater than zero
+use.validation = [each(isGreaterThanZero)];
 use.doc = {
   name: 'use',
   desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
