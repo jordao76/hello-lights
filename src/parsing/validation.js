@@ -21,10 +21,16 @@ const isGreaterThan = n => {
   v.exp = `a number (> ${n})`;
   return v;
 };
-
 const isGreaterThanZero = isGreaterThan(0);
 
-const isPeriod = isGreaterThanZero;
+const isGreaterThanOrEqual = n => {
+  let v = x => isNumber(x) && x >= n;
+  v.exp = `a number (>= ${n})`;
+  return v;
+};
+const isGreaterThanOrEqualZero = isGreaterThanOrEqual(0);
+
+const isPeriod = isGreaterThanOrEqualZero;
 
 const isCommand = f => typeof f === 'function';
 isCommand.exp = 'a command';
@@ -43,6 +49,8 @@ module.exports = {
   isNumber,
   isGreaterThan,
   isGreaterThanZero,
+  isGreaterThanOrEqual,
+  isGreaterThanOrEqualZero,
   isPeriod,
   isCommand,
   each
