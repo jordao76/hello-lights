@@ -111,6 +111,17 @@ class FlexMultiTrafficLight extends TrafficLight {
     this.use([0]);
   }
 
+  /**
+   * Adds a traffic light to the composite.
+   * @param {TrafficLight} trafficLight - Traffic light to add.
+   *   Must not be null.
+   */
+  add(trafficLight) {
+    if (this.allTrafficLights.indexOf(trafficLight) >= 0) return;
+    this.allTrafficLights.push(trafficLight);
+    this._subscribe(trafficLight);
+  }
+
   // returns an array of the tuple: (traffic light, original index)
   get enabledTrafficLights() {
     return (
@@ -193,6 +204,13 @@ class FlexMultiTrafficLight extends TrafficLight {
     this.use(newActiveIndexes);
 
     if (activeTrafficLightWasDisabled) {
+      /**
+       * Interrupted event. In a `FlexMultiTrafficLight`, if an active traffic
+       * light gets disabled, and there are still enabled traffic lights left,
+       * this event is raised. If no more traffic lights are enabled,
+       * then the `disabled` event is raised.
+       * @event FlexMultiTrafficLight#interrupted
+       */
       this.emit('interrupted');
     }
 

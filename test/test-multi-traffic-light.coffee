@@ -42,7 +42,7 @@ describe 'MultiTrafficLight', () ->
     @tl1 = new TrafficLight
     @mtl = new MultiTrafficLight [@tl0, @tl1]
 
-  it 'should be enabled as long as one composed traffic light is enabled, and raise events accordingly', () ->
+  it 'should be enabled as long as one composed traffic light is enabled', () ->
     @mtl.isEnabled.should.be.true
     @tl0.setEnabled false
     @tl0.isEnabled.should.be.false
@@ -355,3 +355,28 @@ describe 'FlexMultiTrafficLight', () ->
           @enabled.callCount.should.equal 1
           @tl1.setEnabled true              # *[0] [1]  []  []
           @enabled.callCount.should.equal 1 # no difference since it's already enabled
+
+  describe 'add', () ->
+
+    beforeEach () ->
+      @interrupted = sinon.stub()
+      @mtl.on 'interrupted', @interrupted
+      @tl4 = new TrafficLight
+      @mtl.add @tl4
+
+    it 'can use the added traffic light', () ->
+      @mtl.use [4]
+      @mtl.using().should.deep.equal [4]
+      @mtl.red.toggle()
+      @tl4.red.on.should.be.true
+
+    it 'raises interrupted for the added traffic light', () ->
+      @mtl.use [4]
+      @interrupted.callCount.should.equal 0
+      @tl4.setEnabled false
+      @interrupted.callCount.should.equal 1
+
+    it 'does not add duplicate traffic light', () ->
+      @mtl.add @tl4 # add a second time
+      @mtl.use [5] # wraps at the end and chooses the first (index 0)
+      @mtl.using().should.deep.equal [0]
