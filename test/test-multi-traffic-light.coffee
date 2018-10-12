@@ -174,7 +174,7 @@ describe 'FlexMultiTrafficLight', () ->
       @tl3.red.on.should.be.true
 
       @mtl.next() # using 2 and 4 (which wraps around to 0)
-      @mtl.using().should.deep.equal [2, 0] # the order is only important for the assertion
+      @mtl.using().should.deep.equal [0, 2]
       @mtl.red.toggle()
       @tl0.red.on.should.be.false
       @tl1.red.on.should.be.true
@@ -182,7 +182,7 @@ describe 'FlexMultiTrafficLight', () ->
       @tl3.red.on.should.be.true
 
       @mtl.next() # using 3 and 1
-      @mtl.using().should.deep.equal [3, 1] # the order is only important for the assertion
+      @mtl.using().should.deep.equal [1, 3]
       @mtl.red.toggle()
       @tl0.red.on.should.be.false
       @tl1.red.on.should.be.false
@@ -288,7 +288,7 @@ describe 'FlexMultiTrafficLight', () ->
         @tl0.setEnabled false # not active
         @interrupted.callCount.should.equal 0
 
-      xit 'recalculates used indexes accordingly', () ->
+      it 'recalculates used indexes accordingly', () ->
         @mtl.use [1, 2]                         # [0] *[1] *[2] [3]
         @tl3.setEnabled false                   # [0] *[1] *[2] []
         @mtl.using().should.deep.equal [1, 2]
@@ -306,24 +306,27 @@ describe 'FlexMultiTrafficLight', () ->
         @interrupted.callCount.should.equal 1
         @mtl.using().should.deep.equal [0]
 
-      xit 'recalculates the used index accordingly', () ->
+      it 'recalculates the used index accordingly', () ->
         @mtl.use [2]            #  [0] [1] *[2] [3]
         @tl2.setEnabled false   # *[0] [1]  []  [2]
         @mtl.using().should.deep.equal [0]
 
-      xit 'when using multiple, recalculates used indexes accordingly', () ->
+      it 'when using multiple, recalculates used indexes accordingly', () ->
         @mtl.use [0, 2, 3]      # *[0] [1] *[2] *[3]
         @tl2.setEnabled false   # *[0] [1]  []  *[2]
         @mtl.using().should.deep.equal [0, 2]
         @tl0.setEnabled false   #  []  [0]  []  *[1]
         @mtl.using().should.deep.equal [1]
 
-      xit 'when using multiple, emits the interrupted event for all', () ->
-        @mtl.use [1, 2]         # [0] *[1] *[2] [3]
-        @tl1.setEnabled false   # [0]  []  *[1] [2]
+      it 'when using multiple, emits the interrupted event for all', () ->
+        @mtl.use [1, 2, 3]      # [0] *[1] *[2] *[3]
+        @tl1.setEnabled false   # [0]  []  *[1] *[2]
         @interrupted.callCount.should.equal 1
-        @mtl.using().should.deep.equal [1]
-        @tl0.setEnabled false   # []   []  *[0] [1]
+        @mtl.using().should.deep.equal [1, 2]
+        @tl0.setEnabled false   # []   []  *[0] *[1]
+        @interrupted.callCount.should.equal 1 # did not interrupt
+        @mtl.using().should.deep.equal [0, 1]
+        @tl2.setEnabled false   # []   []   []  *[0]
         @interrupted.callCount.should.equal 2
         @mtl.using().should.deep.equal [0]
 

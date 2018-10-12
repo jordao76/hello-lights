@@ -40,6 +40,10 @@ class MultiLight extends Light {
 
 ///////////////
 
+let dummyLight = new Light();
+
+///////////////
+
 /**
  * A composite traffic light that combines all composed traffic lights.
  * Does not track or raise any `enabled` or `disabled` events for the composed
@@ -78,8 +82,6 @@ class MultiTrafficLight extends TrafficLight {
 
 ///////////////
 
-let dummyLight = new Light();
-
 function unique(a) {
   return [...new Set(a)];
 }
@@ -109,37 +111,91 @@ class FlexMultiTrafficLight extends TrafficLight {
     this.use([0]);
   }
 
+  // returns an array of the tuple: (traffic light, original index)
+  get enabledTrafficLights() {
+    return (
+      this.allTrafficLights
+        .map((tl, i) => [tl, i])
+        .filter(([tl, _]) => tl.isEnabled));
+  }
+
+  // returns an array of the tuple: (traffic light, original index)
+  get activeTrafficLights() {
+    return (
+      this.enabledTrafficLights
+        .filter(([tl, _], i) => this.activeIndexes.indexOf(i) >= 0));
+  }
+
+  /**
+   * Selects which traffic lights to use given their indexes (0-based),
+   * only considering enabled traffic lights.
+   * Indexes wrap around from the last to the first.
+   * @param {number[]} activeIndexes - Traffic light indexes to use.
+   *   Must not be empty.
+   */
+  use(activeIndexes) {
+    this._setIndexes(activeIndexes);
+    this.activeMultiTrafficLight.trafficLights = this.activeTrafficLights.map(([tl, _]) => tl);
+    this.red = this.activeMultiTrafficLight.red;
+    this.yellow = this.activeMultiTrafficLight.yellow;
+    this.green = this.activeMultiTrafficLight.green;
+  }
+
+  _setIndexes(activeIndexes) {
+    let tlsEnabled = this.enabledTrafficLights.map(([tl, _]) => tl);
+    if (tlsEnabled.length > 0) {
+      activeIndexes = unique(activeIndexes.map(i => i % tlsEnabled.length));
+    } else {
+      activeIndexes = [];
+    }
+    activeIndexes.sort();
+    this.activeIndexes = activeIndexes;
+    this.indexes = this.activeTrafficLights.map(([_, i]) => i);
+  }
+
   _subscribe(tl) {
     tl.on('enabled', () => this._enabled(tl));
     tl.on('disabled', () => this._disabled(tl));
   }
 
   _enabled(tl) {
-    // raise 'enabled' when the first traffic light is enabled
-    if (this._enabledTrafficLights().length !== 1) return;
-    this.use([0]);
-    this.emit('enabled');
+    if (this.enabledTrafficLights.length === 1) {
+      // the first traffic light is enabled
+      this.use([0]);
+      this.emit('enabled');
+    } else {
+      // recalculate indexes
+      let tlIndex = this.allTrafficLights.indexOf(tl);
+      let newActiveIndexes = this.indexes.map((i, j) => this.activeIndexes[j] + (tlIndex < i ? 1 : 0));
+      this.use(newActiveIndexes);
+    }
   }
 
   _disabled(tl) {
-    // raise 'disabled' when the last traffic light is disabled
+
     if (!this.isEnabled) {
-      this.use([]); // no more traffic lights to use
-      this.emit('disabled');
+      // the last traffic light is disabled
+      this.use([]);
+      this.emit('disabled'); // 'disabled' instead of 'interrupted'
       return;
     }
 
-    // check if one of the active traffic lights was disabled
-    if (this.activeMultiTrafficLight.trafficLights.indexOf(tl) >= 0) {
-      // change the active traffic lights and raise 'interrupted'
-      let newIndexes = this.activeMultiTrafficLight.trafficLights
-        .map((tl, i) => tl.isEnabled ? this.indexes[i] : -1)
-        .filter(i => i >= 0);
-      if (newIndexes.length === 0) newIndexes = [0]; // re-assign
-      this.use(newIndexes);
-      this.emit('interrupted');
-      return; // eslint-disable-line no-useless-return
+    // recalculate indexes
+    let tlIndex = this.allTrafficLights.indexOf(tl);
+    let activeTrafficLightWasDisabled = this.indexes.indexOf(tlIndex) >= 0;
+
+    let newActiveIndexes = this.indexes
+      .map((i, j) => tlIndex === i ? -1 : (this.activeIndexes[j] - (tlIndex < i ? 1 : 0)))
+      .filter(i => i >= 0);
+    if (newActiveIndexes.length === 0) {
+      newActiveIndexes = [0]; // re-assign
     }
+    this.use(newActiveIndexes);
+
+    if (activeTrafficLightWasDisabled) {
+      this.emit('interrupted');
+    }
+
   }
 
   /**
@@ -149,40 +205,7 @@ class FlexMultiTrafficLight extends TrafficLight {
    * @returns {number[]} The traffic light indexes that are in use.
    */
   using() {
-    return this.indexes;
-  }
-
-  /**
-   * Selects which traffic lights to use given their indexes (0-based),
-   * only considering enabled traffic lights.
-   * Indexes wrap around from the last to the first.
-   * @param {number[]} indexes - Traffic light indexes to use.
-   *   Must not be empty.
-   */
-  use(indexes) {
-    this._setIndexes(indexes);
-    this.activeMultiTrafficLight.trafficLights = this._activeTrafficLights();
-    this.red = this.activeMultiTrafficLight.red;
-    this.yellow = this.activeMultiTrafficLight.yellow;
-    this.green = this.activeMultiTrafficLight.green;
-  }
-
-  _setIndexes(indexes) {
-    let tlsEnabled = this._enabledTrafficLights();
-    if (tlsEnabled.length > 0) {
-      this.indexes = unique(indexes.map(i => i % tlsEnabled.length));
-    } else {
-      this.indexes = [];
-    }
-  }
-
-  _activeTrafficLights() {
-    let tlsEnabled = this._enabledTrafficLights();
-    return this.indexes.map(i => tlsEnabled[i]);
-  }
-
-  _enabledTrafficLights() {
-    return this.allTrafficLights.filter(tl => tl.isEnabled);
+    return this.activeIndexes;
   }
 
   /**
@@ -191,8 +214,8 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Also works with multiple selected traffic lights, moving all to the next.
    */
   next() {
-    if (this.indexes.length > 0) {
-      this.use(this.indexes.map(i => i + 1));
+    if (this.activeIndexes.length > 0) {
+      this.use(this.activeIndexes.map(i => i + 1));
     } else {
       this.use([0]);
     }
@@ -202,7 +225,7 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Selects all traffic lights to use simultaneously.
    */
   useAll() {
-    this.use(this._enabledTrafficLights().map((_, i) => i));
+    this.use(this.enabledTrafficLights.map((_, i) => i));
   }
 
   /**
