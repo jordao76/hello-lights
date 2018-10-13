@@ -1,0 +1,108 @@
+const EventEmitter = require('events');
+const {FlexMultiTrafficLight} = require('./multi-traffic-light');
+
+////////////////////////////////////////////////
+
+// the default device manager
+const {Manager} = require('./devices/cleware-switch1');
+
+////////////////////////////////////////////////
+
+/**
+ * Selects all available physical traffic light to use in a composite.
+ * @see FlexMultiTrafficLight
+ * @extends EventEmitter
+ * @package
+ */
+class PhysicalMultiTrafficLightSelector extends EventEmitter {
+
+  /**
+   * Selects all available physical traffic lights to use.
+   * Checks-out and uses all available traffic lights to issue commands.
+   * @see DeviceManager#startMonitoring
+   * @param {Object} [options] - Options.
+   * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {CommandParser} [options.parser] - The Command Parser to use.
+   *   Used to define multi-traffic-light commands.
+   */
+  constructor({manager = Manager, parser = null} = {}) {
+    super();
+    this.manager = manager;
+    this._setupCommands(parser);
+    this._setupTrafficLight();
+  }
+
+  _setupTrafficLight() {
+    this.manager.startMonitoring();
+    this.trafficLight = new FlexMultiTrafficLight(this._retrieveTrafficLights());
+    this.trafficLight.on('enabled', () =>
+      /**
+       * Fired when the multi traffic light gets enabled.
+       * @event PhysicalMultiTrafficLightSelector#enabled
+       */
+      this.emit('enabled'));
+    this.trafficLight.on('disabled', () =>
+      /**
+       * Fired when the multi traffic light gets disabled.
+       * @event PhysicalMultiTrafficLightSelector#disabled
+       */
+      this.emit('disabled'));
+    this.trafficLight.on('interrupted', () =>
+      /**
+       * Fired when the multi traffic light gets interrupted.
+       * @event PhysicalMultiTrafficLightSelector#interrupted
+       */
+      this.emit('interrupted'));
+    this.manager.on('added', () => {
+      this._retrieveTrafficLights()
+        .forEach(tl => this.trafficLight.add(tl));
+    });
+  }
+
+  _setupCommands(parser) {
+    if (!parser) return;
+    const {defineCommands} = require('./multi-traffic-light-commands');
+    defineCommands(parser);
+  }
+
+  _retrieveTrafficLights() {
+    return this.manager.allDevices()
+      .map(device => device.trafficLight)
+      .filter(tl => tl.isAvailable);
+  }
+
+  /**
+   * Called to close this instance and to stop monitoring for devices.
+   * Should be done as the last operation before exiting the process.
+   * @see DeviceManager#stopMonitoring
+   */
+  close() {
+    this.manager.stopMonitoring();
+  }
+
+  /**
+   * Retrieves a multi traffic light for exclusive usage of the caller,
+   * or `null` if no traffic lights are available.
+   * @returns {FlexMultiTrafficLight} - A multi traffic light, or `null`.
+   */
+  resolveTrafficLight() {
+    if (this.trafficLight.isEnabled) return this.trafficLight;
+    return null;
+  }
+
+  /**
+   * Logs information about known devices.
+   * @param {Object} [logger=console] - A Console-like object for logging.
+   */
+  logInfo(logger = console) {
+    this.manager.logInfo(logger);
+  }
+
+}
+
+////////////////////////////////////////////////
+
+module.exports = {
+  PhysicalMultiTrafficLightSelector,
+  SelectorCtor: PhysicalMultiTrafficLightSelector
+};

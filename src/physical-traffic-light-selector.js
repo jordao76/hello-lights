@@ -35,7 +35,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
     this.manager.on('added', () =>
       /**
        * Traffic light enabled event.
-       * Fired for any new or old traffic light that gets enabled.
+       * Fired for any traffic light that gets enabled.
        * @event PhysicalTrafficLightSelector#enabled
        */
       this.emit('enabled'));
@@ -91,48 +91,14 @@ class PhysicalTrafficLightSelector extends EventEmitter {
   }
 
   /**
-   * Returns information about known devices.
-   * Known devices are either connected devices or
-   * devices that were once connected and then got disconnected.
-   * @returns {PhysicalTrafficLightSelector~DeviceInfo[]} Device info list.
-   */
-  info() {
-    let devices = this.manager.allDevices();
-    return devices.map(d => ({
-      type: this.manager.type,
-      serialNum: d.serialNum,
-      status: d.isConnected ? 'connected' : 'disconnected'
-    }));
-  }
-
-  /**
    * Logs information about known devices.
-   * @param {Object} [logger=console] - A Console-like object for logging,
-   *   with a log function.
-   * @see PhysicalTrafficLightSelector#info
+   * @param {Object} [logger=console] - A Console-like object for logging.
    */
   logInfo(logger = console) {
-    let devicesInfo = this.info();
-    if (devicesInfo.length === 0) {
-      logger.log('No devices found');
-    } else {
-      logger.log('Known devices:');
-      devicesInfo.forEach(info =>
-        logger.log(`device ${info.serialNum}: ${info.status}`));
-    }
+    this.manager.logInfo(logger);
   }
 
 }
-
-////////////////////////////////////////////////
-
-/**
- * @typedef {object} PhysicalTrafficLightSelector~DeviceInfo
- * @property {string} type - The type of the device.
- * @property {(string|number)} serialNum - The serial number of the device.
- * @property {string} status - The status of the device, either
- *   'connected' or 'disconnected'.
- */
 
 ////////////////////////////////////////////////
 

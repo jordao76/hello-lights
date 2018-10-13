@@ -23,8 +23,10 @@
     "web": "opn web/index.html",
     "precli": "npm run peg",
     "cli": "node cli/main.js",
+    "precli-multi": "npm run peg",
+    "cli-multi": "node cli/main.js ../src/devices/cleware-switch1 ../src/physical-multi-traffic-light-selector",
     "precli-browser": "npm run peg",
-    "cli-browser": "node cli/main.js ./chromium",
+    "cli-browser": "node cli/main.js ./chromium ../src/physical-multi-traffic-light-selector",
     "predeploy": "npm run peg && npm run browserify",
     "deploy": "gh-pages -d web",
     "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents"

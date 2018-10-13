@@ -1,7 +1,7 @@
 const {PhysicalTrafficLight} = require('./physical-traffic-light');
 const EventEmitter = require('events');
 
-///////////////
+////////////////////////////////////////////////
 
 /**
  * A physical device that can turn lights on or off.
@@ -81,7 +81,7 @@ class Device extends EventEmitter {
 
 }
 
-///////////////
+////////////////////////////////////////////////
 
 /**
  * A Device Manager.
@@ -120,7 +120,41 @@ class DeviceManager extends EventEmitter {
     throw new Error('DeviceManager#allDevices is abstract');
   }
 
+  /**
+   * Returns information about known devices.
+   * Known devices are either connected devices or
+   * devices that were once connected and then got disconnected.
+   * @returns {DeviceManager~DeviceInfo[]} Device info list.
+   */
+  info() {
+    let devices = this.allDevices();
+    return devices.map(d => ({
+      type: this.type,
+      serialNum: d.serialNum,
+      status: d.isConnected ? 'connected' : 'disconnected'
+    }));
+  }
+
+  /**
+   * Logs information about known devices.
+   * @param {Object} [logger=console] - A Console-like object for logging,
+   *   with a log function.
+   * @see DeviceManager#info
+   */
+  logInfo(logger = console) {
+    let devicesInfo = this.info();
+    if (devicesInfo.length === 0) {
+      logger.log('No devices found');
+    } else {
+      logger.log('Known devices:');
+      devicesInfo.forEach(info =>
+        logger.log(`device ${info.serialNum}: ${info.status}`));
+    }
+  }
+
 }
+
+////////////////////////////////////////////////
 
 /**
  * Device added event.
@@ -136,7 +170,17 @@ class DeviceManager extends EventEmitter {
  * @event DeviceManager#removed
  */
 
-///////////////
+////////////////////////////////////////////////
+
+/**
+ * @typedef {object} DeviceManager~DeviceInfo
+ * @property {string} type - The type of the device.
+ * @property {(string|number)} serialNum - The serial number of the device.
+ * @property {string} status - The status of the device, either
+ *   'connected' or 'disconnected'.
+ */
+
+////////////////////////////////////////////////
 
 module.exports = {
   Device,

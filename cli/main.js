@@ -2,6 +2,8 @@
 
 let device = process.argv[2] || '../src/devices/cleware-switch1';
 let {Manager} = require(device);
+let selector = process.argv[3] || '../src/physical-traffic-light-selector';
+let {SelectorCtor} = require(selector);
 let {Commander} = require('../src/commander');
 
 ///////////////
@@ -22,7 +24,10 @@ let logger = {
 
 ///////////////
 
-let commander = new Commander({logger, manager: Manager});
+let commander = new Commander({
+  logger,
+  manager: Manager,
+  selectorCtor: SelectorCtor});
 
 ///////////////
 

@@ -112,13 +112,13 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   /**
    * Adds a traffic light to the composite.
-   * Tries to exclusively check it out first and doesn't add any duplicates.
+   * Tries to exclusively check it out first and because of that won't add
+   * any duplicates.
    * @param {TrafficLight} trafficLight - Traffic light to add.
    *   Must not be null.
    */
   add(trafficLight) {
     if (!trafficLight.checkOut()) return;
-    if (this.allTrafficLights.indexOf(trafficLight) >= 0) return;
     let wasEnabled = this.isEnabled;
     this.allTrafficLights.push(trafficLight);
     this._subscribe(trafficLight);

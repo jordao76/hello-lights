@@ -61,9 +61,10 @@ class Commander {
     this.logger = logger;
     this.parser = parser;
 
-    this.selector = selector || new selectorCtor(options); // eslint-disable-line new-cap
+    this.selector = selector || new selectorCtor({...options, logger, parser}); // eslint-disable-line new-cap
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
+    this.selector.on('interrupted', () => this._interrupt());
   }
 
   /**
@@ -78,6 +79,12 @@ class Commander {
    * Cancels any currently executing command.
    */
   cancel() {
+    this.parser.cancel();
+  }
+
+  _interrupt() {
+    if (!this.running) return;
+    this.isInterrupted = true;
     this.parser.cancel();
   }
 
@@ -128,24 +135,26 @@ class Commander {
     this.logger.log(`${tl}: running '${command}'`);
     this.running = command;
     let res = await this.parser.execute(command, {tl});
-    this.running = null;
+    if (command === this.running) this.running = null;
     this._finishedExecution(command, tl);
     return res;
   }
 
   _finishedExecution(command, tl) {
-    if (tl.isEnabled) {
+    if (this.isInterrupted || !tl.isEnabled) {
+      let state = this.isInterrupted ? 'interrupted' : 'disabled';
+      this.logger.log(`${tl}: ${state}, suspending '${command}'`);
+      this.suspended = command;
+      this.isInterrupted = false;
+      this._resumeIfNeeded(); // try to resume in another traffic light
+    } else {
       this.suspended = null;
       this.logger.log(`${tl}: finished '${command}'`);
-    } else {
-      this.suspended = command;
-      this.logger.log(`${tl}: disabled, suspending '${command}'`);
-      this._resumeIfNeeded(); // try to resume in another traffic light
     }
   }
 
   _errorInExecution(command, tl, error) {
-    this.running = null;
+    if (command === this.running) this.running = null;
     this.logger.error(`${tl}: error in '${command}'`);
     this.logger.error(error.message);
   }
