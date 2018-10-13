@@ -249,6 +249,30 @@ describe 'FlexMultiTrafficLight', () ->
       @tl2.red.on.should.be.false
       @tl3.red.on.should.be.false
 
+  describe 'near', () ->
+
+    it 'near bounces around the edges', () ->
+      @mtl.last() # using the last
+      @mtl.using().should.deep.equal [3]
+      @mtl.near() # using the penultimate (bounces)
+      @mtl.using().should.deep.equal [2]
+      @mtl.near()
+      @mtl.using().should.deep.equal [1]
+      @mtl.near()
+      @mtl.using().should.deep.equal [0]
+      @mtl.near()
+      @mtl.using().should.deep.equal [1] # bounces
+      @mtl.near()
+      @mtl.using().should.deep.equal [2]
+
+    it 'near works with multiple selected traffic lights', () ->
+      @mtl.use [0, 2]
+      @mtl.using().should.deep.equal [0, 2]
+      @mtl.near()
+      @mtl.using().should.deep.equal [1, 3]
+      @mtl.near()
+      @mtl.using().should.deep.equal [0, 2]
+
   describe 'last', () ->
 
     it 'last uses the last traffic light', () ->

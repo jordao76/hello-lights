@@ -245,11 +245,30 @@ class FlexMultiTrafficLight extends TrafficLight {
     this._move(-1);
   }
 
+  near() {
+    if (this.activeIndexes.length === 0) {
+      this.use([0]);
+      return;
+    }
+
+    let
+      firstIndex = 0,
+      lastIndex = this.enabledTrafficLights.length - 1;
+
+    if (this.activeIndexes.indexOf(firstIndex) >= 0) {
+      this.direction = +1;
+    } else if (this.activeIndexes.indexOf(lastIndex) >= 0) {
+      this.direction = -1;
+    }
+
+    this._move(this.direction || +1);
+  }
+
   _move(direction) {
     if (this.activeIndexes.length > 0) {
       this.use(this.activeIndexes.map(i => i + direction));
     } else {
-      this.last();
+      this.use([0]);
     }
   }
 

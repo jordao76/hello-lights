@@ -71,6 +71,21 @@ useLast.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
+function useNear({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.near) {
+    tl.near();
+  }
+}
+useNear.paramNames = [];
+useNear.validation = [];
+useNear.doc = {
+  name: 'use-near',
+  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 function useAll({tl, ct}) {
   if (ct.isCancelled) return;
   if (tl.useAll) {
@@ -93,6 +108,7 @@ function defineCommands(cp) {
   cp.add('use-next', useNext);
   cp.add('use-previous', usePrevious);
   cp.add('use-last', useLast);
+  cp.add('use-near', useNear);
   cp.add('use-all', useAll);
 }
 
@@ -103,6 +119,7 @@ module.exports = {
   'use-next': useNext,
   'use-previous': usePrevious,
   'use-last': useLast,
+  'use-near': useNear,
   'use-all': useAll,
   defineCommands
 };
