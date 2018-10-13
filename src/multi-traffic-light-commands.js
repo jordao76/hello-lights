@@ -56,6 +56,21 @@ usePrevious.doc = {
 
 //////////////////////////////////////////////////////////////////////////////
 
+function useLast({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.last) {
+    tl.last();
+  }
+}
+useLast.paramNames = [];
+useLast.validation = [];
+useLast.doc = {
+  name: 'use-last',
+  desc: 'When using multiple traffic lights, chooses the last one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 function useAll({tl, ct}) {
   if (ct.isCancelled) return;
   if (tl.useAll) {
@@ -77,6 +92,7 @@ function defineCommands(cp) {
   cp.add('use', use);
   cp.add('use-next', useNext);
   cp.add('use-previous', usePrevious);
+  cp.add('use-last', useLast);
   cp.add('use-all', useAll);
 }
 
@@ -86,6 +102,7 @@ module.exports = {
   use,
   'use-next': useNext,
   'use-previous': usePrevious,
+  'use-last': useLast,
   'use-all': useAll,
   defineCommands
 };

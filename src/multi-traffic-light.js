@@ -154,8 +154,9 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   _setIndexes(activeIndexes) {
     let tlsEnabled = this.enabledTrafficLights.map(([tl, _]) => tl);
-    if (tlsEnabled.length > 0) {
-      activeIndexes = unique(activeIndexes.map(i => i % tlsEnabled.length));
+    let l = tlsEnabled.length;
+    if (l > 0) {
+      activeIndexes = unique(activeIndexes.map(i => i < 0 ? l + i : i % l));
     } else {
       activeIndexes = [];
     }
@@ -171,7 +172,7 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   _enabled(tl) {
     if (this.enabledTrafficLights.length === 1) {
-      // the first traffic light is enabled
+      // the first traffic light is enabled; all were disabled before
       this.use([0]);
       this.emit('enabled');
     } else {
@@ -185,7 +186,7 @@ class FlexMultiTrafficLight extends TrafficLight {
   _disabled(tl) {
 
     if (!this.isEnabled) {
-      // the last traffic light is disabled
+      // the only enabled traffic light was disabled
       this.use([]);
       this.emit('disabled'); // 'disabled' instead of 'interrupted'
       return;
@@ -232,11 +233,7 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Also works with multiple selected traffic lights, moving all to the next.
    */
   next() {
-    if (this.activeIndexes.length > 0) {
-      this.use(this.activeIndexes.map(i => i + 1));
-    } else {
-      this.use([0]);
-    }
+    this._move(+1);
   }
 
   /**
@@ -245,12 +242,22 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Also works with multiple selected traffic lights, moving all to the previous.
    */
   previous() {
+    this._move(-1);
+  }
+
+  _move(direction) {
     if (this.activeIndexes.length > 0) {
-      this.use(this.activeIndexes
-        .map(i => (i === 0 ? this.enabledTrafficLights.length : i) - 1));
+      this.use(this.activeIndexes.map(i => i + direction));
     } else {
-      this.use([0]);
+      this.last();
     }
+  }
+
+  /**
+   * Selects the last traffic light to use.
+   */
+  last() {
+    this.use([this.enabledTrafficLights.length - 1]);
   }
 
   /**

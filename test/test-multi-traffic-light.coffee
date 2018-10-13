@@ -249,6 +249,17 @@ describe 'FlexMultiTrafficLight', () ->
       @tl2.red.on.should.be.false
       @tl3.red.on.should.be.false
 
+  describe 'last', () ->
+
+    it 'last uses the last traffic light', () ->
+      @mtl.last()
+      @mtl.using().should.deep.equal [3]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.false
+      @tl1.red.on.should.be.false
+      @tl2.red.on.should.be.false
+      @tl3.red.on.should.be.true
+
   describe 'reset', () ->
 
     it 'reset turns the active traffic light off', () ->
