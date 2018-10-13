@@ -98,28 +98,36 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   /**
    * Creates a new instance of this class.
-   * Starts off using the first traffic light in the provided `trafficLights`,
-   * which must not be empty.
+   * Starts off using the first traffic light in the provided `trafficLights`.
+   * Tries to checks out the provided traffic lights.
    * @param {TrafficLight[]} trafficLights - Traffic lights composed.
-   *   Must not be empty.
    */
   constructor(trafficLights) {
     super(dummyLight, dummyLight, dummyLight);
     this.activeMultiTrafficLight = new MultiTrafficLight([]);
-    this.allTrafficLights = trafficLights;
+    this.allTrafficLights = trafficLights.filter(tl => tl.checkOut());
     this.allTrafficLights.forEach(tl => this._subscribe(tl));
     this.use([0]);
   }
 
   /**
    * Adds a traffic light to the composite.
+   * Tries to exclusively check it out first and doesn't add any duplicates.
    * @param {TrafficLight} trafficLight - Traffic light to add.
    *   Must not be null.
    */
   add(trafficLight) {
+    if (!trafficLight.checkOut()) return;
     if (this.allTrafficLights.indexOf(trafficLight) >= 0) return;
+    let wasEnabled = this.isEnabled;
     this.allTrafficLights.push(trafficLight);
     this._subscribe(trafficLight);
+    if (this.activeTrafficLights.length === 0) {
+      this.use([0]);
+    }
+    if (!wasEnabled && this.isEnabled) {
+      this.emit('enabled');
+    }
   }
 
   // returns an array of the tuple: (traffic light, original index)
@@ -245,17 +253,21 @@ class FlexMultiTrafficLight extends TrafficLight {
     this._move(-1);
   }
 
+  /**
+   * Selects the nearest traffic light to use, remembering the direction
+   * of movement (forwards or backwards).
+   * Also works with multiple selected traffic lights, moving all to the nearest,
+   * following a single direction (so it's possible to wrap around at the last
+   * if both the first and last indexes are in use).
+   */
   near() {
     if (this.activeIndexes.length === 0) {
       this.use([0]);
       return;
     }
 
-    let
-      firstIndex = 0,
-      lastIndex = this.enabledTrafficLights.length - 1;
-
-    if (this.activeIndexes.indexOf(firstIndex) >= 0) {
+    let lastIndex = this.enabledTrafficLights.length - 1;
+    if (this.activeIndexes.indexOf(0) >= 0) {
       this.direction = +1;
     } else if (this.activeIndexes.indexOf(lastIndex) >= 0) {
       this.direction = -1;
@@ -294,15 +306,16 @@ class FlexMultiTrafficLight extends TrafficLight {
   }
 
   /**
-   * If any of the composed traffic lights is enabled.
+   * If there are composed traffic lights and any of them is enabled.
    * @type {boolean}
    */
   get isEnabled() {
-    return this.allTrafficLights.some(tl => tl.isEnabled);
+    return this.allTrafficLights.length > 0 &&
+      this.allTrafficLights.some(tl => tl.isEnabled);
   }
 
   toString() {
-    return 'Multi Traffic Lights';
+    return `multi (${this.enabledTrafficLights.length};${this.activeTrafficLights.length})`;
   }
 
 }

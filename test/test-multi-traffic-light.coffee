@@ -82,6 +82,18 @@ describe 'FlexMultiTrafficLight', () ->
     @tl3 = new TrafficLight
     @mtl = new FlexMultiTrafficLight [@tl0, @tl1, @tl2, @tl3]
 
+  it 'checks out the composed traffic lights', () ->
+    @tl0.isCheckedOut.should.be.true
+    @tl1.isCheckedOut.should.be.true
+    @tl2.isCheckedOut.should.be.true
+    @tl3.isCheckedOut.should.be.true
+
+  it 'does not use already checked out traffic lights', () ->
+    tl = new TrafficLight
+    tl.checkOut()
+    mtl = new FlexMultiTrafficLight [tl]
+    mtl.using().should.deep.equal []
+
   describe 'use', () ->
 
     it 'starts using the first traffic light', () ->
@@ -465,6 +477,9 @@ describe 'FlexMultiTrafficLight', () ->
       @mtl.red.toggle()
       @tl4.red.on.should.be.true
 
+    it 'check out the added traffic light', () ->
+      @tl4.isCheckedOut.should.be.true
+
     it 'raises interrupted for the added traffic light', () ->
       @mtl.use [4]
       @interrupted.callCount.should.equal 0
@@ -475,3 +490,22 @@ describe 'FlexMultiTrafficLight', () ->
       @mtl.add @tl4 # add a second time
       @mtl.use [5] # wraps at the end and chooses the first (index 0)
       @mtl.using().should.deep.equal [0]
+
+    it 'does not add checked out traffic light', () ->
+      tl = new TrafficLight
+      tl.checkOut()
+      @mtl.add tl # add a checked out traffic light
+      @mtl.use [5] # wraps at the end and chooses the first (index 0)
+      @mtl.using().should.deep.equal [0]
+
+    it 'can start empty and gets enabled when a traffic light is added', () ->
+      mtl  = new FlexMultiTrafficLight [] # no traffic lights
+      enabled = sinon.stub()
+      mtl.on 'enabled', enabled
+      mtl.isEnabled.should.be.false
+      tl = new TrafficLight
+      enabled.callCount.should.equal 0
+      mtl.add tl
+      enabled.callCount.should.equal 1
+      mtl.isEnabled.should.be.true
+      mtl.using().should.deep.equal [0] # start using it
