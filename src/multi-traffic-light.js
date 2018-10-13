@@ -240,6 +240,20 @@ class FlexMultiTrafficLight extends TrafficLight {
   }
 
   /**
+   * Selects the previous traffic light to use, going to the last one if
+   * the currently selected one is the first.
+   * Also works with multiple selected traffic lights, moving all to the previous.
+   */
+  previous() {
+    if (this.activeIndexes.length > 0) {
+      this.use(this.activeIndexes
+        .map(i => (i === 0 ? this.enabledTrafficLights.length : i) - 1));
+    } else {
+      this.use([0]);
+    }
+  }
+
+  /**
    * Selects all traffic lights to use simultaneously.
    */
   useAll() {

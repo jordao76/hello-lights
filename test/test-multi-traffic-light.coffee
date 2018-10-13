@@ -189,6 +189,66 @@ describe 'FlexMultiTrafficLight', () ->
       @tl2.red.on.should.be.false
       @tl3.red.on.should.be.false
 
+  describe 'previous', () ->
+
+    it 'previous uses the previous traffic light', () ->
+      @mtl.use [3] # using the last
+      @mtl.previous()
+      @mtl.using().should.deep.equal [2]
+      @mtl.red.toggle()
+      @tl2.red.on.should.be.true
+      @tl3.red.on.should.be.false
+      @mtl.previous()
+      @mtl.using().should.deep.equal [1]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.false
+      @tl1.red.on.should.be.true
+      @tl2.red.on.should.be.true
+      @tl3.red.on.should.be.false
+
+    it 'previous wraps around the first traffic light', () ->
+      @mtl.using().should.deep.equal [0]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.true
+      @mtl.previous() # using the last (wraps around)
+      @mtl.using().should.deep.equal [3]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.true
+      @tl1.red.on.should.be.false
+      @tl2.red.on.should.be.false
+      @tl3.red.on.should.be.true
+
+    it 'previous works with multiple selected traffic lights', () ->
+      @mtl.use [2, 3]
+      @mtl.using().should.deep.equal [2, 3]
+      @mtl.red.toggle()
+      @tl2.red.on.should.be.true
+      @tl3.red.on.should.be.true
+
+      @mtl.previous() # using 1 and 2
+      @mtl.using().should.deep.equal [1, 2]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.false
+      @tl1.red.on.should.be.true
+      @tl2.red.on.should.be.false
+      @tl3.red.on.should.be.true
+
+      @mtl.previous() # using 0 and 1
+      @mtl.using().should.deep.equal [0, 1]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.true
+      @tl1.red.on.should.be.false
+      @tl2.red.on.should.be.false
+      @tl3.red.on.should.be.true
+
+      @mtl.previous() # using 3 (wraps) and 0
+      @mtl.using().should.deep.equal [0, 3]
+      @mtl.red.toggle()
+      @tl0.red.on.should.be.false
+      @tl1.red.on.should.be.false
+      @tl2.red.on.should.be.false
+      @tl3.red.on.should.be.false
+
   describe 'reset', () ->
 
     it 'reset turns the active traffic light off', () ->
