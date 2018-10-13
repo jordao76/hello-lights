@@ -1,24 +1,26 @@
-// 🚦
+///////////////
 
-let device = process.argv[2] || '../src/devices/cleware-switch1';
-let {Manager} = require(device);
-let selector = process.argv[3] || '../src/physical-traffic-light-selector';
-let {SelectorCtor} = require(selector);
-let {Commander} = require('../src/commander');
+const repl = require('repl');
 
 ///////////////
 
-let blue = '\x1b[34m';
-let red = '\x1b[31m';
-let reset = '\x1b[0m';
-let logger = {
+const device = process.argv[2] || '../src/devices/cleware-switch1';
+const {Manager} = require(device);
+const selector = process.argv[3] || '../src/physical-traffic-light-selector';
+const {SelectorCtor} = require(selector);
+const {Commander} = require('../src/commander');
+
+///////////////
+
+const blue = '\x1b[34m';
+const red = '\x1b[31m';
+const reset = '\x1b[0m';
+const logger = {
   log: (...args) => {
     console.log(blue, ...args, reset);
-    prompt();
   },
   error: (...args) => {
     console.error(red, ...args, reset);
-    prompt();
   }
 };
 
@@ -31,46 +33,38 @@ let commander = new Commander({
 
 ///////////////
 
-let log = console.log;
-let write = (...args) => process.stdout.write(...args);
-
-///////////////
-
-function prompt() {
-  write(' > ');
-}
-
-///////////////
-
-function listen() {
-  process.stdin.resume();
-  process.stdin.setEncoding('utf8');
-  process.stdin.on('data', async (text) => {
-    text = text.trim();
-    let match;
-    if (!text) {
-      prompt();
-    } else if (text === 'cancel') {
-      commander.cancel();
-      prompt();
-    } else if (text === 'help') {
-      help();
-    } else if (match = text.match(/^help\s+(.+)/)) { // eslint-disable-line no-cond-assign
-      help(match[1]);
-    } else if (text === 'exit' || text === 'quit') {
-      commander.cancel();
-      commander.close();
-      log('Bye');
-      process.exit(0);
-    } else if (text === 'check device') {
-      commander.logInfo();
-    } else if (Manager.newDevice && text === 'new device') {
-      Manager.newDevice();
-    } else {
-      commander.run(text);
-      prompt();
-    }
-  });
+let multiline = false;
+function execute(text, context, filename, callback) {
+  text = text.trim();
+  let match;
+  if (!text) {
+  } else if (text === 'cancel') {
+    commander.cancel();
+  } else if (text === 'help') {
+    help();
+  } else if (match = text.match(/^help\s+(.+)/)) { // eslint-disable-line no-cond-assign
+    help(match[1]);
+  } else if (text === 'exit' || text === 'quit') {
+    commander.cancel();
+    commander.close();
+    console.log('Bye');
+    process.exit(0);
+  } else if (text === 'check device') {
+    commander.logInfo();
+  } else if (Manager.newDevice && text === 'new device') {
+    Manager.newDevice();
+  } else if (text.startsWith('{')) {
+    multiline = true;
+    return execute(text.replace('{', ''), context, filename, callback);
+  } else if (multiline && text.endsWith('}')) {
+    multiline = false;
+    commander.run(text.replace('}', ''));
+  } else if (multiline) {
+    return callback(new repl.Recoverable());
+  } else {
+    commander.run(text);
+  }
+  return callback();
 }
 
 ///////////////
@@ -78,18 +72,18 @@ function listen() {
 function help(commandName) {
   if (commandName === undefined) {
     var commandList = commander.commands().map(c => `    ${c}`);
-    log([
+    console.log([
       `Commands for the traffic light`,
       `> help`,
       `> help [command name]`,
-      `> [command]`,
       `> cancel`,
       `> check device` + (Manager.newDevice ? '\n> new device' : ''),
       `> exit | quit`,
+      `> [command]`,
+      `> { [... multi line command] }`,
       `  available commands:`,
       ...commandList
     ].join('\n'));
-    prompt();
   } else {
     commander.help(commandName);
   }
@@ -99,7 +93,13 @@ function help(commandName) {
 
 function main() {
   help();
-  listen();
+  let server = repl.start({
+    prompt: '> ',
+    eval: execute
+  });
+  server.context.commander = commander;
+  server.context.manager = Manager;
+  server.on('exit', () => process.exit(0));
 }
 
 ///////////////
