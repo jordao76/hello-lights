@@ -204,4 +204,29 @@ class Commander {
 
 ////////////////////////////////////////////////
 
+/**
+ * Factory for a Commander that deals with multiple traffic lights.
+ * It will greedily get all available traffic lights for use and add commands
+ * to deal with multiple traffic lights.
+ * @param {Object} [options] - Commander options.
+ * @param {Object} [options.logger=console] - A Console-like object for logging,
+ *   with a log and an error function.
+ * @param {CommandParser} [options.parser] - The Command Parser to use.
+ * @param {object} [options.selector] - The traffic light selector to use.
+ *   Takes precedence over `options.selectorCtor`.
+ * @param {function} [options.selectorCtor] - The constructor of a traffic
+ *   light selector to use. Will be passed the entire `options` object.
+ *   Ignored if `options.selector` is set.
+ * @param {DeviceManager} [options.manager] - The Device Manager to use.
+ *   This is an option for the default `options.selectorCtor`.
+ * @returns {Commander} A multi-traffic-light commander.
+ */
+Commander.multi = (options = {}) => {
+  const {SelectorCtor} = tryRequire('./physical-multi-traffic-light-selector');
+  let {selectorCtor = SelectorCtor} = options;
+  return new Commander({...options, selectorCtor});
+}
+
+////////////////////////////////////////////////
+
 module.exports = {Commander};
