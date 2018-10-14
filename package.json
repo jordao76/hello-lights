@@ -18,7 +18,7 @@
     "test": "npm run mocha",
     "precoverage": "nyc npm run test",
     "coverage": "nyc report --reporter=html && opn coverage/index.html",
-    "browserify": "browserify web/main.js -o web/bundle.js",
+    "browserify": "browserify web/main.js -o web/bundle.js && browserify web/multi/main.js -o web/multi/bundle.js",
     "preweb": "npm run peg && npm run browserify",
     "web": "opn web/index.html",
     "precli": "npm run peg",
