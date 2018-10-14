@@ -1,16 +1,16 @@
 const EventEmitter = require('events');
-const {FlexMultiTrafficLight} = require('./multi-traffic-light');
+const {FlexMultiTrafficLight} = require('../traffic-light/multi-traffic-light');
 
 ////////////////////////////////////////////////
 
 // the default device manager
-const {Manager} = require('./devices/cleware-switch1');
+const {Manager} = require('../devices/cleware-switch1');
 
 ////////////////////////////////////////////////
 
 /**
- * Selects all available physical traffic light to use in a composite.
- * @see FlexMultiTrafficLight
+ * Selects all available physical traffic lights to use in a composite.
+ * @memberof selectors
  * @extends EventEmitter
  * @package
  */
@@ -19,8 +19,8 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
   /**
    * Selects all available physical traffic lights to use.
    * Checks-out and uses all available traffic lights to issue commands.
-   * @see DeviceManager#startMonitoring
-   * @param {Object} [options] - Options.
+   * @see physical.DeviceManager#startMonitoring
+   * @param {object} [options] - Options.
    * @param {DeviceManager} [options.manager] - The Device Manager to use.
    * @param {CommandParser} [options.parser] - The Command Parser to use.
    *   Used to define multi-traffic-light commands.
@@ -38,19 +38,19 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
     this.trafficLight.on('enabled', () =>
       /**
        * Fired when the multi traffic light gets enabled.
-       * @event PhysicalMultiTrafficLightSelector#enabled
+       * @event selectors.PhysicalMultiTrafficLightSelector#enabled
        */
       this.emit('enabled'));
     this.trafficLight.on('disabled', () =>
       /**
        * Fired when the multi traffic light gets disabled.
-       * @event PhysicalMultiTrafficLightSelector#disabled
+       * @event selectors.PhysicalMultiTrafficLightSelector#disabled
        */
       this.emit('disabled'));
     this.trafficLight.on('interrupted', () =>
       /**
        * Fired when the multi traffic light gets interrupted.
-       * @event PhysicalMultiTrafficLightSelector#interrupted
+       * @event selectors.PhysicalMultiTrafficLightSelector#interrupted
        */
       this.emit('interrupted'));
     this.manager.on('added', () => {
@@ -61,7 +61,7 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
 
   _setupCommands(parser) {
     if (!parser) return;
-    const {defineCommands} = require('./multi-traffic-light-commands');
+    const {defineCommands} = require('../traffic-light/multi-traffic-light-commands');
     defineCommands(parser);
   }
 
@@ -74,7 +74,7 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
   /**
    * Called to close this instance and to stop monitoring for devices.
    * Should be done as the last operation before exiting the process.
-   * @see DeviceManager#stopMonitoring
+   * @see physical.DeviceManager#stopMonitoring
    */
   close() {
     this.manager.stopMonitoring();
@@ -92,7 +92,7 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
 
   /**
    * Logs information about known devices.
-   * @param {Object} [logger=console] - A Console-like object for logging.
+   * @param {object} [logger=console] - A Console-like object for logging.
    */
   logInfo(logger = console) {
     this.manager.logInfo(logger);

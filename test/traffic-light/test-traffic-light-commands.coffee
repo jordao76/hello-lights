@@ -1,8 +1,8 @@
-require './setup-unhandled-rejection'
-{Light, TrafficLight} = require '../src/traffic-light'
-{CommandParser} = require '../src/parsing/command-parser'
-{Cancellable} = require '../src/parsing/cancellable'
-{defineCommands} = require '../src/traffic-light-commands'
+require '../setup-unhandled-rejection'
+{Light, TrafficLight} = require '../../src/traffic-light/traffic-light'
+{CommandParser} = require '../../src/parsing/command-parser'
+{Cancellable} = require '../../src/parsing/cancellable'
+{defineCommands} = require '../../src/traffic-light/traffic-light-commands'
 require('chai').should()
 sinon = require('sinon')
 

@@ -5,6 +5,7 @@
  * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
  * them all when {@link Cancellable#cancel} is called, setting the
  * {@link Cancellable#isCancelled} attribute to true.
+ * @memberof parsing
  */
 class Cancellable {
 

@@ -16,12 +16,12 @@ const tryRequire = (path) => {
 // Browserify won't pick it up since the `require` call is encapsulated in
 // `tryRequire`.
 // If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
-const {SelectorCtor} = tryRequire('./physical-traffic-light-selector');
+const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
 
 ////////////////////////////////////////////////
 
 const {CommandParser} = require('./parsing/command-parser');
-const {defineCommands} = require('./traffic-light-commands');
+const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
 // the default command parser
 const Parser = new CommandParser();
 defineCommands(Parser);
@@ -35,16 +35,16 @@ class Commander {
 
   /**
    * Creates a new Commander instance.
-   * @param {Object} [options] - Commander options.
-   * @param {Object} [options.logger=console] - A Console-like object for logging,
+   * @param {object} [options] - Commander options.
+   * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
    * @param {object} [options.selector] - The traffic light selector to use.
    *   Takes precedence over `options.selectorCtor`.
    * @param {function} [options.selectorCtor] - The constructor of a traffic
    *   light selector to use. Will be passed the entire `options` object.
    *   Ignored if `options.selector` is set.
-   * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
    *   This is an option for the default `options.selectorCtor`.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
@@ -177,7 +177,6 @@ class Commander {
   /**
    * Logs the help info for the given command name.
    * @param {string} commandName - Name of the command to log help info.
-   * @see Commander#commands
    */
   help(commandName) {
     let command = this.parser.commands[commandName];
@@ -208,21 +207,21 @@ class Commander {
  * Factory for a Commander that deals with multiple traffic lights.
  * It will greedily get all available traffic lights for use and add commands
  * to deal with multiple traffic lights.
- * @param {Object} [options] - Commander options.
- * @param {Object} [options.logger=console] - A Console-like object for logging,
+ * @param {object} [options] - Commander options.
+ * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
- * @param {CommandParser} [options.parser] - The Command Parser to use.
+ * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
  * @param {object} [options.selector] - The traffic light selector to use.
  *   Takes precedence over `options.selectorCtor`.
  * @param {function} [options.selectorCtor] - The constructor of a traffic
  *   light selector to use. Will be passed the entire `options` object.
  *   Ignored if `options.selector` is set.
- * @param {DeviceManager} [options.manager] - The Device Manager to use.
+ * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
  *   This is an option for the default `options.selectorCtor`.
  * @returns {Commander} A multi-traffic-light commander.
  */
 Commander.multi = (options = {}) => {
-  const {SelectorCtor} = tryRequire('./physical-multi-traffic-light-selector');
+  const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
   let {selectorCtor = SelectorCtor} = options;
   return new Commander({...options, selectorCtor});
 };

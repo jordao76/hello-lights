@@ -1,5 +1,1 @@
-let {Commander} = require('./lib/commander');
-
-module.exports = {
-  Commander
-};
+module.exports = require('./lib');

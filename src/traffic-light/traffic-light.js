@@ -1,6 +1,9 @@
 ///////////////////////////////////////////////////////////////////
 
-/** A Light in a traffic light. */
+/**
+ * A Light in a traffic light.
+ * @memberof trafficLight
+ */
 class Light {
 
   constructor() {
@@ -33,6 +36,7 @@ const EventEmitter = require('events');
 
 /**
  * A Traffic Light with red, yellow and green lights.
+ * @memberof trafficLight
  * @extends EventEmitter
  */
 class TrafficLight extends EventEmitter {
@@ -59,8 +63,6 @@ class TrafficLight extends EventEmitter {
     /**
      * If the traffic light is checked-out or reserved.
      * @type {boolean}
-     * @see TrafficLight#checkOut
-     * @see TrafficLight#checkIn
      */
     this.isCheckedOut = false;
   }
@@ -83,8 +85,6 @@ class TrafficLight extends EventEmitter {
   /**
    * Checks-out or reserve the traffic light for exclusive usage, making it
    * unavailable for other users.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkIn
    * @returns {boolean} True if the traffic light was successfully checked out.
    *   False if it was already checked out.
    */
@@ -95,8 +95,6 @@ class TrafficLight extends EventEmitter {
 
   /**
    * Checks-in the traffic light, making it available for checking out again.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkOut
    */
   checkIn() {
     this.isCheckedOut = false;
@@ -105,8 +103,6 @@ class TrafficLight extends EventEmitter {
   /**
    * If the traffic light is available: enabled and not checked-out.
    * @type {boolean}
-   * @see TrafficLight#isEnabled
-   * @see TrafficLight#isCheckedOut
    */
   get isAvailable() {
     return this.isEnabled && !this.isCheckedOut;
@@ -118,12 +114,12 @@ class TrafficLight extends EventEmitter {
 
 /**
  * Traffic light enabled event.
- * @event TrafficLight#enabled
+ * @event trafficLight.TrafficLight#enabled
  */
 
 /**
  * Traffic light disabled event.
- * @event TrafficLight#disabled
+ * @event trafficLight.TrafficLight#disabled
  */
 
 ///////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-let {Device, DeviceManager} = require('../src/device');
+let {Device, DeviceManager} = require('../src/physical/device');
 let puppeteer = require('puppeteer');
 let path = require('path');
 

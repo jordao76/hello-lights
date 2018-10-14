@@ -1,6 +1,6 @@
 require '../setup-unhandled-rejection'
 {RED, YELLOW, GREEN, ON, OFF, PhysicalLight, PhysicalTrafficLight} =
-  require('../../src/physical-traffic-light')
+  require('../../src/physical/physical-traffic-light')
 {Manager} = require("../../src/devices/cleware-switch1")
 require('chai').should()
 HID = require('node-hid')

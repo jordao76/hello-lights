@@ -1,4 +1,4 @@
-let {Device, DeviceManager} = require('../device');
+let {Device, DeviceManager} = require('../physical/device');
 let HID = require('node-hid');
 
 //////////////////////////////////////////////

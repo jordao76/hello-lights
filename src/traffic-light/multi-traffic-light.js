@@ -4,6 +4,7 @@ const {Light, TrafficLight} = require('./traffic-light');
 
 /**
  * A composite light that combines all composed lights.
+ * @memberof trafficLight
  * @extends Light
  */
 class MultiLight extends Light {
@@ -48,6 +49,7 @@ let dummyLight = new Light();
  * A composite traffic light that combines all composed traffic lights.
  * Does not track or raise any `enabled` or `disabled` events for the composed
  * traffic lights.
+ * @memberof trafficLight
  * @extends TrafficLight
  */
 class MultiTrafficLight extends TrafficLight {
@@ -91,8 +93,8 @@ function unique(a) {
 /**
  * A composite traffic light with a flexible way to select which composed
  * traffic lights are active or in use.
+ * @memberof trafficLight
  * @extends TrafficLight
- * @see FlexMultiTrafficLight#use
  */
 class FlexMultiTrafficLight extends TrafficLight {
 
@@ -218,7 +220,7 @@ class FlexMultiTrafficLight extends TrafficLight {
        * light gets disabled, and there are still enabled traffic lights left,
        * this event is raised. If no more traffic lights are enabled,
        * then the `disabled` event is raised.
-       * @event FlexMultiTrafficLight#interrupted
+       * @event trafficLight.FlexMultiTrafficLight#interrupted
        */
       this.emit('interrupted');
     }

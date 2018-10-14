@@ -3,12 +3,13 @@ const EventEmitter = require('events');
 ////////////////////////////////////////////////
 
 // the default device manager
-const {Manager} = require('./devices/cleware-switch1');
+const {Manager} = require('../devices/cleware-switch1');
 
 ////////////////////////////////////////////////
 
 /**
  * Selects a physical traffic light to use.
+ * @memberof selectors
  * @extends EventEmitter
  * @package
  */
@@ -18,8 +19,8 @@ class PhysicalTrafficLightSelector extends EventEmitter {
    * Selects a physical traffic light to use.
    * Checks-out and uses a specific traffic light or the first available one
    * to issue commands.
-   * @see DeviceManager#startMonitoring
-   * @param {Object} [options] - Options.
+   * @see physical.DeviceManager#startMonitoring
+   * @param {object} [options] - Options.
    * @param {DeviceManager} [options.manager] - The Device Manager to use.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
@@ -36,7 +37,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
       /**
        * Traffic light enabled event.
        * Fired for any traffic light that gets enabled.
-       * @event PhysicalTrafficLightSelector#enabled
+       * @event selectors.PhysicalTrafficLightSelector#enabled
        */
       this.emit('enabled'));
   }
@@ -44,7 +45,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
   /**
    * Called to close this instance and to stop monitoring for devices.
    * Should be done as the last operation before exiting the process.
-   * @see DeviceManager#stopMonitoring
+   * @see physical.DeviceManager#stopMonitoring
    */
   close() {
     this.manager.stopMonitoring();
@@ -84,7 +85,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
       /**
        * Traffic light disabled event.
        * Only fired for the specific traffic light that was checked-out.
-       * @event PhysicalTrafficLightSelector#disabled
+       * @event selectors.PhysicalTrafficLightSelector#disabled
        */
       this.emit('disabled');
     });
@@ -92,7 +93,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
 
   /**
    * Logs information about known devices.
-   * @param {Object} [logger=console] - A Console-like object for logging.
+   * @param {object} [logger=console] - A Console-like object for logging.
    */
   logInfo(logger = console) {
     this.manager.logInfo(logger);

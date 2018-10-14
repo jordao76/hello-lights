@@ -6,9 +6,10 @@ const parser = require('./command-peg-parser');
 
 /**
  * A function that implements a command.
- * @typedef {function} CommandParser~CommandFunction
+ * @typedef {function} CommandFunction
+ * @memberof parsing
  * @param {object} ctx - Context to execute the command.
- * @param {Cancellable} ctx.ct - A cancellation token.
+ * @param {parsing.Cancellable} ctx.ct - A cancellation token.
  * @param {object} ctx.scope - Variable bindings for nested commands.
  * @param {...object} [ctx....] - Extra context objects needed for the command,
  *   like the objects that the command manipulates.
@@ -24,11 +25,14 @@ const parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Parses and executes commands. */
+/**
+ * Parses and executes commands.
+ * @memberof parsing
+ */
 class CommandParser {
 
   /**
-   * @param {object.<string, CommandParser~CommandFunction>} [commands] -
+   * @param {object.<string, parsing.CommandFunction>} [commands] -
    *   Base commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
@@ -52,7 +56,7 @@ class CommandParser {
 
   /**
    * Cancels any executing commands.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    */
   cancel(ct = this.ct) {
     if (ct.isCancelled) return;
@@ -65,11 +69,11 @@ class CommandParser {
   /**
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
-   * @param {Object} [ctx] - Context object to be passed as part of the executed
+   * @param {object} [ctx] - Context object to be passed as part of the executed
    *   commands context, togeher with the cancellation token and the scope.
    *   This context cannot have keys 'ct' and 'scope', since they would be
    *   overwritten anyway.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
    */
   async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
@@ -92,7 +96,7 @@ class CommandParser {
    * Parses a command string.
    * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {(CommandParser~CommandFunction|CommandParser~CommandFunction[])}
+   * @returns {(parsing.CommandFunction|parsing.CommandFunction[])}
    *   One or many command functions.
    */
   parse(commandStr) {
@@ -106,7 +110,7 @@ class CommandParser {
   /**
    * Adds a new command or redefines an existing one.
    * @param {string} name - The command name.
-   * @param {CommandParser~CommandFunction} command - The command function.
+   * @param {parsing.CommandFunction} command - The command function.
    */
   add(name, command) {
     this.commands[name] = command;

@@ -1,6 +1,6 @@
-require './setup-unhandled-rejection'
-{Light, TrafficLight} = require '../src/traffic-light'
-{MultiLight, MultiTrafficLight, FlexMultiTrafficLight} = require '../src/multi-traffic-light'
+require '../setup-unhandled-rejection'
+{Light, TrafficLight} = require '../../src/traffic-light/traffic-light'
+{MultiLight, MultiTrafficLight, FlexMultiTrafficLight} = require '../../src/traffic-light/multi-traffic-light'
 sinon = require('sinon')
 require('chai').should()
 

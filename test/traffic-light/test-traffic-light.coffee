@@ -1,5 +1,5 @@
-require './setup-unhandled-rejection'
-{Light, TrafficLight} = require '../src/traffic-light'
+require '../setup-unhandled-rejection'
+{Light, TrafficLight} = require '../../src/traffic-light/traffic-light'
 require('chai').should()
 
 describe 'Light', () ->

@@ -1,6 +1,6 @@
 require './setup-unhandled-rejection'
 {Commander} = require '../src/commander'
-{Device, DeviceManager} = require '../src/device'
+{Device, DeviceManager} = require '../src/physical/device'
 require('chai').should()
 sinon = require('sinon')
 yieldThen = (fn) -> setTimeout(fn, 0)

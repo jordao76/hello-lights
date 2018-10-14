@@ -1,4 +1,4 @@
-let { Light, TrafficLight } = require('./traffic-light');
+let { Light, TrafficLight } = require('../traffic-light/traffic-light');
 
 ///////////////
 
@@ -9,6 +9,7 @@ const ON=1, OFF=0;
 
 /**
  * A physical light in a traffic light.
+ * @memberof physical
  * @extends Light
  */
 class PhysicalLight extends Light {
@@ -25,7 +26,7 @@ class PhysicalLight extends Light {
 
   /**
    * Toggles the light if its device is connected.
-   * @see Device#turn
+   * @see physical.Device#turn
    */
   async toggle() {
     if (!this.device.isConnected) return;
@@ -35,7 +36,7 @@ class PhysicalLight extends Light {
 
   /**
    * Turn the light on if its device is connected.
-   * @see Device#turn
+   * @see physical.Device#turn
    */
   async turnOn() {
     if (!this.device.isConnected) return;
@@ -45,7 +46,7 @@ class PhysicalLight extends Light {
 
   /**
    * Turn the light off if its device is connected.
-   * @see Device#turn
+   * @see physical.Device#turn
    */
   async turnOff() {
     if (!this.device.isConnected) return;
@@ -55,7 +56,7 @@ class PhysicalLight extends Light {
 
   /**
    * Syncs the physical light in the device with the state of this instance.
-   * @see Device#turn
+   * @see physical.Device#turn
    */
   async sync() {
     if (!this.device.isConnected) return;
@@ -68,6 +69,7 @@ class PhysicalLight extends Light {
 
 /**
  * A physical traffic light.
+ * @memberof physical
  * @extends TrafficLight
  */
 class PhysicalTrafficLight extends TrafficLight {
@@ -112,8 +114,6 @@ class PhysicalTrafficLight extends TrafficLight {
   /**
    * If the traffic light is enabled and ready to use.
    * Checks if the traffic light's device is connected.
-   * @see PhysicalTrafficLight#isConnected
-   * @see Device#isConnected
    * @type {boolean}
    */
   get isEnabled() {
@@ -122,7 +122,6 @@ class PhysicalTrafficLight extends TrafficLight {
 
   /**
    * If the traffic light's device is connected.
-   * @see Device#isConnected
    * @type {boolean}
    */
   get isConnected() {

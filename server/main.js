@@ -2,7 +2,7 @@
 
 const device = process.argv[2] || '../src/devices/cleware-switch1';
 const {Manager} = require(device);
-const selector = process.argv[3] || '../src/physical-traffic-light-selector';
+const selector = process.argv[3] || '../src/selectors/physical-traffic-light-selector';
 const {SelectorCtor} = require(selector);
 const {Commander} = require('../src/commander');
 

@@ -1,10 +1,11 @@
-const {PhysicalTrafficLight} = require('./physical-traffic-light');
+const {PhysicalTrafficLight} = require('../physical/physical-traffic-light');
 const EventEmitter = require('events');
 
 ////////////////////////////////////////////////
 
 /**
  * A physical device that can turn lights on or off.
+ * @memberof physical
  * @abstract
  * @extends EventEmitter
  */
@@ -52,7 +53,7 @@ class Device extends EventEmitter {
 
   /**
    * Marks this device as connected.
-   * @fires Device#connected
+   * @fires physical.Device#connected
    */
   connect() {
     if (this.isConnected) return;
@@ -60,21 +61,21 @@ class Device extends EventEmitter {
     this.trafficLight.sync();
     /**
      * Connected event.
-     * @event Device#connected
+     * @event physical.Device#connected
      */
     this.emit('connected');
   }
 
   /**
    * Marks this device as disconnected.
-   * @fires Device#disconnected
+   * @fires physical.Device#disconnected
    */
   disconnect() {
     if (!this.isConnected) return;
     this.isConnected = false;
     /**
      * Disconnected event.
-     * @event Device#disconnected
+     * @event physical.Device#disconnected
      */
     this.emit('disconnected');
   }
@@ -85,6 +86,7 @@ class Device extends EventEmitter {
 
 /**
  * A Device Manager.
+ * @memberof physical
  * @abstract
  * @extends EventEmitter
  */
@@ -92,8 +94,8 @@ class DeviceManager extends EventEmitter {
 
   /**
    * Starts monitoring for devices.
-   * @fires DeviceManager#added
-   * @fires DeviceManager#removed
+   * @fires physical.DeviceManager#added
+   * @fires physical.DeviceManager#removed
    */
   startMonitoring() { }
 
@@ -114,7 +116,7 @@ class DeviceManager extends EventEmitter {
   /**
    * All devices being managed.
    * @abstract
-   * @return {Device[]} All devices being managed.
+   * @return {physical.Device[]} All devices being managed.
    */
   allDevices() {
     throw new Error('DeviceManager#allDevices is abstract');
@@ -124,7 +126,7 @@ class DeviceManager extends EventEmitter {
    * Returns information about known devices.
    * Known devices are either connected devices or
    * devices that were once connected and then got disconnected.
-   * @returns {DeviceManager~DeviceInfo[]} Device info list.
+   * @returns {physical.DeviceInfo[]} Device info list.
    */
   info() {
     let devices = this.allDevices();
@@ -137,9 +139,9 @@ class DeviceManager extends EventEmitter {
 
   /**
    * Logs information about known devices.
-   * @param {Object} [logger=console] - A Console-like object for logging,
+   * @param {object} [logger=console] - A Console-like object for logging,
    *   with a log function.
-   * @see DeviceManager#info
+   * @see physical.DeviceManager#info
    */
   logInfo(logger = console) {
     let devicesInfo = this.info();
@@ -160,20 +162,21 @@ class DeviceManager extends EventEmitter {
  * Device added event.
  * A monitoring Device Manager should fire this event
  * when a device is added (connected).
- * @event DeviceManager#added
+ * @event physical.DeviceManager#added
  */
 
 /**
  * Device removed event.
  * A monitoring Device Manager should fire this event
  * when a device is removed (disconnected).
- * @event DeviceManager#removed
+ * @event physical.DeviceManager#removed
  */
 
 ////////////////////////////////////////////////
 
 /**
- * @typedef {object} DeviceManager~DeviceInfo
+ * @typedef {object} DeviceInfo
+ * @memberof physical
  * @property {string} type - The type of the device.
  * @property {(string|number)} serialNum - The serial number of the device.
  * @property {string} status - The status of the device, either

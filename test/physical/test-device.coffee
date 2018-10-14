@@ -1,5 +1,5 @@
-require './setup-unhandled-rejection'
-{Device} = require '../src/device'
+require '../setup-unhandled-rejection'
+{Device} = require '../../src/physical/device'
 require('chai').should()
 sinon = require('sinon')
 
