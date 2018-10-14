@@ -1,0 +1,232 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto);
+
+body {
+  font: 18px 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: whitesmoke;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: auto 649px auto;
+  grid-template-rows: auto 250px auto 280px auto auto auto auto;
+  grid-template-areas:
+    ". header ."
+    ". tl ."
+    ". switches ."
+    ". command ."
+    ". toolbar ."
+    ". messages ."
+    ". help ."
+    ". footer .";
+}
+
+.header {
+  grid-area: header;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
+  text-align: center;
+  letter-spacing: 10px;
+  background: #afafaf;
+  border-radius: 7px 7px 0px 0px;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+#traffic-lights {
+  grid-area: tl;
+  border-right: 5px solid black;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.traffic-light {
+  float: left;
+  display: inline-block;
+  background-color: #222222;
+  border: 5px solid black;
+  border-right: 0px;
+  width: 87px;
+  height: 240px;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+.light {
+  border-radius: 50%;
+  width: 57px;
+  height: 57px;
+  margin: 9px;
+  border: 5px solid black;
+  opacity: .2;
+  cursor: pointer;
+}
+.on {
+  opacity: 1;
+}
+.red { background-color: red; }
+.yellow { background-color: gold; }
+.green { background-color: #0f5; }
+.disabled > .light { background-color: black; cursor: default; }
+
+.command {
+  grid-area: command;
+  background: #1f1f1f;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.toolbar {
+  grid-area: toolbar;
+  border-radius: 0px 0px 7px 7px;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.help {
+  grid-area: help;
+}
+
+#help-title {
+  border-bottom: 1px solid #c9cacc;
+}
+
+h3 {
+  border-bottom: 1px solid #eaecef;
+}
+
+textarea {
+  width: 95%;
+  height: 250px;
+  resize: none;
+  border: 0;
+  margin: 0;
+  background: transparent;
+  line-height: 21px;
+  font-size: 20px;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
+  padding: 10px;
+  color: #bbb529;
+}
+
+textarea:focus {
+  outline: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.buttons {
+  background: #afafaf;
+  padding-top: 4px;
+  padding-left: 10px;
+  padding-bottom: 4px;
+  border-radius: 0px 0px 7px 7px;
+}
+.buttons > button {
+  width: 100px;
+  padding: 20px;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  background-color: #455;
+  font: 18px 'Roboto', sans-serif;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #988;
+}
+
+.error {
+  grid-area: messages;
+  margin-top: 5px;
+  padding: 10px;
+  border-radius: 7px;
+  color: #d8000c;
+  background-color: #ffbaba;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+.variable {
+  background: #d6d6d6;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-radius: 7px;
+}
+
+.sample {
+  background: #d6d6d6;
+  border-radius: 13px;
+  padding: 10px;
+  display: inline-block;
+  font-family: Consolas,Liberation Mono,Courier,monospace;
+  font-weight: bold;
+  color: #556682;
+  cursor: pointer;
+}
+
+.sample:hover {
+  background: #bababa;
+}
+
+.footer {
+  border-top: 1px solid #c9cacc;
+  grid-area: footer;
+  text-align: right;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.switches {
+  grid-area: switches;
+  background: #afafaf;
+  box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+
+/* from: https://proto.io/freebies/onoff/ */
+.onoffswitch {
+  float: left;
+  margin-left: 2px;
+  position: relative; width: 90px;
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+  display: none;
+}
+.onoffswitch-label {
+  display: block; overflow: hidden; cursor: pointer;
+  border: 2px solid #999999; border-radius: 20px;
+}
+.onoffswitch-inner {
+  display: block; width: 200%; margin-left: -100%;
+  transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+  display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 30px;
+  font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+  box-sizing: border-box;
+}
+.onoffswitch-inner:before {
+  content: "ON";
+  padding-left: 10px;
+  background-color: #23383d; color: #ffffff;
+}
+.onoffswitch-inner:after {
+  content: "OFF";
+  padding-right: 10px;
+  background-color: #eeeeee; color: #999999;
+  text-align: right;
+}
+.onoffswitch-switch {
+  display: block; width: 18px; margin: 6px;
+  background: #ffffff;
+  position: absolute; top: 0; bottom: 0;
+  right: 56px;
+  border: 2px solid #999999; border-radius: 20px;
+  transition: all 0.3s ease-in 0s;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+  margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+  right: 0px;
+}
