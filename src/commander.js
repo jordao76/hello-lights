@@ -225,7 +225,7 @@ Commander.multi = (options = {}) => {
   const {SelectorCtor} = tryRequire('./physical-multi-traffic-light-selector');
   let {selectorCtor = SelectorCtor} = options;
   return new Commander({...options, selectorCtor});
-}
+};
 
 ////////////////////////////////////////////////
 
