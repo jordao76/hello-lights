@@ -44,7 +44,7 @@ class Device extends EventEmitter {
 
   /**
    * The physical traffic light associated with this device.
-   * @type {PhysicalTrafficLight}
+   * @type {physical.PhysicalTrafficLight}
    */
   get trafficLight() {
     if (this._tl) return this._tl;

@@ -19,10 +19,9 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
   /**
    * Selects all available physical traffic lights to use.
    * Checks-out and uses all available traffic lights to issue commands.
-   * @see physical.DeviceManager#startMonitoring
    * @param {object} [options] - Options.
-   * @param {DeviceManager} [options.manager] - The Device Manager to use.
-   * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
    *   Used to define multi-traffic-light commands.
    */
   constructor({manager = Manager, parser = null} = {}) {
@@ -83,7 +82,7 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
   /**
    * Retrieves a multi traffic light for exclusive usage of the caller,
    * or `null` if no traffic lights are available.
-   * @returns {FlexMultiTrafficLight} - A multi traffic light, or `null`.
+   * @returns {trafficLight.FlexMultiTrafficLight} - A multi traffic light, or `null`.
    */
   resolveTrafficLight() {
     if (this.trafficLight.isEnabled) return this.trafficLight;

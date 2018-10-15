@@ -21,7 +21,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
    * to issue commands.
    * @see physical.DeviceManager#startMonitoring
    * @param {object} [options] - Options.
-   * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
    *   a numeric serial number.
@@ -55,7 +55,7 @@ class PhysicalTrafficLightSelector extends EventEmitter {
    * Retrieves a traffic light for exclusive usage of the caller,
    * or `null` if one could not be found or checked-out.
    * Traffic lights are released (checked-in) when disconnected.
-   * @returns {PhysicalTrafficLight} - A traffic light, or `null`.
+   * @returns {physical.PhysicalTrafficLight} - A traffic light, or `null`.
    */
   resolveTrafficLight() {
     if (this._device) return this._device.trafficLight;

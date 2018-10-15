@@ -16,7 +16,7 @@ class PhysicalLight extends Light {
 
   /**
    * @param {number} lightNum - The light number for this light.
-   * @param {Device} device - The device associated with this light.
+   * @param {physical.Device} device - The device associated with this light.
    */
   constructor(lightNum, device) {
     super();
@@ -75,10 +75,10 @@ class PhysicalLight extends Light {
 class PhysicalTrafficLight extends TrafficLight {
 
   /**
-   * @param {Device} device - The device associated with this traffic light.
-   * @param {PhysicalLight} [red] - Red light.
-   * @param {PhysicalLight} [yellow] - Yellow light.
-   * @param {PhysicalLight} [green] - Green light.
+   * @param {physical.Device} device - The device associated with this traffic light.
+   * @param {physical.PhysicalLight} [red] - Red light.
+   * @param {physical.PhysicalLight} [yellow] - Yellow light.
+   * @param {physical.PhysicalLight} [green] - Green light.
    */
   constructor(device, red, yellow, green) {
     super(
