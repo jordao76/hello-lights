@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: selectors</title>
+    <title>JSDoc: Source: parsing/command-function.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,109 +17,36 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: selectors</h1>
+    <h1 class="page-title">Source: parsing/command-function.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>selectors</h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description">Traffic light selectors.</div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="selectors_index.js.html">selectors/index.js</a>, <a href="selectors_index.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="selectors.PhysicalMultiTrafficLightSelector.html">PhysicalMultiTrafficLightSelector</a></dt>
-            <dd></dd>
-        
-            <dt><a href="selectors.PhysicalTrafficLightSelector.html">PhysicalTrafficLightSelector</a></dt>
-            <dd></dd>
-        </dl>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * A function that implements a command.
+ * @typedef {function} CommandFunction
+ * @memberof parsing
+ * @param {object} ctx - Context to execute the command.
+ * @param {parsing.Cancellable} ctx.ct - A cancellation token.
+ * @param {object} ctx.scope - Variable bindings for nested commands.
+ * @param {...object} [ctx....] - Extra context objects needed for the command,
+ *   like the objects that the command manipulates.
+ * @param {object[]} [params] - The command parameters.
+ * @property {object} doc - Name and description of the command.
+ * @property {string} doc.name - Command name.
+ * @property {string} doc.desc - Command description.
+ * @property {function} [transformation] - Transforms the parameters of the command.
+ * @property {string[]} [paramNames] - Parameter names for the command.
+ * @property {function[]} [validation] - Validation functions for each parameter
+ *   after transformation.
+ */
+</code></pre>
+        </article>
+    </section>
 
 
 

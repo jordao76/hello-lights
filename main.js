@@ -1,30 +1,8 @@
-var trafficlight = require('../src/traffic-light/traffic-light');
-var {CommandParser} = require('../src/parsing/command-parser');
-let {defineCommands} = require('../src/traffic-light/traffic-light-commands');
+const {Commander} = require('../src/commander');
+const {setUpHelp} = require('./help');
+const {MultiTrafficLightSelector} = require('./web-traffic-light');
 
-///////////////
-
-class WebLight extends trafficlight.Light {
-  constructor(selector) {
-    super();
-    this.elLight = document.querySelector(selector);
-    this.elLight.addEventListener('click', () => this.toggle());
-  }
-  toggle() {
-    super.toggle();
-    this.elLight.classList.toggle('on');
-  }
-  turnOn() {
-    super.turnOn();
-    this.elLight.classList.add('on');
-  }
-  turnOff() {
-    super.turnOff();
-    this.elLight.classList.remove('on');
-  }
-}
-
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
 function info(str) {
   console.log(str);
@@ -45,116 +23,74 @@ function clearError() {
   divError.style.display = 'none';
 }
 
-///////////////
-
-var cp = new CommandParser(); defineCommands(cp);
-
-///////////////
-
-async function execute(commandStr) {
-  clearError();
-  info(`Executing command '${commandStr}'`);
-  cp.cancel();
-  await cp.execute('reset', {tl: window.tl});
-  try {
-    if (commandStr.match(/define/)) {
-      setTimeout(showHelp, 0);
-    }
-    await cp.execute(commandStr, {tl: window.tl});
-    info(`Finished command '${commandStr}'`);
-  } catch (e) {
-    error(`Error executing command.\n${e}`);
-  }
+const logger = {
+  log: info,
+  error
 };
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
+
+function execute(commandStr) {
+  clearError();
+  window.commander.run(commandStr);
+  if (commandStr.match(/define/)) {
+    setTimeout(showHelp, 0); // yield
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
 
 function showHelp() {
-  let divHelp = document.querySelector('#help');
-  divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
-  for (let i = 0; i < cp.commandList.length; ++i) {
-    let commandName = cp.commandList[i];
-    let command = cp.commands[commandName];
-    let usage = (c) => `<h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
-    divHelp.innerHTML += [
-      usage(command),
-      command.doc.desc
-        .replace(/:(\s*\(.+\)\s*)$/s,
-          (_, sample) => {
-            sample = sample.trim()
-              .replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
-            return `:<br /><br /><div class="sample">${sample}</div>`;
-          }
-        )
-        .replace(/'([^']+)'/g, '<code class="variable">$1</code>')
-        .replace(/\n/g, '<br />\n')
-    ].join('');
-  }
-  setUpSamples();
+  setUpHelp(window.commander, runCommand);
 };
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpButtons() {
+function setUpActions() {
   let txtCommand = document.querySelector('#command');
+  txtCommand.addEventListener('keydown', e => {
+    if (e.ctrlKey && (e.keyCode === 13 || e.keyCode === 10)) { // CTRL+ENTER
+      execute(txtCommand.value);
+    }
+  });
+
   let btnRun = document.querySelector('#run');
   btnRun.addEventListener('click', () => execute(txtCommand.value));
 
   let btnCancel = document.querySelector('#cancel');
-  btnCancel.addEventListener('click', () => cp.cancel());
+  btnCancel.addEventListener('click', () => window.commander.cancel());
 
   let btnReset = document.querySelector('#reset');
   btnReset.addEventListener('click', () => execute('reset'));
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpSamples() {
-  let txtSamples = document.querySelectorAll('.sample');
-  txtSamples.forEach(txtSample =>
-    txtSample.addEventListener('click', () => {
-      location.hash = '#top';
-      runCommand(txtSample.innerHTML
-        .replace(/<br\s*\/?>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .trim());
-      location.hash = '#_';
-    }));
-}
-
-///////////////
-
-async function runCommand(command) {
+function runCommand(command) {
   let txtCommand = document.querySelector('#command');
   txtCommand.value = command;
-  await execute(command);
+  execute(command);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpTrafficLight() {
-  var r = new WebLight('#tl > .red');
-  var y = new WebLight('#tl > .yellow');
-  var g = new WebLight('#tl > .green');
-  window.tl = new trafficlight.TrafficLight(r, y, g);
+function setUpTrafficLight(n) {
+  let selector = new MultiTrafficLightSelector('#tl', '#switch', n);
+  window.commander = new Commander({logger, selector});
+  selector.setUpMultiCommands(window.commander);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-async function main() {
-  setUpTrafficLight();
+function main() {
+  setUpTrafficLight(document.querySelectorAll('.traffic-light').length);
   showHelp();
-  setUpButtons();
-  runCommand(`
-    loop
-      (up 70)
-      (pause 500)
-      (down 70)
-      (pause 500)
-  `.trim().replace(/^\s{4}/gm, '')); // trim per-line indentation
+  setUpActions();
+  let txtCommand = document.querySelector('#command');
+  execute(txtCommand.value);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
 if (document.readyState !== 'loading') {
   main();

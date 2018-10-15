@@ -524,6 +524,247 @@ function functionBindPolyfill(context) {
 }
 
 },{}],2:[function(require,module,exports){
+////////////////////////////////////////////////
+
+const tryRequire = (path) => {
+  try {
+    return require(path);
+  } catch (e) {
+    return {};
+  }
+};
+
+////////////////////////////////////////////////
+
+// The default Selector constructor.
+// This is an optional requirement since when used in a web context
+// it would fail because of further USB-related dependencies.
+// Browserify won't pick it up since the `require` call is encapsulated in
+// `tryRequire`.
+// If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
+const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
+
+////////////////////////////////////////////////
+
+const {CommandParser} = require('./parsing/command-parser');
+const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
+// the default command parser
+const Parser = new CommandParser();
+defineCommands(Parser);
+
+////////////////////////////////////////////////
+
+/**
+ * Issues commands to control a traffic light.
+ */
+class Commander {
+
+  /**
+   * Creates a new Commander instance.
+   * @param {object} [options] - Commander options.
+   * @param {object} [options.logger=console] - A Console-like object for logging,
+   *   with a log and an error function.
+   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+   * @param {object} [options.selector] - The traffic light selector to use.
+   *   Takes precedence over `options.selectorCtor`.
+   * @param {function} [options.selectorCtor] - The constructor of a traffic
+   *   light selector to use. Will be passed the entire `options` object.
+   *   Ignored if `options.selector` is set.
+   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+   *   This is an option for the default `options.selectorCtor`.
+   * @param {string|number} [options.serialNum] - The serial number of the
+   *   traffic light to use, if available. Cleware USB traffic lights have
+   *   a numeric serial number.
+   *   This is an option for the default `options.selectorCtor`.
+   */
+  constructor(options = {}) {
+    let {
+      logger = console,
+      parser = Parser,
+      selector = null,
+      selectorCtor = SelectorCtor
+    } = options;
+    this.logger = logger;
+    this.parser = parser;
+
+    this.selector = selector || new selectorCtor({...options, logger, parser}); // eslint-disable-line new-cap
+    this.selector.on('enabled', () => this._resumeIfNeeded());
+    this.selector.on('disabled', () => this.cancel());
+    this.selector.on('interrupted', () => this._interrupt());
+  }
+
+  /**
+   * Called to close this instance.
+   * Should be done as the last operation before exiting the process.
+   */
+  close() {
+    this.selector.close();
+  }
+
+  /**
+   * Cancels any currently executing command.
+   */
+  cancel() {
+    this.parser.cancel();
+  }
+
+  _interrupt() {
+    if (!this.running) return;
+    this.isInterrupted = true;
+    this.parser.cancel();
+  }
+
+  /**
+   * Executes a command asynchronously.
+   * If the same command is already running, does nothing.
+   * If another command is running, cancels it, resets the traffic light,
+   * and runs the new command.
+   * If no command is running, executes the given command, optionally
+   * resetting the traffic light based on the `reset` parameter.
+   * If there's no traffic light to run the command, stores it for later when
+   * one becomes available. Logs messages appropriately.
+   * @param {string} command - Command to execute.
+   * @param {boolean} [reset=false] - Whether to reset the traffic light
+   *   before executing the command.
+   */
+  async run(command, reset = false) {
+    let tl = this.selector.resolveTrafficLight();
+    if (!tl) {
+      this.suspended = command;
+      this.logger.log(`no traffic light available to run '${command}'`);
+      return;
+    }
+    try {
+      if (this._skipIfRunningSame(command, tl)) return;
+      await this._cancelIfRunningDifferent(command, tl);
+      return await this._execute(command, tl, reset);
+    } catch (e) {
+      this._errorInExecution(command, tl, e);
+    }
+  }
+
+  async _cancelIfRunningDifferent(command, tl) {
+    if (!this.running || this.running === command) return;
+    this.logger.log(`${tl}: cancel '${this.running}'`);
+    this.parser.cancel();
+    await tl.reset();
+  }
+
+  _skipIfRunningSame(command, tl) {
+    if (this.running !== command) return false;
+    this.logger.log(`${tl}: skip '${command}'`);
+    return true;
+  }
+
+  async _execute(command, tl, reset) {
+    if (reset) await tl.reset();
+    this.logger.log(`${tl}: running '${command}'`);
+    this.running = command;
+    let res = await this.parser.execute(command, {tl});
+    if (command === this.running) this.running = null;
+    this._finishedExecution(command, tl);
+    return res;
+  }
+
+  _finishedExecution(command, tl) {
+    if (this.isInterrupted || !tl.isEnabled) {
+      let state = this.isInterrupted ? 'interrupted' : 'disabled';
+      this.logger.log(`${tl}: ${state}, suspending '${command}'`);
+      this.suspended = command;
+      this.isInterrupted = false;
+      this._resumeIfNeeded(); // try to resume in another traffic light
+    } else {
+      this.suspended = null;
+      this.logger.log(`${tl}: finished '${command}'`);
+    }
+  }
+
+  _errorInExecution(command, tl, error) {
+    if (command === this.running) this.running = null;
+    this.logger.error(`${tl}: error in '${command}'`);
+    this.logger.error(error.message);
+  }
+
+  _resumeIfNeeded() {
+    let command = this.suspended;
+    if (!command) return;
+    this.suspended = null;
+    this.run(command, true); // no await
+  }
+
+  /**
+   * All supported command names.
+   * @type {string[]}
+   */
+  get commandNames() {
+    return this.parser.commandNames;
+  }
+
+  /**
+   * All supported commands indexed by their names.
+   * @type {object.<string, parsing.CommandFunction>}
+   */
+  get commands() {
+    return this.parser.commands;
+  }
+
+  /**
+   * Logs the help info for the given command name.
+   * @param {string} commandName - Name of the command to log help info.
+   */
+  help(commandName) {
+    let command = this.parser.commands[commandName];
+    if (!command) {
+      this.logger.error(`Command not found: "${commandName}"`);
+      return;
+    }
+    let paramNames = command.paramNames, params = '';
+    if (paramNames && paramNames.length > 0) {
+      params = ' ' + paramNames.map(n => ':' + n).join(' ');
+    }
+    this.logger.log(`${command.doc.name}${params}`);
+    this.logger.log(command.doc.desc);
+  }
+
+  /**
+   * Logs information about known traffic lights.
+   */
+  logInfo() {
+    this.selector.logInfo(this.logger);
+  }
+
+}
+
+////////////////////////////////////////////////
+
+/**
+ * Factory for a Commander that deals with multiple traffic lights.
+ * It will greedily get all available traffic lights for use and add commands
+ * to deal with multiple traffic lights.
+ * @param {object} [options] - Commander options.
+ * @param {object} [options.logger=console] - A Console-like object for logging,
+ *   with a log and an error function.
+ * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+ * @param {object} [options.selector] - The traffic light selector to use.
+ *   Takes precedence over `options.selectorCtor`.
+ * @param {function} [options.selectorCtor] - The constructor of a traffic
+ *   light selector to use. Will be passed the entire `options` object.
+ *   Ignored if `options.selector` is set.
+ * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+ *   This is an option for the default `options.selectorCtor`.
+ * @returns {Commander} A multi-traffic-light commander.
+ */
+Commander.multi = (options = {}) => {
+  const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
+  let {selectorCtor = SelectorCtor} = options;
+  return new Commander({...options, selectorCtor});
+};
+
+////////////////////////////////////////////////
+
+module.exports = {Commander};
+
+},{"./parsing/command-parser":5,"./traffic-light/traffic-light-commands":11}],3:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -753,7 +994,7 @@ module.exports = {
   run, loop, repeat, all, ease
 };
 
-},{"./cancellable":3,"./validation":6}],3:[function(require,module,exports){
+},{"./cancellable":4,"./validation":7}],4:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
  * Commands should regularly check for the {@link Cancellable#isCancelled}
@@ -813,31 +1054,10 @@ class Cancellable {
 
 module.exports = {Cancellable};
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 const baseCommands = require('./base-commands');
 const {Cancellable} = require('./cancellable');
 const parser = require('./command-peg-parser');
-
-//////////////////////////////////////////////////////////////////////////////
-
-/**
- * A function that implements a command.
- * @typedef {function} CommandFunction
- * @memberof parsing
- * @param {object} ctx - Context to execute the command.
- * @param {parsing.Cancellable} ctx.ct - A cancellation token.
- * @param {object} ctx.scope - Variable bindings for nested commands.
- * @param {...object} [ctx....] - Extra context objects needed for the command,
- *   like the objects that the command manipulates.
- * @param {object[]} [params] - The command parameters.
- * @property {object} doc - Name and description of the command.
- * @property {string} doc.name - Command name.
- * @property {string} doc.desc - Command description.
- * @property {function} [transformation] - Transforms the parameters of the command.
- * @property {string[]} [paramNames] - Parameter names for the command.
- * @property {function[]} [validation] - Validation functions for each parameter
- *   after transformation.
- */
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -866,7 +1086,7 @@ class CommandParser {
    * Command names this parser recognizes.
    * @type {string[]}
    */
-  get commandList() {
+  get commandNames() {
     return Object.keys(this.commands);
   }
 
@@ -1113,7 +1333,7 @@ let Validator = {
 
 module.exports = {CommandParser};
 
-},{"./base-commands":2,"./cancellable":3,"./command-peg-parser":5,"./validation":6}],5:[function(require,module,exports){
+},{"./base-commands":3,"./cancellable":4,"./command-peg-parser":6,"./validation":7}],6:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -2027,7 +2247,7 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -2086,7 +2306,465 @@ module.exports = {
   each
 };
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+const {
+  isGreaterThanZero,
+  each
+} = require('../parsing/validation');
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+function use({tl, ct}, [indexes]) {
+  if (ct.isCancelled) return;
+  if (tl.use) {
+    tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
+  }
+}
+use.transformation = args => [args];
+use.paramNames = ['indexes'];
+use.validation = [each(isGreaterThanZero)];
+use.doc = {
+  name: 'use',
+  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
+        '(use 1 2)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useNext({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.next) {
+    tl.next();
+  }
+}
+useNext.paramNames = [];
+useNext.validation = [];
+useNext.doc = {
+  name: 'use-next',
+  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function usePrevious({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.previous) {
+    tl.previous();
+  }
+}
+usePrevious.paramNames = [];
+usePrevious.validation = [];
+usePrevious.doc = {
+  name: 'use-previous',
+  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useLast({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.last) {
+    tl.last();
+  }
+}
+useLast.paramNames = [];
+useLast.validation = [];
+useLast.doc = {
+  name: 'use-last',
+  desc: 'When using multiple traffic lights, chooses the last one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useNear({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.near) {
+    tl.near();
+  }
+}
+useNear.paramNames = [];
+useNear.validation = [];
+useNear.doc = {
+  name: 'use-near',
+  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useAll({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.useAll) {
+    tl.useAll();
+  }
+}
+useAll.paramNames = [];
+useAll.validation = [];
+useAll.doc = {
+  name: 'use-all',
+  desc: 'When using multiple traffic lights, chooses all of them to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+function defineCommands(cp) {
+  // add multi commands
+  cp.add('use', use);
+  cp.add('use-next', useNext);
+  cp.add('use-previous', usePrevious);
+  cp.add('use-last', useLast);
+  cp.add('use-near', useNear);
+  cp.add('use-all', useAll);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  use,
+  'use-next': useNext,
+  'use-previous': usePrevious,
+  'use-last': useLast,
+  'use-near': useNear,
+  'use-all': useAll,
+  defineCommands
+};
+
+},{"../parsing/validation":7}],9:[function(require,module,exports){
+const {Light, TrafficLight} = require('./traffic-light');
+
+///////////////
+
+/**
+ * A composite light that combines all composed lights.
+ * @memberof trafficLight
+ * @extends trafficLight.Light
+ */
+class MultiLight extends Light {
+
+  /**
+   * @param {trafficLight.Light[]} lights - Lights composed.
+   */
+  constructor(lights) {
+    super();
+    this.lights = lights;
+    // this.on and this.off might not reflect the underlying lights,
+    // just what the multi-light has been through
+  }
+
+  /** Toggles the lights. */
+  toggle() {
+    super.toggle();
+    this.lights.forEach(l => l.toggle());
+  }
+
+  /** Turns the lights on. */
+  turnOn() {
+    super.turnOn();
+    this.lights.forEach(l => l.turnOn());
+  }
+
+  /** Turns the lights off. */
+  turnOff() {
+    super.turnOff();
+    this.lights.forEach(l => l.turnOff());
+  }
+
+}
+
+///////////////
+
+let dummyLight = new Light();
+
+///////////////
+
+/**
+ * A composite traffic light that combines all composed traffic lights.
+ * Does not track or raise any `enabled` or `disabled` events for the composed
+ * traffic lights.
+ * @memberof trafficLight
+ * @extends trafficLight.TrafficLight
+ */
+class MultiTrafficLight extends TrafficLight {
+
+  /**
+   * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
+   */
+  constructor(trafficLights) {
+    super(dummyLight, dummyLight, dummyLight);
+    this.trafficLights = trafficLights;
+  }
+
+  get trafficLights() {
+    return this._trafficLights;
+  }
+  set trafficLights(trafficLights) {
+    this._trafficLights = trafficLights;
+    this.red    = new MultiLight(trafficLights.map(tl => tl.red));    // eslint-disable-line no-multi-spaces
+    this.yellow = new MultiLight(trafficLights.map(tl => tl.yellow));
+    this.green  = new MultiLight(trafficLights.map(tl => tl.green));  // eslint-disable-line no-multi-spaces
+  }
+
+  /**
+   * If any of the composed traffic lights is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this._trafficLights.some(tl => tl.isEnabled);
+  }
+
+}
+
+///////////////
+
+function unique(a) {
+  return [...new Set(a)];
+}
+
+///////////////
+
+/**
+ * A composite traffic light with a flexible way to select which composed
+ * traffic lights are active or in use.
+ * @memberof trafficLight
+ * @extends trafficLight.TrafficLight
+ */
+class FlexMultiTrafficLight extends TrafficLight {
+
+  /**
+   * Creates a new instance of this class.
+   * Starts off using the first traffic light in the provided `trafficLights`.
+   * Tries to checks out the provided traffic lights.
+   * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
+   */
+  constructor(trafficLights) {
+    super(dummyLight, dummyLight, dummyLight);
+    this.activeMultiTrafficLight = new MultiTrafficLight([]);
+    this.allTrafficLights = trafficLights.filter(tl => tl.checkOut());
+    this.allTrafficLights.forEach(tl => this._subscribe(tl));
+    this.use([0]);
+  }
+
+  /**
+   * Adds a traffic light to the composite.
+   * Tries to exclusively check it out first and because of that won't add
+   * any duplicates.
+   * @param {trafficLight.TrafficLight} trafficLight - Traffic light to add.
+   *   Must not be null.
+   */
+  add(trafficLight) {
+    if (!trafficLight.checkOut()) return;
+    let wasEnabled = this.isEnabled;
+    this.allTrafficLights.push(trafficLight);
+    this._subscribe(trafficLight);
+    if (this.activeTrafficLights.length === 0) {
+      this.use([0]);
+    }
+    if (!wasEnabled && this.isEnabled) {
+      this.emit('enabled');
+    }
+  }
+
+  // returns an array of the tuple: (traffic light, original index)
+  get enabledTrafficLights() {
+    return (
+      this.allTrafficLights
+        .map((tl, i) => [tl, i])
+        .filter(([tl, _]) => tl.isEnabled));
+  }
+
+  // returns an array of the tuple: (traffic light, original index)
+  get activeTrafficLights() {
+    return (
+      this.enabledTrafficLights
+        .filter(([tl, _], i) => this.activeIndexes.indexOf(i) >= 0));
+  }
+
+  /**
+   * Selects which traffic lights to use given their indexes (0-based),
+   * only considering enabled traffic lights.
+   * Indexes wrap around from the last to the first.
+   * @param {number[]} activeIndexes - Traffic light indexes to use.
+   *   Must not be empty.
+   */
+  use(activeIndexes) {
+    this._setIndexes(activeIndexes);
+    this.activeMultiTrafficLight.trafficLights = this.activeTrafficLights.map(([tl, _]) => tl);
+    this.red = this.activeMultiTrafficLight.red;
+    this.yellow = this.activeMultiTrafficLight.yellow;
+    this.green = this.activeMultiTrafficLight.green;
+  }
+
+  _setIndexes(activeIndexes) {
+    let tlsEnabled = this.enabledTrafficLights.map(([tl, _]) => tl);
+    let l = tlsEnabled.length;
+    if (l > 0) {
+      activeIndexes = unique(activeIndexes.map(i => i < 0 ? l + i : i % l));
+    } else {
+      activeIndexes = [];
+    }
+    activeIndexes.sort();
+    this.activeIndexes = activeIndexes;
+    this.indexes = this.activeTrafficLights.map(([_, i]) => i);
+  }
+
+  _subscribe(tl) {
+    tl.on('enabled', () => this._enabled(tl));
+    tl.on('disabled', () => this._disabled(tl));
+  }
+
+  _enabled(tl) {
+    if (this.enabledTrafficLights.length === 1) {
+      // the first traffic light is enabled; all were disabled before
+      this.use([0]);
+      this.emit('enabled');
+    } else {
+      // recalculate indexes
+      let tlIndex = this.allTrafficLights.indexOf(tl);
+      let newActiveIndexes = this.indexes.map((i, j) => this.activeIndexes[j] + (tlIndex < i ? 1 : 0));
+      this.use(newActiveIndexes);
+    }
+  }
+
+  _disabled(tl) {
+
+    if (!this.isEnabled) {
+      // the only enabled traffic light was disabled
+      this.use([]);
+      this.emit('disabled'); // 'disabled' instead of 'interrupted'
+      return;
+    }
+
+    // recalculate indexes
+    let tlIndex = this.allTrafficLights.indexOf(tl);
+    let activeTrafficLightWasDisabled = this.indexes.indexOf(tlIndex) >= 0;
+
+    let newActiveIndexes = this.indexes
+      .map((i, j) => tlIndex === i ? -1 : (this.activeIndexes[j] - (tlIndex < i ? 1 : 0)))
+      .filter(i => i >= 0);
+    if (newActiveIndexes.length === 0) {
+      newActiveIndexes = [0]; // re-assign
+    }
+    this.use(newActiveIndexes);
+
+    if (activeTrafficLightWasDisabled) {
+      /**
+       * Interrupted event. In a `FlexMultiTrafficLight`, if an active traffic
+       * light gets disabled, and there are still enabled traffic lights left,
+       * this event is raised. If no more traffic lights are enabled,
+       * then the `disabled` event is raised.
+       * @event trafficLight.FlexMultiTrafficLight#interrupted
+       */
+      this.emit('interrupted');
+    }
+
+  }
+
+  /**
+   * Gets the traffic light indexes that are in use.
+   * If there are no traffic lights in use, or no traffic lights useable,
+   * returns and empty array.
+   * @returns {number[]} The traffic light indexes that are in use.
+   */
+  using() {
+    return this.activeIndexes;
+  }
+
+  /**
+   * Selects the next traffic light to use, going back to the first one if
+   * the currently selected one is the last.
+   * Also works with multiple selected traffic lights, moving all to the next.
+   */
+  next() {
+    this._move(+1);
+  }
+
+  /**
+   * Selects the previous traffic light to use, going to the last one if
+   * the currently selected one is the first.
+   * Also works with multiple selected traffic lights, moving all to the previous.
+   */
+  previous() {
+    this._move(-1);
+  }
+
+  /**
+   * Selects the nearest traffic light to use, remembering the direction
+   * of movement (forwards or backwards).
+   * Also works with multiple selected traffic lights, moving all to the nearest,
+   * following a single direction (so it's possible to wrap around at the last
+   * if both the first and last indexes are in use).
+   */
+  near() {
+    if (this.activeIndexes.length === 0) {
+      this.use([0]);
+      return;
+    }
+
+    let lastIndex = this.enabledTrafficLights.length - 1;
+    if (this.activeIndexes.indexOf(0) >= 0) {
+      this.direction = +1;
+    } else if (this.activeIndexes.indexOf(lastIndex) >= 0) {
+      this.direction = -1;
+    }
+
+    this._move(this.direction || +1);
+  }
+
+  _move(direction) {
+    if (this.activeIndexes.length > 0) {
+      this.use(this.activeIndexes.map(i => i + direction));
+    } else {
+      this.use([0]);
+    }
+  }
+
+  /**
+   * Selects the last traffic light to use.
+   */
+  last() {
+    this.use([this.enabledTrafficLights.length - 1]);
+  }
+
+  /**
+   * Selects all traffic lights to use simultaneously.
+   */
+  useAll() {
+    this.use(this.enabledTrafficLights.map((_, i) => i));
+  }
+
+  /**
+   * Resets all active traffic lights.
+   */
+  reset() {
+    this.activeMultiTrafficLight.reset();
+  }
+
+  /**
+   * If there are composed traffic lights and any of them is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.allTrafficLights.length > 0 &&
+      this.allTrafficLights.some(tl => tl.isEnabled);
+  }
+
+  toString() {
+    return `multi (${this.enabledTrafficLights.length};${this.activeTrafficLights.length})`;
+  }
+
+}
+
+///////////////
+
+module.exports = {
+  MultiLight, MultiTrafficLight, FlexMultiTrafficLight
+};
+
+},{"./traffic-light":12}],10:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -2261,7 +2939,7 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],8:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
@@ -2344,7 +3022,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./traffic-light-commands.cljs":7}],9:[function(require,module,exports){
+},{"./traffic-light-commands.cljs":10}],12:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -2475,34 +3153,87 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],10:[function(require,module,exports){
-var trafficlight = require('../src/traffic-light/traffic-light');
-var {CommandParser} = require('../src/parsing/command-parser');
-let {defineCommands} = require('../src/traffic-light/traffic-light-commands');
+},{"events":1}],13:[function(require,module,exports){
+////////////////////////////////////////////////////////
 
-///////////////
+class WebCommandFormatter {
 
-class WebLight extends trafficlight.Light {
-  constructor(selector) {
-    super();
-    this.elLight = document.querySelector(selector);
-    this.elLight.addEventListener('click', () => this.toggle());
+  constructor(command) {
+    this.command = command;
   }
-  toggle() {
-    super.toggle();
-    this.elLight.classList.toggle('on');
+
+  formatParams() {
+    return this.command.paramNames
+      .map(param => ':' + param).join(' ');
   }
-  turnOn() {
-    super.turnOn();
-    this.elLight.classList.add('on');
+
+  formatSignature() {
+    return `<h3><code>${this.command.doc.name} ${this.formatParams()}</code></h3>`;
   }
-  turnOff() {
-    super.turnOff();
-    this.elLight.classList.remove('on');
+
+  formatVariable(variable) {
+    return `<code class="variable">${variable}</code>`;
   }
+
+  formatSample(sample) {
+    sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
+    return `:<br /><br /><div class="sample">${sample}</div>`;
+  }
+
+  formatDesc() {
+    return this.command.doc.desc
+      .replace(/'([^']+)'/g, (_, variable) => this.formatVariable(variable))
+      .replace(/:(\s*\(.+\)\s*)$/s, (_, sample) => this.formatSample(sample))
+      .replace(/\n/g, '<br />\n');
+  }
+
+  format() {
+    return `${this.formatSignature()}${this.formatDesc()}`;
+  }
+
 }
 
-///////////////
+////////////////////////////////////////////////////////
+
+function setUpHelp(commander, runCommand) {
+  let divHelp = document.querySelector('#help');
+  divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
+  let commandNames = commander.commandNames;
+  for (let i = 0; i < commandNames.length; ++i) {
+    let commandName = commandNames[i];
+    let command = commander.commands[commandName];
+    divHelp.innerHTML += new WebCommandFormatter(command).format();
+  }
+  setUpSamples(runCommand);
+}
+
+////////////////////////////////////////////////////////
+
+function setUpSamples(runCommand) {
+  let txtSamples = document.querySelectorAll('.sample');
+  txtSamples.forEach(txtSample =>
+    txtSample.addEventListener('click', () => {
+      location.hash = '#top';
+      runCommand(txtSample.innerHTML
+        .replace(/<br\s*\/?>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim());
+      location.hash = '#_';
+    }));
+}
+
+////////////////////////////////////////////////////////
+
+module.exports = {
+  setUpHelp
+};
+
+},{}],14:[function(require,module,exports){
+const {Commander} = require('../src/commander');
+const {setUpHelp} = require('./help');
+const {MultiTrafficLightSelector} = require('./web-traffic-light');
+
+////////////////////////////////////////////////////////////////////////////
 
 function info(str) {
   console.log(str);
@@ -2523,116 +3254,74 @@ function clearError() {
   divError.style.display = 'none';
 }
 
-///////////////
-
-var cp = new CommandParser(); defineCommands(cp);
-
-///////////////
-
-async function execute(commandStr) {
-  clearError();
-  info(`Executing command '${commandStr}'`);
-  cp.cancel();
-  await cp.execute('reset', {tl: window.tl});
-  try {
-    if (commandStr.match(/define/)) {
-      setTimeout(showHelp, 0);
-    }
-    await cp.execute(commandStr, {tl: window.tl});
-    info(`Finished command '${commandStr}'`);
-  } catch (e) {
-    error(`Error executing command.\n${e}`);
-  }
+const logger = {
+  log: info,
+  error
 };
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
+
+function execute(commandStr) {
+  clearError();
+  window.commander.run(commandStr);
+  if (commandStr.match(/define/)) {
+    setTimeout(showHelp, 0); // yield
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
 
 function showHelp() {
-  let divHelp = document.querySelector('#help');
-  divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
-  for (let i = 0; i < cp.commandList.length; ++i) {
-    let commandName = cp.commandList[i];
-    let command = cp.commands[commandName];
-    let usage = (c) => `<h3><code>${c.doc.name} ${c.paramNames.map(n => ':'+n).join(' ')}</code></h3>`;
-    divHelp.innerHTML += [
-      usage(command),
-      command.doc.desc
-        .replace(/:(\s*\(.+\)\s*)$/s,
-          (_, sample) => {
-            sample = sample.trim()
-              .replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
-            return `:<br /><br /><div class="sample">${sample}</div>`;
-          }
-        )
-        .replace(/'([^']+)'/g, '<code class="variable">$1</code>')
-        .replace(/\n/g, '<br />\n')
-    ].join('');
-  }
-  setUpSamples();
+  setUpHelp(window.commander, runCommand);
 };
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpButtons() {
+function setUpActions() {
   let txtCommand = document.querySelector('#command');
+  txtCommand.addEventListener('keydown', e => {
+    if (e.ctrlKey && (e.keyCode === 13 || e.keyCode === 10)) { // CTRL+ENTER
+      execute(txtCommand.value);
+    }
+  });
+
   let btnRun = document.querySelector('#run');
   btnRun.addEventListener('click', () => execute(txtCommand.value));
 
   let btnCancel = document.querySelector('#cancel');
-  btnCancel.addEventListener('click', () => cp.cancel());
+  btnCancel.addEventListener('click', () => window.commander.cancel());
 
   let btnReset = document.querySelector('#reset');
   btnReset.addEventListener('click', () => execute('reset'));
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpSamples() {
-  let txtSamples = document.querySelectorAll('.sample');
-  txtSamples.forEach(txtSample =>
-    txtSample.addEventListener('click', () => {
-      location.hash = '#top';
-      runCommand(txtSample.innerHTML
-        .replace(/<br\s*\/?>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .trim());
-      location.hash = '#_';
-    }));
-}
-
-///////////////
-
-async function runCommand(command) {
+function runCommand(command) {
   let txtCommand = document.querySelector('#command');
   txtCommand.value = command;
-  await execute(command);
+  execute(command);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-function setUpTrafficLight() {
-  var r = new WebLight('#tl > .red');
-  var y = new WebLight('#tl > .yellow');
-  var g = new WebLight('#tl > .green');
-  window.tl = new trafficlight.TrafficLight(r, y, g);
+function setUpTrafficLight(n) {
+  let selector = new MultiTrafficLightSelector('#tl', '#switch', n);
+  window.commander = new Commander({logger, selector});
+  selector.setUpMultiCommands(window.commander);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
-async function main() {
-  setUpTrafficLight();
+function main() {
+  setUpTrafficLight(document.querySelectorAll('.traffic-light').length);
   showHelp();
-  setUpButtons();
-  runCommand(`
-    loop
-      (up 70)
-      (pause 500)
-      (down 70)
-      (pause 500)
-  `.trim().replace(/^\s{4}/gm, '')); // trim per-line indentation
+  setUpActions();
+  let txtCommand = document.querySelector('#command');
+  execute(txtCommand.value);
 }
 
-///////////////
+////////////////////////////////////////////////////////////////////////////
 
 if (document.readyState !== 'loading') {
   main();
@@ -2640,4 +3329,117 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/parsing/command-parser":4,"../src/traffic-light/traffic-light":9,"../src/traffic-light/traffic-light-commands":8}]},{},[10]);
+},{"../src/commander":2,"./help":13,"./web-traffic-light":15}],15:[function(require,module,exports){
+const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
+const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
+
+////////////////////////////////////////////////////////////////////////////
+
+class WebLight extends Light {
+  constructor(selector) {
+    super();
+    this.elLight = document.querySelector(selector);
+    this.elLight.addEventListener('click', () => this.toggle());
+    this.enabled = true;
+  }
+  toggle() {
+    if (!this.enabled) return;
+    super.toggle();
+    this.elLight.classList.toggle('on');
+  }
+  turnOn() {
+    if (!this.enabled) return;
+    super.turnOn();
+    this.elLight.classList.add('on');
+  }
+  turnOff() {
+    if (!this.enabled) return;
+    super.turnOff();
+    this.elLight.classList.remove('on');
+  }
+  enable() {
+    this.enabled = true;
+  }
+  disable() {
+    this.enabled = false;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+class WebTrafficLight extends TrafficLight {
+  constructor(selector, switchSelector) {
+    super(
+      new WebLight(selector + ' > .red'),
+      new WebLight(selector + ' > .yellow'),
+      new WebLight(selector + ' > .green'));
+    this.selector = selector;
+    this.elTrafficLight = document.querySelector(selector);
+    this.elSwitch = document.querySelector(switchSelector);
+    if (this.elSwitch) {
+      this.elSwitch.addEventListener('click', () => this._setEnabled(this.elSwitch.checked));
+    }
+    this._setEnabled(true);
+  }
+  get isEnabled() {
+    return this.enabled;
+  }
+  enable() {
+    this._setEnabled(true);
+  }
+  disable() {
+    this._setEnabled(false);
+  }
+  _setEnabled(enabled) {
+    if (this.enabled === enabled) return;
+    if (!enabled) this.reset();
+    [this, this.red, this.yellow, this.green].forEach(e => e.enabled = enabled);
+    this.elTrafficLight.classList[enabled ? 'remove' : 'add']('disabled');
+    this.emit(enabled ? 'enabled' : 'disabled');
+  }
+  toString() {
+    return this.selector;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+const EventEmitter = require('events');
+
+////////////////////////////////////////////////////////////////////////////
+
+class MultiTrafficLightSelector extends EventEmitter {
+  constructor(tlIdPrefix, switchIdPrefix, n) {
+    super();
+    let tls = [];
+    for (let i = 1; i <= n; ++i) {
+      tls.push(this._createTrafficLight(tlIdPrefix + i, switchIdPrefix + i));
+    }
+    this._tl = new FlexMultiTrafficLight(tls);
+    this._tl.on('enabled', () => this.emit('enabled'));
+    this._tl.on('disabled', () => this.emit('disabled'));
+    this._tl.on('interrupted', () => this.emit('interrupted'));
+    this.n = n;
+  }
+  _createTrafficLight(selector, switchSelector) {
+    let tl = new WebTrafficLight(selector, switchSelector);
+    return tl;
+  }
+  resolveTrafficLight() {
+    return this._tl.isEnabled ? this._tl : null;
+  }
+  setUpMultiCommands(commander) {
+    if (this.n > 1) {
+      const {defineCommands} = require('../src/traffic-light/multi-traffic-light-commands');
+      defineCommands(commander.parser);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  MultiTrafficLightSelector
+};
+
+},{"../src/traffic-light/multi-traffic-light":9,"../src/traffic-light/multi-traffic-light-commands":8,"../src/traffic-light/traffic-light":12,"events":1}]},{},[14]);
