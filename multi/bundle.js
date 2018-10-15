@@ -2454,12 +2454,12 @@ const {Light, TrafficLight} = require('./traffic-light');
 /**
  * A composite light that combines all composed lights.
  * @memberof trafficLight
- * @extends Light
+ * @extends trafficLight.Light
  */
 class MultiLight extends Light {
 
   /**
-   * @param {Light[]} lights - Lights composed.
+   * @param {trafficLight.Light[]} lights - Lights composed.
    */
   constructor(lights) {
     super();
@@ -2499,12 +2499,12 @@ let dummyLight = new Light();
  * Does not track or raise any `enabled` or `disabled` events for the composed
  * traffic lights.
  * @memberof trafficLight
- * @extends TrafficLight
+ * @extends trafficLight.TrafficLight
  */
 class MultiTrafficLight extends TrafficLight {
 
   /**
-   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
+   * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
    */
   constructor(trafficLights) {
     super(dummyLight, dummyLight, dummyLight);
@@ -2543,7 +2543,7 @@ function unique(a) {
  * A composite traffic light with a flexible way to select which composed
  * traffic lights are active or in use.
  * @memberof trafficLight
- * @extends TrafficLight
+ * @extends trafficLight.TrafficLight
  */
 class FlexMultiTrafficLight extends TrafficLight {
 
@@ -2551,7 +2551,7 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Creates a new instance of this class.
    * Starts off using the first traffic light in the provided `trafficLights`.
    * Tries to checks out the provided traffic lights.
-   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
+   * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
    */
   constructor(trafficLights) {
     super(dummyLight, dummyLight, dummyLight);
@@ -2565,7 +2565,7 @@ class FlexMultiTrafficLight extends TrafficLight {
    * Adds a traffic light to the composite.
    * Tries to exclusively check it out first and because of that won't add
    * any duplicates.
-   * @param {TrafficLight} trafficLight - Traffic light to add.
+   * @param {trafficLight.TrafficLight} trafficLight - Traffic light to add.
    *   Must not be null.
    */
   add(trafficLight) {
@@ -3080,22 +3080,22 @@ const EventEmitter = require('events');
 class TrafficLight extends EventEmitter {
 
   /**
-   * @param {Light} [red] - Red light.
-   * @param {Light} [yellow] - Yellow light.
-   * @param {Light} [green] - Green light.
+   * @param {trafficLight.Light} [red] - Red light.
+   * @param {trafficLight.Light} [yellow] - Yellow light.
+   * @param {trafficLight.Light} [green] - Green light.
    */
   constructor(red, yellow, green) {
     super();
     /** The red light.
-      * @type {Light}
+      * @type {trafficLight.Light}
       */
     this.red = red || new Light;
     /** The yellow light.
-     * @type {Light}
+     * @type {trafficLight.Light}
      */
     this.yellow = yellow || new Light;
     /** The green light.
-     * @type {Light}
+     * @type {trafficLight.Light}
      */
     this.green = green || new Light;
     /**
