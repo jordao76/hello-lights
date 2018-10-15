@@ -4,6 +4,6 @@ web/multi/bundle.js
 src/parsing/command-peg-parser.js
 temp
 lib
-doc
+web/doc
 .nyc_output
 coverage

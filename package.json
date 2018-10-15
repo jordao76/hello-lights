@@ -10,7 +10,7 @@
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "scripts": {
-    "doc": "jsdoc src -r -d doc && opn doc/index.html",
+    "doc": "jsdoc src --readme README.md -r -d web/doc && opn web/doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web cli",
     "peg": "pegjs -o src/parsing/command-peg-parser.js src/parsing/command-grammar.pegjs",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
@@ -31,7 +31,7 @@
     "server": "node server/main.js",
     "preserver-chromium": "npm run peg",
     "server-chromium": "node server/main.js ../cli/chromium ../src/selectors/physical-multi-traffic-light-selector",
-    "predeploy": "npm run peg && npm run browserify",
+    "predeploy": "npm run peg && npm run browserify && npm run doc",
     "deploy": "gh-pages -d web",
     "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents"
   },
