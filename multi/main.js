@@ -1,5 +1,5 @@
-const {Light, TrafficLight} = require('../../src/traffic-light');
-const {FlexMultiTrafficLight} = require('../../src/multi-traffic-light');
+const {Light, TrafficLight} = require('../../src/traffic-light/traffic-light');
+const {FlexMultiTrafficLight} = require('../../src/traffic-light/multi-traffic-light');
 const {Commander} = require('../../src/commander');
 
 ////////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ function runCommand(command) {
 function setUpTrafficLight() {
   let selector = new MultiTrafficLightSelector('#tl', '#switch', 7);
   window.commander = new Commander({logger, selector});
-  const {defineCommands} = require('../../src/multi-traffic-light-commands');
+  const {defineCommands} = require('../../src/traffic-light/multi-traffic-light-commands');
   defineCommands(window.commander.parser);
 }
 

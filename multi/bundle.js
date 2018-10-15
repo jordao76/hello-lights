@@ -542,12 +542,12 @@ const tryRequire = (path) => {
 // Browserify won't pick it up since the `require` call is encapsulated in
 // `tryRequire`.
 // If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
-const {SelectorCtor} = tryRequire('./physical-traffic-light-selector');
+const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
 
 ////////////////////////////////////////////////
 
 const {CommandParser} = require('./parsing/command-parser');
-const {defineCommands} = require('./traffic-light-commands');
+const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
 // the default command parser
 const Parser = new CommandParser();
 defineCommands(Parser);
@@ -561,16 +561,16 @@ class Commander {
 
   /**
    * Creates a new Commander instance.
-   * @param {Object} [options] - Commander options.
-   * @param {Object} [options.logger=console] - A Console-like object for logging,
+   * @param {object} [options] - Commander options.
+   * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {CommandParser} [options.parser] - The Command Parser to use.
+   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
    * @param {object} [options.selector] - The traffic light selector to use.
    *   Takes precedence over `options.selectorCtor`.
    * @param {function} [options.selectorCtor] - The constructor of a traffic
    *   light selector to use. Will be passed the entire `options` object.
    *   Ignored if `options.selector` is set.
-   * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
    *   This is an option for the default `options.selectorCtor`.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
@@ -703,7 +703,6 @@ class Commander {
   /**
    * Logs the help info for the given command name.
    * @param {string} commandName - Name of the command to log help info.
-   * @see Commander#commands
    */
   help(commandName) {
     let command = this.parser.commands[commandName];
@@ -730,465 +729,34 @@ class Commander {
 
 ////////////////////////////////////////////////
 
+/**
+ * Factory for a Commander that deals with multiple traffic lights.
+ * It will greedily get all available traffic lights for use and add commands
+ * to deal with multiple traffic lights.
+ * @param {object} [options] - Commander options.
+ * @param {object} [options.logger=console] - A Console-like object for logging,
+ *   with a log and an error function.
+ * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+ * @param {object} [options.selector] - The traffic light selector to use.
+ *   Takes precedence over `options.selectorCtor`.
+ * @param {function} [options.selectorCtor] - The constructor of a traffic
+ *   light selector to use. Will be passed the entire `options` object.
+ *   Ignored if `options.selector` is set.
+ * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+ *   This is an option for the default `options.selectorCtor`.
+ * @returns {Commander} A multi-traffic-light commander.
+ */
+Commander.multi = (options = {}) => {
+  const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
+  let {selectorCtor = SelectorCtor} = options;
+  return new Commander({...options, selectorCtor});
+};
+
+////////////////////////////////////////////////
+
 module.exports = {Commander};
 
-},{"./parsing/command-parser":7,"./traffic-light-commands":11}],3:[function(require,module,exports){
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-const {
-  isGreaterThanZero,
-  each
-} = require('./parsing/validation');
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-function use({tl, ct}, [indexes]) {
-  if (ct.isCancelled) return;
-  if (tl.use) {
-    tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
-  }
-}
-use.transformation = args => [args];
-use.paramNames = ['indexes'];
-use.validation = [each(isGreaterThanZero)];
-use.doc = {
-  name: 'use',
-  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
-        '(use 1 2)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function useNext({tl, ct}) {
-  if (ct.isCancelled) return;
-  if (tl.next) {
-    tl.next();
-  }
-}
-useNext.paramNames = [];
-useNext.validation = [];
-useNext.doc = {
-  name: 'use-next',
-  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function usePrevious({tl, ct}) {
-  if (ct.isCancelled) return;
-  if (tl.previous) {
-    tl.previous();
-  }
-}
-usePrevious.paramNames = [];
-usePrevious.validation = [];
-usePrevious.doc = {
-  name: 'use-previous',
-  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function useLast({tl, ct}) {
-  if (ct.isCancelled) return;
-  if (tl.last) {
-    tl.last();
-  }
-}
-useLast.paramNames = [];
-useLast.validation = [];
-useLast.doc = {
-  name: 'use-last',
-  desc: 'When using multiple traffic lights, chooses the last one to use.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function useNear({tl, ct}) {
-  if (ct.isCancelled) return;
-  if (tl.near) {
-    tl.near();
-  }
-}
-useNear.paramNames = [];
-useNear.validation = [];
-useNear.doc = {
-  name: 'use-near',
-  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-function useAll({tl, ct}) {
-  if (ct.isCancelled) return;
-  if (tl.useAll) {
-    tl.useAll();
-  }
-}
-useAll.paramNames = [];
-useAll.validation = [];
-useAll.doc = {
-  name: 'use-all',
-  desc: 'When using multiple traffic lights, chooses all of them to use.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-function defineCommands(cp) {
-  // add multi commands
-  cp.add('use', use);
-  cp.add('use-next', useNext);
-  cp.add('use-previous', usePrevious);
-  cp.add('use-last', useLast);
-  cp.add('use-near', useNear);
-  cp.add('use-all', useAll);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-module.exports = {
-  use,
-  'use-next': useNext,
-  'use-previous': usePrevious,
-  'use-last': useLast,
-  'use-near': useNear,
-  'use-all': useAll,
-  defineCommands
-};
-
-},{"./parsing/validation":9}],4:[function(require,module,exports){
-const {Light, TrafficLight} = require('./traffic-light');
-
-///////////////
-
-/**
- * A composite light that combines all composed lights.
- * @extends Light
- */
-class MultiLight extends Light {
-
-  /**
-   * @param {Light[]} lights - Lights composed.
-   */
-  constructor(lights) {
-    super();
-    this.lights = lights;
-    // this.on and this.off might not reflect the underlying lights,
-    // just what the multi-light has been through
-  }
-
-  /** Toggles the lights. */
-  toggle() {
-    super.toggle();
-    this.lights.forEach(l => l.toggle());
-  }
-
-  /** Turns the lights on. */
-  turnOn() {
-    super.turnOn();
-    this.lights.forEach(l => l.turnOn());
-  }
-
-  /** Turns the lights off. */
-  turnOff() {
-    super.turnOff();
-    this.lights.forEach(l => l.turnOff());
-  }
-
-}
-
-///////////////
-
-let dummyLight = new Light();
-
-///////////////
-
-/**
- * A composite traffic light that combines all composed traffic lights.
- * Does not track or raise any `enabled` or `disabled` events for the composed
- * traffic lights.
- * @extends TrafficLight
- */
-class MultiTrafficLight extends TrafficLight {
-
-  /**
-   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
-   */
-  constructor(trafficLights) {
-    super(dummyLight, dummyLight, dummyLight);
-    this.trafficLights = trafficLights;
-  }
-
-  get trafficLights() {
-    return this._trafficLights;
-  }
-  set trafficLights(trafficLights) {
-    this._trafficLights = trafficLights;
-    this.red    = new MultiLight(trafficLights.map(tl => tl.red));    // eslint-disable-line no-multi-spaces
-    this.yellow = new MultiLight(trafficLights.map(tl => tl.yellow));
-    this.green  = new MultiLight(trafficLights.map(tl => tl.green));  // eslint-disable-line no-multi-spaces
-  }
-
-  /**
-   * If any of the composed traffic lights is enabled.
-   * @type {boolean}
-   */
-  get isEnabled() {
-    return this._trafficLights.some(tl => tl.isEnabled);
-  }
-
-}
-
-///////////////
-
-function unique(a) {
-  return [...new Set(a)];
-}
-
-///////////////
-
-/**
- * A composite traffic light with a flexible way to select which composed
- * traffic lights are active or in use.
- * @extends TrafficLight
- * @see FlexMultiTrafficLight#use
- */
-class FlexMultiTrafficLight extends TrafficLight {
-
-  /**
-   * Creates a new instance of this class.
-   * Starts off using the first traffic light in the provided `trafficLights`.
-   * Tries to checks out the provided traffic lights.
-   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
-   */
-  constructor(trafficLights) {
-    super(dummyLight, dummyLight, dummyLight);
-    this.activeMultiTrafficLight = new MultiTrafficLight([]);
-    this.allTrafficLights = trafficLights.filter(tl => tl.checkOut());
-    this.allTrafficLights.forEach(tl => this._subscribe(tl));
-    this.use([0]);
-  }
-
-  /**
-   * Adds a traffic light to the composite.
-   * Tries to exclusively check it out first and because of that won't add
-   * any duplicates.
-   * @param {TrafficLight} trafficLight - Traffic light to add.
-   *   Must not be null.
-   */
-  add(trafficLight) {
-    if (!trafficLight.checkOut()) return;
-    let wasEnabled = this.isEnabled;
-    this.allTrafficLights.push(trafficLight);
-    this._subscribe(trafficLight);
-    if (this.activeTrafficLights.length === 0) {
-      this.use([0]);
-    }
-    if (!wasEnabled && this.isEnabled) {
-      this.emit('enabled');
-    }
-  }
-
-  // returns an array of the tuple: (traffic light, original index)
-  get enabledTrafficLights() {
-    return (
-      this.allTrafficLights
-        .map((tl, i) => [tl, i])
-        .filter(([tl, _]) => tl.isEnabled));
-  }
-
-  // returns an array of the tuple: (traffic light, original index)
-  get activeTrafficLights() {
-    return (
-      this.enabledTrafficLights
-        .filter(([tl, _], i) => this.activeIndexes.indexOf(i) >= 0));
-  }
-
-  /**
-   * Selects which traffic lights to use given their indexes (0-based),
-   * only considering enabled traffic lights.
-   * Indexes wrap around from the last to the first.
-   * @param {number[]} activeIndexes - Traffic light indexes to use.
-   *   Must not be empty.
-   */
-  use(activeIndexes) {
-    this._setIndexes(activeIndexes);
-    this.activeMultiTrafficLight.trafficLights = this.activeTrafficLights.map(([tl, _]) => tl);
-    this.red = this.activeMultiTrafficLight.red;
-    this.yellow = this.activeMultiTrafficLight.yellow;
-    this.green = this.activeMultiTrafficLight.green;
-  }
-
-  _setIndexes(activeIndexes) {
-    let tlsEnabled = this.enabledTrafficLights.map(([tl, _]) => tl);
-    let l = tlsEnabled.length;
-    if (l > 0) {
-      activeIndexes = unique(activeIndexes.map(i => i < 0 ? l + i : i % l));
-    } else {
-      activeIndexes = [];
-    }
-    activeIndexes.sort();
-    this.activeIndexes = activeIndexes;
-    this.indexes = this.activeTrafficLights.map(([_, i]) => i);
-  }
-
-  _subscribe(tl) {
-    tl.on('enabled', () => this._enabled(tl));
-    tl.on('disabled', () => this._disabled(tl));
-  }
-
-  _enabled(tl) {
-    if (this.enabledTrafficLights.length === 1) {
-      // the first traffic light is enabled; all were disabled before
-      this.use([0]);
-      this.emit('enabled');
-    } else {
-      // recalculate indexes
-      let tlIndex = this.allTrafficLights.indexOf(tl);
-      let newActiveIndexes = this.indexes.map((i, j) => this.activeIndexes[j] + (tlIndex < i ? 1 : 0));
-      this.use(newActiveIndexes);
-    }
-  }
-
-  _disabled(tl) {
-
-    if (!this.isEnabled) {
-      // the only enabled traffic light was disabled
-      this.use([]);
-      this.emit('disabled'); // 'disabled' instead of 'interrupted'
-      return;
-    }
-
-    // recalculate indexes
-    let tlIndex = this.allTrafficLights.indexOf(tl);
-    let activeTrafficLightWasDisabled = this.indexes.indexOf(tlIndex) >= 0;
-
-    let newActiveIndexes = this.indexes
-      .map((i, j) => tlIndex === i ? -1 : (this.activeIndexes[j] - (tlIndex < i ? 1 : 0)))
-      .filter(i => i >= 0);
-    if (newActiveIndexes.length === 0) {
-      newActiveIndexes = [0]; // re-assign
-    }
-    this.use(newActiveIndexes);
-
-    if (activeTrafficLightWasDisabled) {
-      /**
-       * Interrupted event. In a `FlexMultiTrafficLight`, if an active traffic
-       * light gets disabled, and there are still enabled traffic lights left,
-       * this event is raised. If no more traffic lights are enabled,
-       * then the `disabled` event is raised.
-       * @event FlexMultiTrafficLight#interrupted
-       */
-      this.emit('interrupted');
-    }
-
-  }
-
-  /**
-   * Gets the traffic light indexes that are in use.
-   * If there are no traffic lights in use, or no traffic lights useable,
-   * returns and empty array.
-   * @returns {number[]} The traffic light indexes that are in use.
-   */
-  using() {
-    return this.activeIndexes;
-  }
-
-  /**
-   * Selects the next traffic light to use, going back to the first one if
-   * the currently selected one is the last.
-   * Also works with multiple selected traffic lights, moving all to the next.
-   */
-  next() {
-    this._move(+1);
-  }
-
-  /**
-   * Selects the previous traffic light to use, going to the last one if
-   * the currently selected one is the first.
-   * Also works with multiple selected traffic lights, moving all to the previous.
-   */
-  previous() {
-    this._move(-1);
-  }
-
-  /**
-   * Selects the nearest traffic light to use, remembering the direction
-   * of movement (forwards or backwards).
-   * Also works with multiple selected traffic lights, moving all to the nearest,
-   * following a single direction (so it's possible to wrap around at the last
-   * if both the first and last indexes are in use).
-   */
-  near() {
-    if (this.activeIndexes.length === 0) {
-      this.use([0]);
-      return;
-    }
-
-    let lastIndex = this.enabledTrafficLights.length - 1;
-    if (this.activeIndexes.indexOf(0) >= 0) {
-      this.direction = +1;
-    } else if (this.activeIndexes.indexOf(lastIndex) >= 0) {
-      this.direction = -1;
-    }
-
-    this._move(this.direction || +1);
-  }
-
-  _move(direction) {
-    if (this.activeIndexes.length > 0) {
-      this.use(this.activeIndexes.map(i => i + direction));
-    } else {
-      this.use([0]);
-    }
-  }
-
-  /**
-   * Selects the last traffic light to use.
-   */
-  last() {
-    this.use([this.enabledTrafficLights.length - 1]);
-  }
-
-  /**
-   * Selects all traffic lights to use simultaneously.
-   */
-  useAll() {
-    this.use(this.enabledTrafficLights.map((_, i) => i));
-  }
-
-  /**
-   * Resets all active traffic lights.
-   */
-  reset() {
-    this.activeMultiTrafficLight.reset();
-  }
-
-  /**
-   * If there are composed traffic lights and any of them is enabled.
-   * @type {boolean}
-   */
-  get isEnabled() {
-    return this.allTrafficLights.length > 0 &&
-      this.allTrafficLights.some(tl => tl.isEnabled);
-  }
-
-  toString() {
-    return `multi (${this.enabledTrafficLights.length};${this.activeTrafficLights.length})`;
-  }
-
-}
-
-///////////////
-
-module.exports = {
-  MultiLight, MultiTrafficLight, FlexMultiTrafficLight
-};
-
-},{"./traffic-light":12}],5:[function(require,module,exports){
+},{"./parsing/command-parser":5,"./traffic-light/traffic-light-commands":11}],3:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -1418,7 +986,7 @@ module.exports = {
   run, loop, repeat, all, ease
 };
 
-},{"./cancellable":6,"./validation":9}],6:[function(require,module,exports){
+},{"./cancellable":4,"./validation":7}],4:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
  * Commands should regularly check for the {@link Cancellable#isCancelled}
@@ -1426,6 +994,7 @@ module.exports = {
  * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
  * them all when {@link Cancellable#cancel} is called, setting the
  * {@link Cancellable#isCancelled} attribute to true.
+ * @memberof parsing
  */
 class Cancellable {
 
@@ -1477,7 +1046,7 @@ class Cancellable {
 
 module.exports = {Cancellable};
 
-},{}],7:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 const baseCommands = require('./base-commands');
 const {Cancellable} = require('./cancellable');
 const parser = require('./command-peg-parser');
@@ -1486,9 +1055,10 @@ const parser = require('./command-peg-parser');
 
 /**
  * A function that implements a command.
- * @typedef {function} CommandParser~CommandFunction
+ * @typedef {function} CommandFunction
+ * @memberof parsing
  * @param {object} ctx - Context to execute the command.
- * @param {Cancellable} ctx.ct - A cancellation token.
+ * @param {parsing.Cancellable} ctx.ct - A cancellation token.
  * @param {object} ctx.scope - Variable bindings for nested commands.
  * @param {...object} [ctx....] - Extra context objects needed for the command,
  *   like the objects that the command manipulates.
@@ -1504,11 +1074,14 @@ const parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Parses and executes commands. */
+/**
+ * Parses and executes commands.
+ * @memberof parsing
+ */
 class CommandParser {
 
   /**
-   * @param {object.<string, CommandParser~CommandFunction>} [commands] -
+   * @param {object.<string, parsing.CommandFunction>} [commands] -
    *   Base commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
@@ -1532,7 +1105,7 @@ class CommandParser {
 
   /**
    * Cancels any executing commands.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    */
   cancel(ct = this.ct) {
     if (ct.isCancelled) return;
@@ -1545,11 +1118,11 @@ class CommandParser {
   /**
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
-   * @param {Object} [ctx] - Context object to be passed as part of the executed
+   * @param {object} [ctx] - Context object to be passed as part of the executed
    *   commands context, togeher with the cancellation token and the scope.
    *   This context cannot have keys 'ct' and 'scope', since they would be
    *   overwritten anyway.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
    */
   async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
@@ -1572,7 +1145,7 @@ class CommandParser {
    * Parses a command string.
    * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {(CommandParser~CommandFunction|CommandParser~CommandFunction[])}
+   * @returns {(parsing.CommandFunction|parsing.CommandFunction[])}
    *   One or many command functions.
    */
   parse(commandStr) {
@@ -1586,7 +1159,7 @@ class CommandParser {
   /**
    * Adds a new command or redefines an existing one.
    * @param {string} name - The command name.
-   * @param {CommandParser~CommandFunction} command - The command function.
+   * @param {parsing.CommandFunction} command - The command function.
    */
   add(name, command) {
     this.commands[name] = command;
@@ -1773,7 +1346,7 @@ let Validator = {
 
 module.exports = {CommandParser};
 
-},{"./base-commands":5,"./cancellable":6,"./command-peg-parser":8,"./validation":9}],8:[function(require,module,exports){
+},{"./base-commands":3,"./cancellable":4,"./command-peg-parser":6,"./validation":7}],6:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -2687,7 +2260,7 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],9:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -2746,7 +2319,465 @@ module.exports = {
   each
 };
 
-},{}],10:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+const {
+  isGreaterThanZero,
+  each
+} = require('../parsing/validation');
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+function use({tl, ct}, [indexes]) {
+  if (ct.isCancelled) return;
+  if (tl.use) {
+    tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
+  }
+}
+use.transformation = args => [args];
+use.paramNames = ['indexes'];
+use.validation = [each(isGreaterThanZero)];
+use.doc = {
+  name: 'use',
+  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
+        '(use 1 2)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useNext({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.next) {
+    tl.next();
+  }
+}
+useNext.paramNames = [];
+useNext.validation = [];
+useNext.doc = {
+  name: 'use-next',
+  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function usePrevious({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.previous) {
+    tl.previous();
+  }
+}
+usePrevious.paramNames = [];
+usePrevious.validation = [];
+usePrevious.doc = {
+  name: 'use-previous',
+  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useLast({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.last) {
+    tl.last();
+  }
+}
+useLast.paramNames = [];
+useLast.validation = [];
+useLast.doc = {
+  name: 'use-last',
+  desc: 'When using multiple traffic lights, chooses the last one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useNear({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.near) {
+    tl.near();
+  }
+}
+useNear.paramNames = [];
+useNear.validation = [];
+useNear.doc = {
+  name: 'use-near',
+  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useAll({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.useAll) {
+    tl.useAll();
+  }
+}
+useAll.paramNames = [];
+useAll.validation = [];
+useAll.doc = {
+  name: 'use-all',
+  desc: 'When using multiple traffic lights, chooses all of them to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+function defineCommands(cp) {
+  // add multi commands
+  cp.add('use', use);
+  cp.add('use-next', useNext);
+  cp.add('use-previous', usePrevious);
+  cp.add('use-last', useLast);
+  cp.add('use-near', useNear);
+  cp.add('use-all', useAll);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  use,
+  'use-next': useNext,
+  'use-previous': usePrevious,
+  'use-last': useLast,
+  'use-near': useNear,
+  'use-all': useAll,
+  defineCommands
+};
+
+},{"../parsing/validation":7}],9:[function(require,module,exports){
+const {Light, TrafficLight} = require('./traffic-light');
+
+///////////////
+
+/**
+ * A composite light that combines all composed lights.
+ * @memberof trafficLight
+ * @extends Light
+ */
+class MultiLight extends Light {
+
+  /**
+   * @param {Light[]} lights - Lights composed.
+   */
+  constructor(lights) {
+    super();
+    this.lights = lights;
+    // this.on and this.off might not reflect the underlying lights,
+    // just what the multi-light has been through
+  }
+
+  /** Toggles the lights. */
+  toggle() {
+    super.toggle();
+    this.lights.forEach(l => l.toggle());
+  }
+
+  /** Turns the lights on. */
+  turnOn() {
+    super.turnOn();
+    this.lights.forEach(l => l.turnOn());
+  }
+
+  /** Turns the lights off. */
+  turnOff() {
+    super.turnOff();
+    this.lights.forEach(l => l.turnOff());
+  }
+
+}
+
+///////////////
+
+let dummyLight = new Light();
+
+///////////////
+
+/**
+ * A composite traffic light that combines all composed traffic lights.
+ * Does not track or raise any `enabled` or `disabled` events for the composed
+ * traffic lights.
+ * @memberof trafficLight
+ * @extends TrafficLight
+ */
+class MultiTrafficLight extends TrafficLight {
+
+  /**
+   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
+   */
+  constructor(trafficLights) {
+    super(dummyLight, dummyLight, dummyLight);
+    this.trafficLights = trafficLights;
+  }
+
+  get trafficLights() {
+    return this._trafficLights;
+  }
+  set trafficLights(trafficLights) {
+    this._trafficLights = trafficLights;
+    this.red    = new MultiLight(trafficLights.map(tl => tl.red));    // eslint-disable-line no-multi-spaces
+    this.yellow = new MultiLight(trafficLights.map(tl => tl.yellow));
+    this.green  = new MultiLight(trafficLights.map(tl => tl.green));  // eslint-disable-line no-multi-spaces
+  }
+
+  /**
+   * If any of the composed traffic lights is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this._trafficLights.some(tl => tl.isEnabled);
+  }
+
+}
+
+///////////////
+
+function unique(a) {
+  return [...new Set(a)];
+}
+
+///////////////
+
+/**
+ * A composite traffic light with a flexible way to select which composed
+ * traffic lights are active or in use.
+ * @memberof trafficLight
+ * @extends TrafficLight
+ */
+class FlexMultiTrafficLight extends TrafficLight {
+
+  /**
+   * Creates a new instance of this class.
+   * Starts off using the first traffic light in the provided `trafficLights`.
+   * Tries to checks out the provided traffic lights.
+   * @param {TrafficLight[]} trafficLights - Traffic lights composed.
+   */
+  constructor(trafficLights) {
+    super(dummyLight, dummyLight, dummyLight);
+    this.activeMultiTrafficLight = new MultiTrafficLight([]);
+    this.allTrafficLights = trafficLights.filter(tl => tl.checkOut());
+    this.allTrafficLights.forEach(tl => this._subscribe(tl));
+    this.use([0]);
+  }
+
+  /**
+   * Adds a traffic light to the composite.
+   * Tries to exclusively check it out first and because of that won't add
+   * any duplicates.
+   * @param {TrafficLight} trafficLight - Traffic light to add.
+   *   Must not be null.
+   */
+  add(trafficLight) {
+    if (!trafficLight.checkOut()) return;
+    let wasEnabled = this.isEnabled;
+    this.allTrafficLights.push(trafficLight);
+    this._subscribe(trafficLight);
+    if (this.activeTrafficLights.length === 0) {
+      this.use([0]);
+    }
+    if (!wasEnabled && this.isEnabled) {
+      this.emit('enabled');
+    }
+  }
+
+  // returns an array of the tuple: (traffic light, original index)
+  get enabledTrafficLights() {
+    return (
+      this.allTrafficLights
+        .map((tl, i) => [tl, i])
+        .filter(([tl, _]) => tl.isEnabled));
+  }
+
+  // returns an array of the tuple: (traffic light, original index)
+  get activeTrafficLights() {
+    return (
+      this.enabledTrafficLights
+        .filter(([tl, _], i) => this.activeIndexes.indexOf(i) >= 0));
+  }
+
+  /**
+   * Selects which traffic lights to use given their indexes (0-based),
+   * only considering enabled traffic lights.
+   * Indexes wrap around from the last to the first.
+   * @param {number[]} activeIndexes - Traffic light indexes to use.
+   *   Must not be empty.
+   */
+  use(activeIndexes) {
+    this._setIndexes(activeIndexes);
+    this.activeMultiTrafficLight.trafficLights = this.activeTrafficLights.map(([tl, _]) => tl);
+    this.red = this.activeMultiTrafficLight.red;
+    this.yellow = this.activeMultiTrafficLight.yellow;
+    this.green = this.activeMultiTrafficLight.green;
+  }
+
+  _setIndexes(activeIndexes) {
+    let tlsEnabled = this.enabledTrafficLights.map(([tl, _]) => tl);
+    let l = tlsEnabled.length;
+    if (l > 0) {
+      activeIndexes = unique(activeIndexes.map(i => i < 0 ? l + i : i % l));
+    } else {
+      activeIndexes = [];
+    }
+    activeIndexes.sort();
+    this.activeIndexes = activeIndexes;
+    this.indexes = this.activeTrafficLights.map(([_, i]) => i);
+  }
+
+  _subscribe(tl) {
+    tl.on('enabled', () => this._enabled(tl));
+    tl.on('disabled', () => this._disabled(tl));
+  }
+
+  _enabled(tl) {
+    if (this.enabledTrafficLights.length === 1) {
+      // the first traffic light is enabled; all were disabled before
+      this.use([0]);
+      this.emit('enabled');
+    } else {
+      // recalculate indexes
+      let tlIndex = this.allTrafficLights.indexOf(tl);
+      let newActiveIndexes = this.indexes.map((i, j) => this.activeIndexes[j] + (tlIndex < i ? 1 : 0));
+      this.use(newActiveIndexes);
+    }
+  }
+
+  _disabled(tl) {
+
+    if (!this.isEnabled) {
+      // the only enabled traffic light was disabled
+      this.use([]);
+      this.emit('disabled'); // 'disabled' instead of 'interrupted'
+      return;
+    }
+
+    // recalculate indexes
+    let tlIndex = this.allTrafficLights.indexOf(tl);
+    let activeTrafficLightWasDisabled = this.indexes.indexOf(tlIndex) >= 0;
+
+    let newActiveIndexes = this.indexes
+      .map((i, j) => tlIndex === i ? -1 : (this.activeIndexes[j] - (tlIndex < i ? 1 : 0)))
+      .filter(i => i >= 0);
+    if (newActiveIndexes.length === 0) {
+      newActiveIndexes = [0]; // re-assign
+    }
+    this.use(newActiveIndexes);
+
+    if (activeTrafficLightWasDisabled) {
+      /**
+       * Interrupted event. In a `FlexMultiTrafficLight`, if an active traffic
+       * light gets disabled, and there are still enabled traffic lights left,
+       * this event is raised. If no more traffic lights are enabled,
+       * then the `disabled` event is raised.
+       * @event trafficLight.FlexMultiTrafficLight#interrupted
+       */
+      this.emit('interrupted');
+    }
+
+  }
+
+  /**
+   * Gets the traffic light indexes that are in use.
+   * If there are no traffic lights in use, or no traffic lights useable,
+   * returns and empty array.
+   * @returns {number[]} The traffic light indexes that are in use.
+   */
+  using() {
+    return this.activeIndexes;
+  }
+
+  /**
+   * Selects the next traffic light to use, going back to the first one if
+   * the currently selected one is the last.
+   * Also works with multiple selected traffic lights, moving all to the next.
+   */
+  next() {
+    this._move(+1);
+  }
+
+  /**
+   * Selects the previous traffic light to use, going to the last one if
+   * the currently selected one is the first.
+   * Also works with multiple selected traffic lights, moving all to the previous.
+   */
+  previous() {
+    this._move(-1);
+  }
+
+  /**
+   * Selects the nearest traffic light to use, remembering the direction
+   * of movement (forwards or backwards).
+   * Also works with multiple selected traffic lights, moving all to the nearest,
+   * following a single direction (so it's possible to wrap around at the last
+   * if both the first and last indexes are in use).
+   */
+  near() {
+    if (this.activeIndexes.length === 0) {
+      this.use([0]);
+      return;
+    }
+
+    let lastIndex = this.enabledTrafficLights.length - 1;
+    if (this.activeIndexes.indexOf(0) >= 0) {
+      this.direction = +1;
+    } else if (this.activeIndexes.indexOf(lastIndex) >= 0) {
+      this.direction = -1;
+    }
+
+    this._move(this.direction || +1);
+  }
+
+  _move(direction) {
+    if (this.activeIndexes.length > 0) {
+      this.use(this.activeIndexes.map(i => i + direction));
+    } else {
+      this.use([0]);
+    }
+  }
+
+  /**
+   * Selects the last traffic light to use.
+   */
+  last() {
+    this.use([this.enabledTrafficLights.length - 1]);
+  }
+
+  /**
+   * Selects all traffic lights to use simultaneously.
+   */
+  useAll() {
+    this.use(this.enabledTrafficLights.map((_, i) => i));
+  }
+
+  /**
+   * Resets all active traffic lights.
+   */
+  reset() {
+    this.activeMultiTrafficLight.reset();
+  }
+
+  /**
+   * If there are composed traffic lights and any of them is enabled.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.allTrafficLights.length > 0 &&
+      this.allTrafficLights.some(tl => tl.isEnabled);
+  }
+
+  toString() {
+    return `multi (${this.enabledTrafficLights.length};${this.activeTrafficLights.length})`;
+  }
+
+}
+
+///////////////
+
+module.exports = {
+  MultiLight, MultiTrafficLight, FlexMultiTrafficLight
+};
+
+},{"./traffic-light":12}],10:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -3007,7 +3038,10 @@ module.exports = {
 },{"./traffic-light-commands.cljs":10}],12:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
-/** A Light in a traffic light. */
+/**
+ * A Light in a traffic light.
+ * @memberof trafficLight
+ */
 class Light {
 
   constructor() {
@@ -3040,6 +3074,7 @@ const EventEmitter = require('events');
 
 /**
  * A Traffic Light with red, yellow and green lights.
+ * @memberof trafficLight
  * @extends EventEmitter
  */
 class TrafficLight extends EventEmitter {
@@ -3066,8 +3101,6 @@ class TrafficLight extends EventEmitter {
     /**
      * If the traffic light is checked-out or reserved.
      * @type {boolean}
-     * @see TrafficLight#checkOut
-     * @see TrafficLight#checkIn
      */
     this.isCheckedOut = false;
   }
@@ -3090,8 +3123,6 @@ class TrafficLight extends EventEmitter {
   /**
    * Checks-out or reserve the traffic light for exclusive usage, making it
    * unavailable for other users.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkIn
    * @returns {boolean} True if the traffic light was successfully checked out.
    *   False if it was already checked out.
    */
@@ -3102,8 +3133,6 @@ class TrafficLight extends EventEmitter {
 
   /**
    * Checks-in the traffic light, making it available for checking out again.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkOut
    */
   checkIn() {
     this.isCheckedOut = false;
@@ -3112,8 +3141,6 @@ class TrafficLight extends EventEmitter {
   /**
    * If the traffic light is available: enabled and not checked-out.
    * @type {boolean}
-   * @see TrafficLight#isEnabled
-   * @see TrafficLight#isCheckedOut
    */
   get isAvailable() {
     return this.isEnabled && !this.isCheckedOut;
@@ -3125,12 +3152,12 @@ class TrafficLight extends EventEmitter {
 
 /**
  * Traffic light enabled event.
- * @event TrafficLight#enabled
+ * @event trafficLight.TrafficLight#enabled
  */
 
 /**
  * Traffic light disabled event.
- * @event TrafficLight#disabled
+ * @event trafficLight.TrafficLight#disabled
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -3140,8 +3167,8 @@ module.exports = {
 };
 
 },{"events":1}],13:[function(require,module,exports){
-const {Light, TrafficLight} = require('../../src/traffic-light');
-const {FlexMultiTrafficLight} = require('../../src/multi-traffic-light');
+const {Light, TrafficLight} = require('../../src/traffic-light/traffic-light');
+const {FlexMultiTrafficLight} = require('../../src/traffic-light/multi-traffic-light');
 const {Commander} = require('../../src/commander');
 
 ////////////////////////////////////////////////////////////////////////////
@@ -3349,7 +3376,7 @@ function runCommand(command) {
 function setUpTrafficLight() {
   let selector = new MultiTrafficLightSelector('#tl', '#switch', 7);
   window.commander = new Commander({logger, selector});
-  const {defineCommands} = require('../../src/multi-traffic-light-commands');
+  const {defineCommands} = require('../../src/traffic-light/multi-traffic-light-commands');
   defineCommands(window.commander.parser);
 }
 
@@ -3376,4 +3403,4 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../../src/commander":2,"../../src/multi-traffic-light":4,"../../src/multi-traffic-light-commands":3,"../../src/traffic-light":12,"events":1}]},{},[13]);
+},{"../../src/commander":2,"../../src/traffic-light/multi-traffic-light":9,"../../src/traffic-light/multi-traffic-light-commands":8,"../../src/traffic-light/traffic-light":12,"events":1}]},{},[13]);

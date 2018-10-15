@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: physical/physical-traffic-light.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: physical/physical-traffic-light.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>let { Light, TrafficLight } = require('../traffic-light/traffic-light');
+
+///////////////
+
+const RED=0, YELLOW=1, GREEN=2;
+const ON=1, OFF=0;
+
+///////////////
+
+/**
+ * A physical light in a traffic light.
+ * @memberof physical
+ * @extends Light
+ */
+class PhysicalLight extends Light {
+
+  /**
+   * @param {number} lightNum - The light number for this light.
+   * @param {Device} device - The device associated with this light.
+   */
+  constructor(lightNum, device) {
+    super();
+    this.lightNum = lightNum;
+    this.device = device;
+  }
+
+  /**
+   * Toggles the light if its device is connected.
+   * @see physical.Device#turn
+   */
+  async toggle() {
+    if (!this.device.isConnected) return;
+    super.toggle();
+    await this.device.turn(this.lightNum, +this.on);
+  }
+
+  /**
+   * Turn the light on if its device is connected.
+   * @see physical.Device#turn
+   */
+  async turnOn() {
+    if (!this.device.isConnected) return;
+    super.turnOn();
+    await this.device.turn(this.lightNum, ON);
+  }
+
+  /**
+   * Turn the light off if its device is connected.
+   * @see physical.Device#turn
+   */
+  async turnOff() {
+    if (!this.device.isConnected) return;
+    super.turnOff();
+    await this.device.turn(this.lightNum, OFF);
+  }
+
+  /**
+   * Syncs the physical light in the device with the state of this instance.
+   * @see physical.Device#turn
+   */
+  async sync() {
+    if (!this.device.isConnected) return;
+    await this.device.turn(this.lightNum, +this.on);
+  }
+
+}
+
+///////////////
+
+/**
+ * A physical traffic light.
+ * @memberof physical
+ * @extends TrafficLight
+ */
+class PhysicalTrafficLight extends TrafficLight {
+
+  /**
+   * @param {Device} device - The device associated with this traffic light.
+   * @param {PhysicalLight} [red] - Red light.
+   * @param {PhysicalLight} [yellow] - Yellow light.
+   * @param {PhysicalLight} [green] - Green light.
+   */
+  constructor(device, red, yellow, green) {
+    super(
+      red || new PhysicalLight(RED, device),
+      yellow || new PhysicalLight(YELLOW, device),
+      green || new PhysicalLight(GREEN, device));
+    this.device = device;
+    this.device.on('connected', () => this.emit('enabled'));
+    this.device.on('disconnected', () => this.emit('disabled'));
+  }
+
+  async reset() {
+    if (!this.device.isConnected) return;
+    await Promise.all([
+      this.red.turnOff(),
+      this.yellow.turnOff(),
+      this.green.turnOff()
+    ]);
+  }
+
+  /**
+   * Syncs the physical lights in the device with the state of this instance.
+   */
+  async sync() {
+    if (!this.device.isConnected) return;
+    await Promise.all([
+      this.red.sync(),
+      this.yellow.sync(),
+      this.green.sync()
+    ]);
+  }
+
+  /**
+   * If the traffic light is enabled and ready to use.
+   * Checks if the traffic light's device is connected.
+   * @type {boolean}
+   */
+  get isEnabled() {
+    return this.isConnected;
+  }
+
+  /**
+   * If the traffic light's device is connected.
+   * @type {boolean}
+   */
+  get isConnected() {
+    return this.device.isConnected;
+  }
+
+  toString() {
+    return `device ${this.device.serialNum}`;
+  }
+
+}
+
+///////////////
+
+module.exports = {
+  RED, YELLOW, GREEN,
+  ON, OFF,
+  PhysicalLight, PhysicalTrafficLight
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Commander.html">Commander</a></li><li><a href="parsing.Cancellable.html">Cancellable</a></li><li><a href="parsing.CommandParser.html">CommandParser</a></li><li><a href="physical.Device.html">Device</a></li><li><a href="physical.DeviceManager.html">DeviceManager</a></li><li><a href="physical.PhysicalLight.html">PhysicalLight</a></li><li><a href="physical.PhysicalTrafficLight.html">PhysicalTrafficLight</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html">PhysicalMultiTrafficLightSelector</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html">PhysicalTrafficLightSelector</a></li><li><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a></li><li><a href="trafficLight.Light.html">Light</a></li><li><a href="trafficLight.MultiLight.html">MultiLight</a></li><li><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a></li><li><a href="trafficLight.TrafficLight.html">TrafficLight</a></li></ul><h3>Events</h3><ul><li><a href="physical.Device.html#event:connected">connected</a></li><li><a href="physical.Device.html#event:disconnected">disconnected</a></li><li><a href="physical.DeviceManager.html#event:added">added</a></li><li><a href="physical.DeviceManager.html#event:removed">removed</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:disabled">disabled</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:enabled">enabled</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:interrupted">interrupted</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html#event:disabled">disabled</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html#event:enabled">enabled</a></li><li><a href="trafficLight.FlexMultiTrafficLight.html#event:interrupted">interrupted</a></li><li><a href="trafficLight.TrafficLight.html#event:disabled">disabled</a></li><li><a href="trafficLight.TrafficLight.html#event:enabled">enabled</a></li></ul><h3>Namespaces</h3><ul><li><a href="parsing.html">parsing</a></li><li><a href="physical.html">physical</a></li><li><a href="selectors.html">selectors</a></li><li><a href="trafficLight.html">trafficLight</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Oct 14 2018 20:06:35 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -761,6 +761,7 @@ module.exports = {
  * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
  * them all when {@link Cancellable#cancel} is called, setting the
  * {@link Cancellable#isCancelled} attribute to true.
+ * @memberof parsing
  */
 class Cancellable {
 
@@ -821,9 +822,10 @@ const parser = require('./command-peg-parser');
 
 /**
  * A function that implements a command.
- * @typedef {function} CommandParser~CommandFunction
+ * @typedef {function} CommandFunction
+ * @memberof parsing
  * @param {object} ctx - Context to execute the command.
- * @param {Cancellable} ctx.ct - A cancellation token.
+ * @param {parsing.Cancellable} ctx.ct - A cancellation token.
  * @param {object} ctx.scope - Variable bindings for nested commands.
  * @param {...object} [ctx....] - Extra context objects needed for the command,
  *   like the objects that the command manipulates.
@@ -839,11 +841,14 @@ const parser = require('./command-peg-parser');
 
 //////////////////////////////////////////////////////////////////////////////
 
-/** Parses and executes commands. */
+/**
+ * Parses and executes commands.
+ * @memberof parsing
+ */
 class CommandParser {
 
   /**
-   * @param {object.<string, CommandParser~CommandFunction>} [commands] -
+   * @param {object.<string, parsing.CommandFunction>} [commands] -
    *   Base commands this parser recognizes.
    */
   constructor(commands = baseCommands) {
@@ -867,7 +872,7 @@ class CommandParser {
 
   /**
    * Cancels any executing commands.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    */
   cancel(ct = this.ct) {
     if (ct.isCancelled) return;
@@ -880,11 +885,11 @@ class CommandParser {
   /**
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
-   * @param {Object} [ctx] - Context object to be passed as part of the executed
+   * @param {object} [ctx] - Context object to be passed as part of the executed
    *   commands context, togeher with the cancellation token and the scope.
    *   This context cannot have keys 'ct' and 'scope', since they would be
    *   overwritten anyway.
-   * @param {Cancellable} [ct] - Cancellation token.
+   * @param {parsing.Cancellable} [ct] - Cancellation token.
    * @param {object} [scope] - Scope for variables in the command.
    */
   async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
@@ -907,7 +912,7 @@ class CommandParser {
    * Parses a command string.
    * @package
    * @param {string} commandStr - Command string to execute.
-   * @returns {(CommandParser~CommandFunction|CommandParser~CommandFunction[])}
+   * @returns {(parsing.CommandFunction|parsing.CommandFunction[])}
    *   One or many command functions.
    */
   parse(commandStr) {
@@ -921,7 +926,7 @@ class CommandParser {
   /**
    * Adds a new command or redefines an existing one.
    * @param {string} name - The command name.
-   * @param {CommandParser~CommandFunction} command - The command function.
+   * @param {parsing.CommandFunction} command - The command function.
    */
   add(name, command) {
     this.commands[name] = command;
@@ -2342,7 +2347,10 @@ module.exports = {
 },{"./traffic-light-commands.cljs":7}],9:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
-/** A Light in a traffic light. */
+/**
+ * A Light in a traffic light.
+ * @memberof trafficLight
+ */
 class Light {
 
   constructor() {
@@ -2375,6 +2383,7 @@ const EventEmitter = require('events');
 
 /**
  * A Traffic Light with red, yellow and green lights.
+ * @memberof trafficLight
  * @extends EventEmitter
  */
 class TrafficLight extends EventEmitter {
@@ -2401,8 +2410,6 @@ class TrafficLight extends EventEmitter {
     /**
      * If the traffic light is checked-out or reserved.
      * @type {boolean}
-     * @see TrafficLight#checkOut
-     * @see TrafficLight#checkIn
      */
     this.isCheckedOut = false;
   }
@@ -2425,8 +2432,6 @@ class TrafficLight extends EventEmitter {
   /**
    * Checks-out or reserve the traffic light for exclusive usage, making it
    * unavailable for other users.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkIn
    * @returns {boolean} True if the traffic light was successfully checked out.
    *   False if it was already checked out.
    */
@@ -2437,8 +2442,6 @@ class TrafficLight extends EventEmitter {
 
   /**
    * Checks-in the traffic light, making it available for checking out again.
-   * @see TrafficLight#isCheckedOut
-   * @see TrafficLight#checkOut
    */
   checkIn() {
     this.isCheckedOut = false;
@@ -2447,8 +2450,6 @@ class TrafficLight extends EventEmitter {
   /**
    * If the traffic light is available: enabled and not checked-out.
    * @type {boolean}
-   * @see TrafficLight#isEnabled
-   * @see TrafficLight#isCheckedOut
    */
   get isAvailable() {
     return this.isEnabled && !this.isCheckedOut;
@@ -2460,12 +2461,12 @@ class TrafficLight extends EventEmitter {
 
 /**
  * Traffic light enabled event.
- * @event TrafficLight#enabled
+ * @event trafficLight.TrafficLight#enabled
  */
 
 /**
  * Traffic light disabled event.
- * @event TrafficLight#disabled
+ * @event trafficLight.TrafficLight#disabled
  */
 
 ///////////////////////////////////////////////////////////////////
@@ -2475,9 +2476,9 @@ module.exports = {
 };
 
 },{"events":1}],10:[function(require,module,exports){
-var trafficlight = require('../src/traffic-light.js');
-var {CommandParser} = require('../src/parsing/command-parser.js');
-let {defineCommands} = require('../src/traffic-light-commands');
+var trafficlight = require('../src/traffic-light/traffic-light');
+var {CommandParser} = require('../src/parsing/command-parser');
+let {defineCommands} = require('../src/traffic-light/traffic-light-commands');
 
 ///////////////
 
@@ -2639,4 +2640,4 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/parsing/command-parser.js":4,"../src/traffic-light-commands":8,"../src/traffic-light.js":9}]},{},[10]);
+},{"../src/parsing/command-parser":4,"../src/traffic-light/traffic-light":9,"../src/traffic-light/traffic-light-commands":8}]},{},[10]);

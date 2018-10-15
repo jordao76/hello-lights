@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: selectors/physical-traffic-light-selector.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: selectors/physical-traffic-light-selector.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const EventEmitter = require('events');
+
+////////////////////////////////////////////////
+
+// the default device manager
+const {Manager} = require('../devices/cleware-switch1');
+
+////////////////////////////////////////////////
+
+/**
+ * Selects a physical traffic light to use.
+ * @memberof selectors
+ * @extends EventEmitter
+ * @package
+ */
+class PhysicalTrafficLightSelector extends EventEmitter {
+
+  /**
+   * Selects a physical traffic light to use.
+   * Checks-out and uses a specific traffic light or the first available one
+   * to issue commands.
+   * @see physical.DeviceManager#startMonitoring
+   * @param {object} [options] - Options.
+   * @param {DeviceManager} [options.manager] - The Device Manager to use.
+   * @param {string|number} [options.serialNum] - The serial number of the
+   *   traffic light to use, if available. Cleware USB traffic lights have
+   *   a numeric serial number.
+   */
+  constructor({manager = Manager, serialNum = null} = {}) {
+    super();
+    this.manager = manager;
+    this.serialNum = serialNum;
+    this.devicesBySerialNum = {};
+
+    this.manager.startMonitoring();
+    this.manager.on('added', () =>
+      /**
+       * Traffic light enabled event.
+       * Fired for any traffic light that gets enabled.
+       * @event selectors.PhysicalTrafficLightSelector#enabled
+       */
+      this.emit('enabled'));
+  }
+
+  /**
+   * Called to close this instance and to stop monitoring for devices.
+   * Should be done as the last operation before exiting the process.
+   * @see physical.DeviceManager#stopMonitoring
+   */
+  close() {
+    this.manager.stopMonitoring();
+  }
+
+  /**
+   * Retrieves a traffic light for exclusive usage of the caller,
+   * or `null` if one could not be found or checked-out.
+   * Traffic lights are released (checked-in) when disconnected.
+   * @returns {PhysicalTrafficLight} - A traffic light, or `null`.
+   */
+  resolveTrafficLight() {
+    if (this._device) return this._device.trafficLight;
+    let device = this._selectDevice();
+    if (!device || !device.trafficLight.checkOut()) return null;
+    this._device = device;
+    this._registerDeviceIfNeeded(device);
+    return device.trafficLight;
+  }
+
+  _selectDevice() {
+    let devices = this.manager.allDevices()
+      .filter(d => d.trafficLight.isAvailable);
+    return this.serialNum
+      ? devices.filter(d => d.serialNum == this.serialNum)[0] // eslint-disable-line eqeqeq
+      : devices[0];
+  }
+
+  _registerDeviceIfNeeded(device) {
+    let sn = device.serialNum;
+    if (this.devicesBySerialNum[sn]) return;
+    this.devicesBySerialNum[sn] = device;
+    device.on('disconnected', () => {
+      if (this._device !== device) return;
+      device.trafficLight.checkIn();
+      this._device = null;
+      /**
+       * Traffic light disabled event.
+       * Only fired for the specific traffic light that was checked-out.
+       * @event selectors.PhysicalTrafficLightSelector#disabled
+       */
+      this.emit('disabled');
+    });
+  }
+
+  /**
+   * Logs information about known devices.
+   * @param {object} [logger=console] - A Console-like object for logging.
+   */
+  logInfo(logger = console) {
+    this.manager.logInfo(logger);
+  }
+
+}
+
+////////////////////////////////////////////////
+
+module.exports = {
+  PhysicalTrafficLightSelector,
+  SelectorCtor: PhysicalTrafficLightSelector
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Commander.html">Commander</a></li><li><a href="parsing.Cancellable.html">Cancellable</a></li><li><a href="parsing.CommandParser.html">CommandParser</a></li><li><a href="physical.Device.html">Device</a></li><li><a href="physical.DeviceManager.html">DeviceManager</a></li><li><a href="physical.PhysicalLight.html">PhysicalLight</a></li><li><a href="physical.PhysicalTrafficLight.html">PhysicalTrafficLight</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html">PhysicalMultiTrafficLightSelector</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html">PhysicalTrafficLightSelector</a></li><li><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a></li><li><a href="trafficLight.Light.html">Light</a></li><li><a href="trafficLight.MultiLight.html">MultiLight</a></li><li><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a></li><li><a href="trafficLight.TrafficLight.html">TrafficLight</a></li></ul><h3>Events</h3><ul><li><a href="physical.Device.html#event:connected">connected</a></li><li><a href="physical.Device.html#event:disconnected">disconnected</a></li><li><a href="physical.DeviceManager.html#event:added">added</a></li><li><a href="physical.DeviceManager.html#event:removed">removed</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:disabled">disabled</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:enabled">enabled</a></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html#event:interrupted">interrupted</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html#event:disabled">disabled</a></li><li><a href="selectors.PhysicalTrafficLightSelector.html#event:enabled">enabled</a></li><li><a href="trafficLight.FlexMultiTrafficLight.html#event:interrupted">interrupted</a></li><li><a href="trafficLight.TrafficLight.html#event:disabled">disabled</a></li><li><a href="trafficLight.TrafficLight.html#event:enabled">enabled</a></li></ul><h3>Namespaces</h3><ul><li><a href="parsing.html">parsing</a></li><li><a href="physical.html">physical</a></li><li><a href="selectors.html">selectors</a></li><li><a href="trafficLight.html">trafficLight</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Oct 14 2018 20:06:35 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
