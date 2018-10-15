@@ -10,7 +10,7 @@ const ON=1, OFF=0;
 /**
  * A physical light in a traffic light.
  * @memberof physical
- * @extends Light
+ * @extends trafficLight.Light
  */
 class PhysicalLight extends Light {
 
@@ -70,7 +70,7 @@ class PhysicalLight extends Light {
 /**
  * A physical traffic light.
  * @memberof physical
- * @extends TrafficLight
+ * @extends trafficLight.TrafficLight
  */
 class PhysicalTrafficLight extends TrafficLight {
 

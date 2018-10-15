@@ -42,22 +42,22 @@ const EventEmitter = require('events');
 class TrafficLight extends EventEmitter {
 
   /**
-   * @param {Light} [red] - Red light.
-   * @param {Light} [yellow] - Yellow light.
-   * @param {Light} [green] - Green light.
+   * @param {trafficLight.Light} [red] - Red light.
+   * @param {trafficLight.Light} [yellow] - Yellow light.
+   * @param {trafficLight.Light} [green] - Green light.
    */
   constructor(red, yellow, green) {
     super();
     /** The red light.
-      * @type {Light}
+      * @type {trafficLight.Light}
       */
     this.red = red || new Light;
     /** The yellow light.
-     * @type {Light}
+     * @type {trafficLight.Light}
      */
     this.yellow = yellow || new Light;
     /** The green light.
-     * @type {Light}
+     * @type {trafficLight.Light}
      */
     this.green = green || new Light;
     /**
