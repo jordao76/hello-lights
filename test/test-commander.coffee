@@ -293,15 +293,15 @@ describe 'Commander', () =>
   describe 'command help', () =>
 
     beforeEach () =>
-      @commandList = ['move','turn','stop']
-      @parser.commandList = @commandList
+      @commandNames = ['move','turn','stop']
+      @parser.commandNames = @commandNames
       moveCommand = sinon.stub()
       moveCommand.paramNames = ['where']
       moveCommand.doc = name: 'move', desc: 'Moves the widget'
       @parser.commands = move: moveCommand
 
-    it 'commands(): lists all available commands', () =>
-      @cm.commands().should.deep.equal @commandList
+    it 'commandNames: lists all available commands', () =>
+      @cm.commandNames.should.deep.equal @commandNames
 
     it 'help: log help for a command', () =>
       @cm.help('move')

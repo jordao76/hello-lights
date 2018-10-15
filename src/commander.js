@@ -167,11 +167,19 @@ class Commander {
   }
 
   /**
-   * Returns a list of supported command names.
-   * @returns {string[]} List of supported command names.
+   * All supported command names.
+   * @type {string[]}
    */
-  commands() {
-    return this.parser.commandList;
+  get commandNames() {
+    return this.parser.commandNames;
+  }
+
+  /**
+   * All supported commands indexed by their names.
+   * @type {object.<string, parsing.CommandFunction>}
+   */
+  get commands() {
+    return this.parser.commands;
   }
 
   /**

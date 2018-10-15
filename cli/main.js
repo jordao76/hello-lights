@@ -71,7 +71,7 @@ function execute(text, context, filename, callback) {
 
 function help(commandName) {
   if (commandName === undefined) {
-    var commandList = commander.commands().map(c => `    ${c}`);
+    var commandNames = commander.commandNames.map(c => `    ${c}`);
     console.log([
       `Commands for the traffic light`,
       `> help`,
@@ -82,7 +82,7 @@ function help(commandName) {
       `> [command]`,
       `> { [... multi line command] }`,
       `  available commands:`,
-      ...commandList
+      ...commandNames
     ].join('\n'));
   } else {
     commander.help(commandName);
