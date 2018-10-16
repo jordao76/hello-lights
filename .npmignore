@@ -1,6 +1,13 @@
-web
+.nyc_output
+cli
+coverage
+server
 src
 temp
-doc
-.nyc_output
-coverage
+test
+web
+.editorconfig
+.eslintignore
+.eslintrc.json
+.travis.yml
+coffeelint.json
