@@ -4,8 +4,29 @@
 <head>
   <meta charset="utf-8">
   <title>Hello Lights</title>
+  <style>
+    :root {
+      --grid-template-columns: auto 649px auto;
+      --grid-template-rows: auto 250px auto 280px auto auto auto auto;
+      --grid-template-areas:
+        ". header ."
+        ". tl ."
+        ". switches ."
+        ". command ."
+        ". toolbar ."
+        ". messages ."
+        ". help ."
+        ". footer .";
+      --traffic-light-width: 87px;
+      --traffic-light-height: 240px;
+      --light-width: 57px;
+      --light-height: 57px;
+      --light-margin: 9px;
+      --textarea-height: 250px;
+    }
+  </style>
   <link rel="stylesheet" href="style.css">
-  <script src="../bundle.js"></script>
+  <script src="bundle.js"></script>
 </head>
 
 <body>

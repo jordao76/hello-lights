@@ -4,6 +4,25 @@
 <head>
   <meta charset="utf-8">
   <title>Hello Lights</title>
+  <style>
+    :root {
+      --grid-template-columns: auto 200px 450px auto;
+      --grid-template-rows: auto 530px auto auto auto auto;
+      --grid-template-areas:
+        ". header header ."
+        ". tl command ."
+        ". toolbar toolbar ."
+        ". messages messages ."
+        ". help help ."
+        ". footer footer .";
+      --traffic-light-width: 190px;
+      --traffic-light-height: 520px;
+      --light-width: 130px;
+      --light-height: 130px;
+      --light-margin: 25px;
+      --textarea-height: 505px;
+    }
+  </style>
   <link rel="stylesheet" href="style.css">
   <script src="bundle.js"></script>
 </head>
@@ -16,10 +35,12 @@
       <h2>hello-lights</h2>
     </div>
 
-    <div id="tl1" class="traffic-light">
-      <div class="red light"></div>
-      <div class="yellow light"></div>
-      <div class="green light"></div>
+    <div id="traffic-lights">
+      <div id="tl1" class="traffic-light">
+        <div class="red light"></div>
+        <div class="yellow light"></div>
+        <div class="green light"></div>
+      </div>
     </div>
 
     <div class="command">
