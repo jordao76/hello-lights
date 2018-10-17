@@ -12,7 +12,7 @@
   "scripts": {
     "predoc": "jsdoc src --readme README.md -r -d web/doc",
     "doc": "opn web/doc/index.html",
-    "lint": "coffeelint -f coffeelint.json test && eslint src web cli",
+    "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
     "peg": "pegjs -o src/parsing/command-peg-parser.js src/parsing/command-grammar.pegjs",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "pretest": "npm run peg",
@@ -22,19 +22,14 @@
     "browserify": "browserify web/main.js -o web/bundle.js",
     "preweb": "npm run peg && npm run browserify",
     "web": "opn web/index.html",
-    "precli": "npm run peg",
-    "cli": "node cli/main.js",
-    "precli-multi": "npm run peg",
-    "cli-multi": "node cli/main.js ../src/devices/cleware-switch1 ../src/selectors/physical-multi-traffic-light-selector",
-    "precli-browser": "npm run peg",
-    "cli-browser": "node cli/main.js ./chromium ../src/selectors/physical-multi-traffic-light-selector",
-    "preserver": "npm run peg",
-    "server": "node server/main.js",
-    "preserver-chromium": "npm run peg",
-    "server-chromium": "node server/main.js ../cli/chromium ../src/selectors/physical-multi-traffic-light-selector",
     "predeploy": "npm run peg && npm run browserify && npm run predoc",
     "deploy": "gh-pages -d web",
-    "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents"
+    "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents",
+    "dev:install": "cd dev && npm install",
+    "predev:repl": "npm run peg",
+    "dev:repl": "node dev/lights-repl",
+    "predev:server": "npm run peg",
+    "dev:server": "node dev/lights-server"
   },
   "devDependencies": {
     "browserify": "^16.2.2",
@@ -49,7 +44,6 @@
     "nyc": "^13.0.1",
     "opn-cli": "^3.1.0",
     "pegjs": "^0.10.0",
-    "puppeteer": "^1.8.0",
     "sinon": "^7.0.0"
   },
   "dependencies": {

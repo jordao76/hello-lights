@@ -1,10 +1,22 @@
 /////////////////////////////////////////////////////////////////
 
-const device = process.argv[2] || '../src/devices/cleware-switch1';
-const {Manager} = require(device);
-const selector = process.argv[3] || '../src/selectors/physical-traffic-light-selector';
-const {SelectorCtor} = require(selector);
-const {Commander} = require('../src/commander');
+// Two possibilities for `device`: cleware (default) or chromium (or anything else really)
+const deviceName = process.argv[2] || 'cleware';
+const devicePath =
+  deviceName === 'cleware'
+    ? 'hello-lights/lib/devices/cleware-switch1'
+    : 'chromium-device'; // fallback is chromium
+const {Manager} = require(devicePath);
+
+const {Commander} = require('hello-lights');
+
+// Two possibilities for selector: single (default) or multi (or anything else really)
+const selectorName = process.argv[3] || 'single';
+const selectorProperty =
+  selectorName === 'single'
+    ? 'PhysicalTrafficLightSelector'
+    : 'PhysicalMultiTrafficLightSelector'; // fallback is multi
+const SelectorCtor = require('hello-lights').selectors[selectorProperty];
 
 /////////////////////////////////////////////////////////////////
 
@@ -25,13 +37,14 @@ const logger = {
 let commander = new Commander({
   logger,
   manager: Manager,
-  selectorCtor: SelectorCtor});
+  selectorCtor: SelectorCtor
+});
 
 /////////////////////////////////////////////////////////////////
 
 const http = require('http');
 const fs = require('fs');
-const port = 9000;
+const port = process.env.PORT || 9000;
 
 /////////////////////////////////////////////////////////////////
 
@@ -44,7 +57,7 @@ function runCommand(req, res) {
 }
 
 function serveFile(filepath, contentType, res) {
-  fs.readFile(`./server/public/${filepath}`, (err, data) => {
+  fs.readFile(`${__dirname}/public/${filepath}`, (err, data) => {
     if (err) {
       res.statusCode = 500; // server error
       res.end(`Error getting ${filepath}: ${err}`);
@@ -75,7 +88,7 @@ http.createServer((req, res) => {
   res.statusCode = 404; // not found
   res.end();
 
-}).listen(parseInt(port, 10));
+}).listen(port);
 
 /////////////////////////////////////////////////////////////////
 

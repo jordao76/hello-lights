@@ -1,26 +1,6 @@
-function info(str) {
-  console.log(str);
-}
-
-function error(str) {
-  let divError = document.querySelector('.error');
-  let spanError = document.querySelector('#error');
-  spanError.innerText = str;
-  divError.style.display = '';
-  console.error(str);
-}
-
-function clearError() {
-  let divError = document.querySelector('.error');
-  let spanError = document.querySelector('#error');
-  spanError.innerText = '';
-  divError.style.display = 'none';
-}
-
 ////////////////////////////////////////////////////////////////////////////
 
 function run(commandStr) {
-  clearError();
   var req = new XMLHttpRequest();
   req.open('POST', '/run', true);
   req.send(commandStr);

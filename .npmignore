@@ -1,7 +1,6 @@
 .nyc_output
-cli
 coverage
-server
+dev
 src
 temp
 test

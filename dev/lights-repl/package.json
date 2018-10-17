@@ -1,0 +1,14 @@
+{
+  "name": "lights-repl",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A REPL for hello-lights",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"No tests...\"",
+    "link": "npm link ../.. && npm link ../chromium-device"
+  },
+  "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
+  "license": "MIT",
+  "dependencies": {}
+}
