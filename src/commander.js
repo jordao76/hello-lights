@@ -219,13 +219,6 @@ class Commander {
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
  * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
- * @param {object} [options.selector] - The traffic light selector to use.
- *   Takes precedence over `options.selectorCtor`.
- * @param {function} [options.selectorCtor] - The constructor of a traffic
- *   light selector to use. Will be passed the entire `options` object.
- *   Ignored if `options.selector` is set.
- * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
- *   This is an option for the default `options.selectorCtor`.
  * @returns {Commander} A multi-traffic-light commander.
  */
 Commander.multi = (options = {}) => {

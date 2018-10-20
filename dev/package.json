@@ -4,8 +4,8 @@
   "private": true,
   "description": "Tools and samples for hello-lights.",
   "scripts": {
-    "preinstall": "cd chromium-device && npm install && cd ../lights-repl && npm install && cd ../lights-server && npm install",
-    "postinstall": "npm link ../ && npm link ./chromium-device"
+    "preinstall": "cd chromium-device && npm install && cd ../commander-cli && npm install && cd ../lights-repl && npm install && cd ../lights-server && npm install",
+    "postinstall": "npm link ../ && npm link ./chromium-device && npm link ./commander-cli"
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT"

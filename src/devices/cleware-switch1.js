@@ -13,7 +13,7 @@ const SWITCH1_DEVICE = 0x8; // traffic light
 
 class ClewareSwitch1Device extends Device {
 
-  constructor(deviceInfo) {
+  constructor() {
     super(null, false);
   }
 

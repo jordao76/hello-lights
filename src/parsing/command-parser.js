@@ -49,7 +49,7 @@ class CommandParser {
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
    * @param {object} [ctx] - Context object to be passed as part of the executed
-   *   commands context, togeher with the cancellation token and the scope.
+   *   commands context, together with the cancellation token and the scope.
    *   This context cannot have keys 'ct' and 'scope', since they would be
    *   overwritten anyway.
    * @param {parsing.Cancellable} [ct] - Cancellation token.
