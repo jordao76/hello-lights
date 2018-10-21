@@ -1,0 +1,15 @@
+{
+  "name": "electron-device",
+  "version": "0.0.1",
+  "description": "A virtual traffic light device with electron.",
+  "main": "electron-device.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^3.0.5",
+    "rimraf": "^2.6.2"
+  }
+}

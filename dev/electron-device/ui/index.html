@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>🚦</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="traffic-light">
+    <div id="red" class="light"></div>
+    <div id="yellow" class="light"></div>
+    <div id="green" class="light"></div>
+  </div>
+</body>
+
+<script>
+  function turn({lightNum, on}) {
+    let light = ['red', 'yellow', 'green'][lightNum];
+    let change = on ? 'add' : 'remove';
+    document.getElementById(light).classList[change]('on');
+  }
+  require('electron').ipcRenderer.on('turn', (e, data) => turn(data));
+</script>
+
+</html>

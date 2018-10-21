@@ -1,11 +1,11 @@
 /////////////////////////////////////////////////////////////////
 
-// Two possibilities for `device`: cleware (default) or chromium (or anything else really)
+// Three possibilities for `device`: cleware (default), electron or chromium (or anything else really)
 const deviceName = process.argv[2] || 'cleware';
 const devicePath =
-  deviceName === 'cleware'
-    ? 'hello-lights/lib/devices/cleware-switch1'
-    : 'chromium-device'; // fallback is chromium
+  deviceName === 'cleware' ? 'hello-lights/lib/devices/cleware-switch1' :
+  deviceName === 'electron' ? 'electron-device' :
+  'chromium-device'; // fallback is chromium
 const {Manager} = require(devicePath);
 
 const {Commander} = require('hello-lights');
