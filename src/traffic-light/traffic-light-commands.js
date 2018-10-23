@@ -2,25 +2,8 @@
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-const isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-
-const turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
-
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-const isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
-
-const isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
+const {turnLight} = require('./utils');
+const {isLight, isState} = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +52,8 @@ function defineCommands(cp) {
   cp.add('toggle', toggle);
   cp.add('turn', turn);
   cp.add('reset', reset);
+  // add other commands
+  require('./morse').defineCommands(cp);
   // add higher-level commands
   require('./traffic-light-commands.cljs')(cp);
 }

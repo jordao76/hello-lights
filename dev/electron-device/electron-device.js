@@ -1,6 +1,5 @@
-let {Device, DeviceManager} = require('hello-lights').physical;
-const net = require('net')
-const EventEmitter = require('events');
+const {Device, DeviceManager} = require('hello-lights').physical;
+const net = require('net');
 const path = require('path');
 const {spawn} = require('child_process');
 const PIPE_PATH = require('./pipe-path');
@@ -61,7 +60,7 @@ class ElectronDeviceManager extends DeviceManager {
         if (match(data, /removed (\d+)/, serialNum => {
           this.devices[serialNum].disconnect();
           this.emit('removed');
-        })) return;
+        })) return; // eslint-disable-line no-useless-return
       });
     }).listen(PIPE_PATH);
   }
@@ -70,9 +69,8 @@ class ElectronDeviceManager extends DeviceManager {
     return Object.values(this.devices);
   }
 
-  async newDevice() {
+  newDevice() {
     this.stream.write('new-window\n');
-    this.emit('added');
   }
 
 }

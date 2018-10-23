@@ -1,4 +1,4 @@
-const net = require('net')
+const net = require('net');
 const EventEmitter = require('events');
 const {app, BrowserWindow} = require('electron');
 const path = require('path');
@@ -90,14 +90,14 @@ const newWindow = () => manager.newWindow();
 client.on('data', data => {
   data = data.toString();
   if (match(data, /turn (\w+) (\d) (\d)/, turn)) return;
-  if (match(data, /new-window/, newWindow)) return;
+  if (match(data, /new-window/, newWindow)) return; // eslint-disable-line no-useless-return
 });
 client.on('close', () => process.exit());
 
 const added = w => client.write(`added ${w.serialNum}`);
 const removed = w => {
   if (client.destroyed) return;
-  client.write(`removed ${w.serialNum}`)
+  client.write(`removed ${w.serialNum}`);
 };
 manager.on('added', added);
 manager.on('removed', removed);

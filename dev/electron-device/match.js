@@ -1,6 +1,6 @@
 function match(str, rx, cb) {
   if (!rx.global) {
-    rx = RegExp(rx.source, 'g');
+    rx = RegExp(rx.source, rx.flags + 'g');
   }
   let res, ret = false;
   while ((res = rx.exec(str)) !== null) {

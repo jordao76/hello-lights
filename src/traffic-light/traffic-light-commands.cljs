@@ -91,14 +91,7 @@
   "SOS distress signal morse code pattern:
   (sos red)"
   (loop
-    (blink 3 :light 150)
-    (blink 2 :light 250)
-    (toggle :light)
-    (pause 250)
-    (toggle :light)
-    (pause 150)
-    (blink 3 :light 150)
-    (pause 700)))
+    (morse :light "SOS")))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
