@@ -745,13 +745,6 @@ class Commander {
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
  * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
- * @param {object} [options.selector] - The traffic light selector to use.
- *   Takes precedence over `options.selectorCtor`.
- * @param {function} [options.selectorCtor] - The constructor of a traffic
- *   light selector to use. Will be passed the entire `options` object.
- *   Ignored if `options.selector` is set.
- * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
- *   This is an option for the default `options.selectorCtor`.
  * @returns {Commander} A multi-traffic-light commander.
  */
 Commander.multi = (options = {}) => {
@@ -764,7 +757,7 @@ Commander.multi = (options = {}) => {
 
 module.exports = {Commander};
 
-},{"./parsing/command-parser":5,"./traffic-light/traffic-light-commands":11}],3:[function(require,module,exports){
+},{"./parsing/command-parser":5,"./traffic-light/traffic-light-commands":12}],3:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -1106,7 +1099,7 @@ class CommandParser {
    * Executes a command.
    * @param {string} commandStr - Command string to execute.
    * @param {object} [ctx] - Context object to be passed as part of the executed
-   *   commands context, togeher with the cancellation token and the scope.
+   *   commands context, together with the cancellation token and the scope.
    *   This context cannot have keys 'ct' and 'scope', since they would be
    *   overwritten anyway.
    * @param {parsing.Cancellable} [ct] - Cancellation token.
@@ -2307,6 +2300,155 @@ module.exports = {
 };
 
 },{}],8:[function(require,module,exports){
+/* eslint no-multi-spaces: 0 */
+
+const {isLight} = require('./validation');
+const {isString} = require('../parsing/validation');
+const {pause} = require('../parsing/base-commands');
+const {intersperse, flatten} = require('./utils');
+
+//////////////////////////////////////////////////////////////////////////////
+
+// ref: https://www.itu.int/dms_pubrec/itu-r/rec/m/R-REC-M.1677-1-200910-I!!PDF-E.pdf [PDF]
+
+const TIME_UNIT = 110; // in ms
+const
+  DOT_SIGNAL = 1,
+  DASH_SIGNAL = 3,
+  INTER_LETTER_GAP = 1,
+  LETTER_GAP = 3,
+  WORD_GAP = 7,
+  END_OF_INPUT_GAP = 7;
+
+const morseCode = {
+  ' ': ' ',
+  // Letters
+  'a': '.-',    'i': '..',   'r': '.-.',
+  'b': '-...',  'j': '.---', 's': '...',
+  'c': '-.-.',  'k': '-.-',  't': '-',
+  'd': '-..',   'l': '.-..', 'u': '..-',
+  'e': '.',     'm': '--',   'v': '...-',
+  'é': '..-..', 'n': '-.',   'w': '.--',
+  'f': '..-.',  'o': '---',  'x': '-..-',
+  'g': '--.',   'p': '.--.', 'y': '-.--',
+  'h': '....',  'q': '--.-', 'z': '--..',
+  // Figures
+  '1': '.----', '6': '-....',
+  '2': '..---', '7': '--...',
+  '3': '...--', '8': '---..',
+  '4': '....-', '9': '----.',
+  '5': '.....', '0': '-----',
+  // Punctuation marks
+  '.': '.-.-.-',
+  ',': '--..--',
+  ':': '---...',
+  '?': '..--..',
+  '’': '.----.', "'": '.----.',
+  '–': '-....-', '-': '-....-', '−': '-....-',
+  '/': '-..-.',
+  '(': '-.--.',
+  ')': '-.--.-',
+  '“': '.-..-.', '”': '.-..-.', '"': '.-..-.',
+  '=': '-...-',
+  '+': '.-.-.',
+  '×': '-..-',
+  '@': '.--.-.'
+  // Miscellaneous signs
+  /*
+    Understood ...-.
+    Error ........
+    Invitation to transmit -.-
+    Wait .-...
+    End of work ...-.-
+    Starting signal (to precede every transmission) -.-.-
+  */
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function timecodeSignal(signal) {
+  if (signal === '.') return DOT_SIGNAL;
+  if (signal === '-') return DASH_SIGNAL;
+}
+
+function timecodeLetter(letter) {             // '.-'
+  let signals = letter.split('');             // ['.', '-']
+  let code = signals.map(timecodeSignal);     // [1, 3]
+  return intersperse(INTER_LETTER_GAP, code); // [1, 1, 3]
+}
+
+function timecodeWord(word) {               // ['.-', '.-']
+  let codes = word.map(timecodeLetter);     // [[1, 1, 3], [1, 1, 3]]
+  codes = intersperse([LETTER_GAP], codes); // [[1, 1, 3], [3], [1, 1, 3]]
+  return flatten(codes);                    // [1, 1, 3, 3, 1, 1, 3]
+}
+
+function timecodePhrase(phrase) {         // [['.-'], ['.-']]
+  let codes = phrase.map(timecodeWord);   // [[1, 1, 3], [1, 1, 3]]
+  codes = intersperse([WORD_GAP], codes); // [[1, 1, 3], [7], [1, 1, 3]]
+  return flatten(codes);                  // [1, 1, 3, 7, 1, 1, 3]
+}
+
+function encodeWord(word) {
+  return word                // 'aãa'
+    .split('')               // ['a','ã','a']
+    .map(c => morseCode[c])  // ['.-',undefined,'.-']
+    .filter(c => !!c);       // ['.-','.-']
+}
+
+function timecodeText(text) {
+  let phrase = text              // ' A A'
+    .toLowerCase()               // ' a a'
+    .split(/\s+/)                // ['', 'a', 'a']
+    .filter(w => !!w)            // ['a', 'a']
+    .map(encodeWord);            // [['.-'], ['.-']]
+  return timecodePhrase(phrase)  // [1, 1, 3, 7, 1, 1, 3]
+    .concat([END_OF_INPUT_GAP]); // [1, 1, 3, 7, 1, 1, 3, 7]
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function morse({tl, ct}, [light, text]) {
+  if (ct.isCancelled) return;
+  let times = timecodeText(text);
+  tl[light].turnOff(); // start as 'off'
+  for (let i = 0; i < times.length; ++i) {
+    if (ct.isCancelled) break;
+    tl[light].toggle();
+    await pause({ct}, [times[i] * TIME_UNIT]);
+  }
+}
+
+morse.paramNames = ['light', 'text'];
+morse.validation = [isLight, isString];
+morse.doc = {
+  name: 'morse',
+  desc: 'Morse code pattern with the given light and text:\n' +
+        '(morse green "hello-lights")'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function defineCommands(cp) {
+  cp.add('morse', morse);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  // morse-utils
+  timecodeSignal,
+  timecodeLetter,
+  timecodeWord,
+  timecodePhrase,
+  encodeWord,
+  timecodeText,
+  // morse core
+  morse,
+  defineCommands
+};
+
+},{"../parsing/base-commands":3,"../parsing/validation":7,"./utils":14,"./validation":15}],9:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -2433,7 +2575,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../parsing/validation":7}],9:[function(require,module,exports){
+},{"../parsing/validation":7}],10:[function(require,module,exports){
 const {Light, TrafficLight} = require('./traffic-light');
 
 ///////////////
@@ -2764,7 +2906,7 @@ module.exports = {
   MultiLight, MultiTrafficLight, FlexMultiTrafficLight
 };
 
-},{"./traffic-light":12}],10:[function(require,module,exports){
+},{"./traffic-light":13}],11:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -2858,14 +3000,7 @@ module.exports = {
   "SOS distress signal morse code pattern:
   (sos red)"
   (loop
-    (blink 3 :light 150)
-    (blink 2 :light 250)
-    (toggle :light)
-    (pause 250)
-    (toggle :light)
-    (pause 150)
-    (blink 3 :light 150)
-    (pause 700)))
+    (morse :light "SOS")))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
@@ -2939,30 +3074,13 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
-// Utility functions
-//////////////////////////////////////////////////////////////////////////////
-
-const isOn = state =>
-  (state === 'off' || state === 'false') ? false : !!state;
-
-const turnLight = (oLight, state) =>
-  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
-
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-const isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
-
-const isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
+const {turnLight} = require('./utils');
+const {isLight, isState} = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3011,6 +3129,8 @@ function defineCommands(cp) {
   cp.add('toggle', toggle);
   cp.add('turn', turn);
   cp.add('reset', reset);
+  // add other commands
+  require('./morse').defineCommands(cp);
   // add higher-level commands
   require('./traffic-light-commands.cljs')(cp);
 }
@@ -3022,7 +3142,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./traffic-light-commands.cljs":10}],12:[function(require,module,exports){
+},{"./morse":8,"./traffic-light-commands.cljs":11,"./utils":14,"./validation":15}],13:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -3153,7 +3273,61 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],13:[function(require,module,exports){
+},{"events":1}],14:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Utility functions
+//////////////////////////////////////////////////////////////////////////////
+
+function intersperse(sep, arr) {
+  let res = [];
+  let len = arr.length;
+  if (len === 0) return res;
+  let idx = 0;
+  for (; idx < len - 1; ++idx) res.push(arr[idx], sep);
+  res.push(arr[idx]);
+  return res;
+}
+
+const flatten = arr =>
+  arr.reduce((acc, val) => acc.concat(val), []);
+
+//////////////////////////////////////////////////////////////////////////////
+
+const isOn = state =>
+  (state === 'off' || state === 'false') ? false : !!state;
+
+const turnLight = (oLight, state) =>
+  oLight[isOn(state) ? 'turnOn' : 'turnOff']();
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  intersperse,
+  flatten,
+  isOn,
+  turnLight
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+},{}],15:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+//////////////////////////////////////////////////////////////////////////////
+
+const isLight = l => l === 'red' || l === 'yellow' || l === 'green';
+isLight.exp = '"red", "yellow" or "green"';
+
+const isState = s => s === 'on' || s === 'off';
+isState.exp = '"on" or "off"';
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {isLight, isState};
+
+//////////////////////////////////////////////////////////////////////////////
+
+},{}],16:[function(require,module,exports){
 ////////////////////////////////////////////////////////
 
 class WebCommandFormatter {
@@ -3228,7 +3402,7 @@ module.exports = {
   setUpHelp
 };
 
-},{}],14:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 const {Commander} = require('../src/commander');
 const {setUpHelp} = require('./help');
 const {MultiTrafficLightSelector} = require('./web-traffic-light');
@@ -3329,7 +3503,7 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/commander":2,"./help":13,"./web-traffic-light":15}],15:[function(require,module,exports){
+},{"../src/commander":2,"./help":16,"./web-traffic-light":18}],18:[function(require,module,exports){
 const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
 const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
 
@@ -3442,4 +3616,4 @@ module.exports = {
   MultiTrafficLightSelector
 };
 
-},{"../src/traffic-light/multi-traffic-light":9,"../src/traffic-light/multi-traffic-light-commands":8,"../src/traffic-light/traffic-light":12,"events":1}]},{},[14]);
+},{"../src/traffic-light/multi-traffic-light":10,"../src/traffic-light/multi-traffic-light-commands":9,"../src/traffic-light/traffic-light":13,"events":1}]},{},[17]);
