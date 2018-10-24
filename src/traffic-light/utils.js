@@ -2,6 +2,21 @@
 // Utility functions
 //////////////////////////////////////////////////////////////////////////////
 
+function intersperse(sep, arr) {
+  let res = [];
+  let len = arr.length;
+  if (len === 0) return res;
+  let idx = 0;
+  for (; idx < len - 1; ++idx) res.push(arr[idx], sep);
+  res.push(arr[idx]);
+  return res;
+}
+
+const flatten = arr =>
+  arr.reduce((acc, val) => acc.concat(val), []);
+
+//////////////////////////////////////////////////////////////////////////////
+
 const isOn = state =>
   (state === 'off' || state === 'false') ? false : !!state;
 
@@ -10,6 +25,11 @@ const turnLight = (oLight, state) =>
 
 //////////////////////////////////////////////////////////////////////////////
 
-module.exports = {isOn, turnLight};
+module.exports = {
+  intersperse,
+  flatten,
+  isOn,
+  turnLight
+};
 
 //////////////////////////////////////////////////////////////////////////////

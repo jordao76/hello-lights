@@ -3,6 +3,7 @@
 const {isLight} = require('./validation');
 const {isString} = require('../parsing/validation');
 const {pause} = require('../parsing/base-commands');
+const {intersperse, flatten} = require('./utils');
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -61,62 +62,54 @@ const morseCode = {
   */
 };
 
-/**
- * Encodes text to morse code.
- * @package
- * @param {string} text - Text to encode.
- * @returns {string[]} Encoded text as an array of morse encoded letters,
- *   with dots (.) and dashes (-).
- * @example
- *   let encodedText = encode('SOS'); // => ['...','---','...']
- */
-function encode(text) {
-  let code = text.toLowerCase().split('').map(c => morseCode[c] || ' ');
-  while (code[0] === ' ') code.shift();
-  while (code[code.length - 1] === ' ') code.pop();
-  return code;
+//////////////////////////////////////////////////////////////////////////////
+
+function timecodeSignal(signal) {
+  if (signal === '.') return DOT_SIGNAL;
+  if (signal === '-') return DASH_SIGNAL;
 }
 
-/**
- * Time-codes a morse code array to on/off durations.
- * @package
- * @param {string[]} encoded - Morse encoded letters array. Output of 'encode'.
- * @returns {number[]} Time coded morse code, an array where each element is a
- *   number indicating how many time-units the signal should be on or off.
- *   Alternates between on and off starting with 'on'.
- * @example
- *   let timecodedMorse = timecode(['...','---','...']); // => [1,1,...]
- */
-function timecode(encoded) {
-  let res = [];
-  encoded.forEach((coded, codedIndex) => {
-    // 'coded' is a single coded letter, e.g '.-' for A
-    let isLastCoded = codedIndex === encoded.length - 1;
-    let morseChars = coded.split(''); // e.g. ['.','-'] for A
-    morseChars.forEach((morseChar, morseCharIndex) => {
-      let isLastMorseChar = morseCharIndex === morseChars.length - 1;
-      // on
-      if (morseChar === '.') res.push(DOT_SIGNAL);
-      else if (morseChar === '-') res.push(DASH_SIGNAL);
-      // off
-      if (morseChar === ' ') { res.pop(); res.push(WORD_GAP); } // eslint-disable-line brace-style
-      else if (!isLastMorseChar) res.push(INTER_LETTER_GAP);
-      else if (!isLastCoded) res.push(LETTER_GAP);
-    });
+function timecodeLetter(letter) {             // '.-'
+  let signals = letter.split('');             // ['.', '-']
+  let code = signals.map(timecodeSignal);     // [1, 3]
+  return intersperse(INTER_LETTER_GAP, code); // [1, 1, 3]
+}
 
-    if (isLastCoded) res.push(END_OF_INPUT_GAP);
-  });
-  return res;
+function timecodeWord(word) {               // ['.-', '.-']
+  let codes = word.map(timecodeLetter);     // [[1, 1, 3], [1, 1, 3]]
+  codes = intersperse([LETTER_GAP], codes); // [[1, 1, 3], [3], [1, 1, 3]]
+  return flatten(codes);                    // [1, 1, 3, 3, 1, 1, 3]
+}
+
+function timecodePhrase(phrase) {         // [['.-'], ['.-']]
+  let codes = phrase.map(timecodeWord);   // [[1, 1, 3], [1, 1, 3]]
+  codes = intersperse([WORD_GAP], codes); // [[1, 1, 3], [7], [1, 1, 3]]
+  return flatten(codes);                  // [1, 1, 3, 7, 1, 1, 3]
+}
+
+function encodeWord(word) {
+  return word                // 'aãa'
+    .split('')               // ['a','ã','a']
+    .map(c => morseCode[c])  // ['.-',undefined,'.-']
+    .filter(c => !!c);       // ['.-','.-']
+}
+
+function timecodeText(text) {
+  let phrase = text              // ' A A'
+    .toLowerCase()               // ' a a'
+    .split(/\s+/)                // ['', 'a', 'a']
+    .filter(w => !!w)            // ['a', 'a']
+    .map(encodeWord);            // [['.-'], ['.-']]
+  return timecodePhrase(phrase)  // [1, 1, 3, 7, 1, 1, 3]
+    .concat([END_OF_INPUT_GAP]); // [1, 1, 3, 7, 1, 1, 3, 7]
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 async function morse({tl, ct}, [light, text]) {
   if (ct.isCancelled) return;
-
-  let times = timecode(encode(text));
-
-  tl[light].turnOff(); // start as off
+  let times = timecodeText(text);
+  tl[light].turnOff(); // start as 'off'
   for (let i = 0; i < times.length; ++i) {
     if (ct.isCancelled) break;
     tl[light].toggle();
@@ -140,4 +133,15 @@ function defineCommands(cp) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-module.exports = {encode, timecode, morse, defineCommands};
+module.exports = {
+  // morse-utils
+  timecodeSignal,
+  timecodeLetter,
+  timecodeWord,
+  timecodePhrase,
+  encodeWord,
+  timecodeText,
+  // morse core
+  morse,
+  defineCommands
+};
