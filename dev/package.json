@@ -8,5 +8,8 @@
     "postinstall": "npm link ../ && npm link ./chromium-device && npm link ./electron-device && npm link ./commander-cli"
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.1"
+  }
 }

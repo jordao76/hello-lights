@@ -1,16 +1,16 @@
 /////////////////////////////////////////////////////////////////
 
-// Three possibilities for `device`: cleware (default), electron or chromium (or anything else really)
+// Three possibilities for `device`: cleware (default, fallback), electron or chromium
 const deviceName = process.argv[2] || 'cleware';
 const devicePath =
-  deviceName === 'cleware' ? 'hello-lights/lib/devices/cleware-switch1'
+  deviceName === 'chromium' ? 'chromium-device'
     : deviceName === 'electron' ? 'electron-device'
-      : 'chromium-device'; // fallback is chromium
+      : 'hello-lights/lib/devices/cleware-switch1'; // fallback is cleware
 const {Manager} = require(devicePath);
 
 const {Commander} = require('hello-lights');
 
-// Two possibilities for selector: single (default) or multi (or anything else really)
+// Two possibilities for selector: single (default) or multi (fallback)
 const selectorName = process.argv[3] || 'single';
 const selectorProperty =
   selectorName === 'single'
@@ -20,15 +20,16 @@ const SelectorCtor = require('hello-lights').selectors[selectorProperty];
 
 /////////////////////////////////////////////////////////////////
 
-const blue = '\x1b[34m';
-const red = '\x1b[31m';
-const reset = '\x1b[0m';
+const chalk = require('chalk');
+
+/////////////////////////////////////////////////////////////////
+
 const logger = {
   log: (...args) => {
-    console.log(blue, ...args, reset);
+    console.log(chalk.cyan(...args));
   },
   error: (...args) => {
-    console.error(red, ...args, reset);
+    console.error(chalk.yellow(...args));
   }
 };
 

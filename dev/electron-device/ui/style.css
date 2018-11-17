@@ -1,16 +1,12 @@
 body {
   margin: 0;
-  background-color: black;
 }
 
 .traffic-light {
   background-color: #222;
   border: 5px solid black;
-  margin-right: 2px;
   width: 190px;
   height: 520px;
-  float: left;
-  box-shadow: 0 0 5px rgba(0,0,0,.8);
 }
 .light {
   border-radius: 50%;

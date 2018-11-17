@@ -44,20 +44,27 @@ function execute(text, context, filename, callback) {
 
 ///////////////
 
+function formatCommandNames(names) {
+  var parts = ['  '];
+  names.forEach((name, i) => {
+    parts.push(`  ${name}`);
+    if ((i + 1) % 8 === 0) parts.push('\n  ');
+  });
+  return parts.join('');
+}
+
 function help(commandName) {
   if (commandName === undefined) {
-    var commandNames = commander.commandNames.map(c => `    ${c}`);
     console.log([
       `Commands for the traffic light`,
       `> help`,
       `> help [command name]`,
-      `> cancel`,
       `> check device` + (Manager.newDevice ? '\n> new device' : ''),
       `> exit | quit`,
       `> [command]`,
       `> { [... multi line command] }`,
       `  available commands:`,
-      ...commandNames
+      formatCommandNames(commander.commandNames)
     ].join('\n'));
   } else {
     commander.help(commandName);

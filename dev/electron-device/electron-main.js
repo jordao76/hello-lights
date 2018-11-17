@@ -1,6 +1,6 @@
+const {app, BrowserWindow} = require('electron');
 const net = require('net');
 const EventEmitter = require('events');
-const {app, BrowserWindow} = require('electron');
 const path = require('path');
 const PIPE_PATH = require('./pipe-path');
 const match = require('./match');

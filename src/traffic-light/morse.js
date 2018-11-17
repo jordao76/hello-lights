@@ -19,7 +19,6 @@ const
   END_OF_INPUT_GAP = 7;
 
 const morseCode = {
-  ' ': ' ',
   // Letters
   'a': '.-',    'i': '..',   'r': '.-.',
   'b': '-...',  'j': '.---', 's': '...',
