@@ -719,8 +719,12 @@ class Commander {
       return;
     }
     let paramNames = command.paramNames, params = '';
+    const validationText = i => {
+      if (!command.validation) return '';
+      return ` (${command.validation[i].exp})`;
+    };
     if (paramNames && paramNames.length > 0) {
-      params = ' ' + paramNames.map(n => ':' + n).join(' ');
+      params = ' ' + paramNames.map((n, i) => ':' + n + validationText(i)).join(' ');
     }
     this.logger.log(`${command.doc.name}${params}`);
     this.logger.log(command.doc.desc);
@@ -1051,6 +1055,7 @@ module.exports = {Cancellable};
 const baseCommands = require('./base-commands');
 const {Cancellable} = require('./cancellable');
 const parser = require('./command-peg-parser');
+const {isIdentifier, isString, isCommand, and} = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -1157,13 +1162,13 @@ class CommandParser {
     };
     newCommand.doc = {name, desc};
     newCommand.paramNames = paramNames;
-    newCommand.toString = () => `'${name}' command`;
+    newCommand.validation = command.validation;
+    newCommand.toString = () => `${name}`;
     return this.commands[name] = newCommand;
   }
 
   _addDefine() {
     // add the 'define' command, which is intrinsic to the CommandParser
-    const {isIdentifier, isString, isCommand} = require('./validation');
     let define = (ctx, [name, desc, command]) => this._define(name, command, desc);
     define.doc = {
       name: 'define',
@@ -1178,18 +1183,39 @@ class CommandParser {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// argument utils
+//////////////////////////////////////////////////////////////////////////////
+// an argument is either a variable, a value or a command:
+//   1. variable :: { type: 'variable', name: <variable name>, validation: [...] }
+//   2. value    :: any
+//   3. command  :: CommandFunction
+//////////////////////////////////////////////////////////////////////////////
 
-let isVar = (a) => typeof a === 'string' && a.startsWith(':');
-let getName = (v) => v.replace(/^:/, '');
+const isVar = a => a && a.type === 'variable';
+
+const isValid = (vf, a) => {
+  if (!a) return false;
+  if (isVar(a)) return true;
+  return vf(a);
+};
+
+const getValue = (a, scope = null) => {
+  if (Array.isArray(a)) return a.map(a => getValue(a, scope));
+  if (isVar(a)) {
+    if (scope) return scope[a.name];
+    return ':' + a.name;
+  }
+  return a;
+};
+
+//////////////////////////////////////////////////////////////////////////////
 
 class Vars {
   constructor(args) {
     this.args = args;
   }
   resolve(scope) {
-    return this.args.map(a =>
-      isVar(a) ? scope[getName(a)] : a
-    );
+    return this.args.map(a => getValue(a, scope));
   }
 }
 
@@ -1203,7 +1229,7 @@ class Generator {
   }
 
   execute(ast) {
-    this.variables = [];
+    this.variables = new Map();
     this.errors = [];
     let res = this.recur(ast);
     Validator.raiseIf(this.errors);
@@ -1211,6 +1237,7 @@ class Generator {
   }
 
   recur(node) {
+    // possible types: command, variable, value
     return this[node.type](node);
   }
 
@@ -1230,7 +1257,6 @@ class Generator {
     if (command) {
       // transform the command arguments
       args = this._transform(command, args);
-
       // validate the command arguments
       errors = Validator.collect(command, args);
     } else {
@@ -1242,6 +1268,17 @@ class Generator {
     if (errors.length > 0) {
       this.errors.push(...errors);
       return;
+    }
+
+    // collect validation functions
+    if (command.validation) {
+      args
+        .map((a, i) => isVar(a) ? { name: a.name, vf: command.validation[i] } : null)
+        .filter(v => !!v) // remove nulls
+        .forEach(v => {
+          let vf = this.variables.get(v.name).validation;
+          this.variables.get(v.name).validation = vf ? and(vf, v.vf) : v.vf;
+        });
     }
 
     // return a command that takes a context including an
@@ -1258,16 +1295,20 @@ class Generator {
     // e.g. (run (toggle :l1) (pause :ms) (toggle :l2))
     //   'pause' will have [l1, ms]
     //   the second 'toggle' will have [l1, ms, l2]
-    res.paramNames = this.variables; // variables become parameter names
-    res.toString = () => `'${commandName}' command`;
+    res.paramNames = Array.from(this.variables.keys());
+    if (command.validation) {
+      res.validation = Array.from(this.variables.values()).map(v => v.validation);
+    }
+    res.toString = () => `${commandName}`;
     return res;
   }
 
   variable(node) {
-    if (this.variables.indexOf(node.name) < 0) {
-      this.variables.push(node.name);
+    let name = node.name, vs = this.variables;
+    if (!vs.has(name)) {
+      vs.set(name, node);
     }
-    return ':' + node.name;
+    return vs.get(name);
   }
 
   value(node) {
@@ -1285,7 +1326,7 @@ class Generator {
 
 //////////////////////////////////////////////////////////////////////////////
 
-let Validator = {
+const Validator = {
 
   validate(command, args) {
     let errors = this.collect(command, args);
@@ -1297,11 +1338,11 @@ let Validator = {
   },
 
   collect(command, args) {
-    let badArity = (exp, act) =>
+    const badArity = (exp, act) =>
       `Bad number of arguments to "${commandName}"; it takes ${exp} but was given ${act}`;
-    let badValue = (i) => {
+    const badValue = (i) => {
       if (args[i] === undefined) return null;
-      return `Bad value "${args[i]}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
+      return `Bad value "${getValue(args[i])}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
     };
 
     let commandName = command.doc ? command.doc.name : command.name;
@@ -1314,7 +1355,7 @@ let Validator = {
 
     let vfs = command.validation || []; // vfs = Validation FunctionS
     let argsErrors = vfs
-      .map((isValid, i) => args.length <= i || isVar(args[i]) || isValid(args[i]) ? null : badValue(i))
+      .map((vf, i) => args.length <= i || isValid(vf, args[i]) ? null : badValue(i))
       .filter(e => e); // filter out 'null', where the validation was successful
     es.push(...argsErrors);
     return es;
@@ -2284,6 +2325,14 @@ const each = vf => {
   return v;
 };
 
+const and = (...vfs) => {
+  vfs = [...new Set(vfs)]; // remove duplicates
+  if (vfs.length === 1) return vfs[0];
+  let v = e => vfs.every(vf => vf(e));
+  v.exp = vfs.map(vf => vf.exp).join(' and ');
+  return v;
+};
+
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
@@ -2296,7 +2345,8 @@ module.exports = {
   isGreaterThanOrEqualZero,
   isPeriod,
   isCommand,
-  each
+  each,
+  and
 };
 
 },{}],8:[function(require,module,exports){
@@ -2321,7 +2371,6 @@ const
   END_OF_INPUT_GAP = 7;
 
 const morseCode = {
-  ' ': ' ',
   // Letters
   'a': '.-',    'i': '..',   'r': '.-.',
   'b': '-...',  'j': '.---', 's': '...',
