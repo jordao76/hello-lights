@@ -41,6 +41,14 @@ const each = vf => {
   return v;
 };
 
+const and = (...vfs) => {
+  vfs = [...new Set(vfs)]; // remove duplicates
+  if (vfs.length === 1) return vfs[0];
+  let v = e => vfs.every(vf => vf(e));
+  v.exp = vfs.map(vf => vf.exp).join(' and ');
+  return v;
+};
+
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
@@ -53,5 +61,6 @@ module.exports = {
   isGreaterThanOrEqualZero,
   isPeriod,
   isCommand,
-  each
+  each,
+  and
 };

@@ -122,7 +122,7 @@ describe 'Commands', () =>
       go.doc.name.should.equal 'go'
       go.doc.desc.should.equal 'Just go.'
       go.paramNames.should.deep.equal ['direction']
-      #TODO go.validations.should.deep.equal [@isDirection]
+      go.validation.should.deep.equal [@isDirection]
       # execute
       await @exec 'go left'
       @move.calledOnceWith(@ctx, ['left']).should.be.true

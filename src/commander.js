@@ -193,8 +193,12 @@ class Commander {
       return;
     }
     let paramNames = command.paramNames, params = '';
+    const validationText = i => {
+      if (!command.validation) return '';
+      return ` (${command.validation[i].exp})`;
+    };
     if (paramNames && paramNames.length > 0) {
-      params = ' ' + paramNames.map(n => ':' + n).join(' ');
+      params = ' ' + paramNames.map((n, i) => ':' + n + validationText(i)).join(' ');
     }
     this.logger.log(`${command.doc.name}${params}`);
     this.logger.log(command.doc.desc);
