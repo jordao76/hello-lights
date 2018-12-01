@@ -1,8 +1,9 @@
 require '../setup-unhandled-rejection'
-parser = require '../../src/parsing/command-peg-parser'
-{Analyzer} = require '../../src/parsing/command-analyzer'
+{StripLocation} = require './strip-location'
+parser = require '../../src/commands/peg-parser'
+{Analyzer} = require '../../src/commands/analyzer'
 _and = require('../../src/parsing/validation')['and']
-require('chai').should()
+should = require('chai').should()
 sinon = require('sinon')
 
 describe 'Command Analyzer', () ->
@@ -32,7 +33,9 @@ describe 'Command Analyzer', () ->
     @commands = { @turn, @move, @do }
 
     # analyzer
-    @analyzer = new Analyzer(parser, @commands)
+    stripLocation = new StripLocation
+    @analyzer = new Analyzer(@commands)
+    @analyze = (text) => stripLocation.process @analyzer.analyze parser.parse text
 
   it 'call a command with an argument', () ->
     exp = [
@@ -42,7 +45,7 @@ describe 'Command Analyzer', () ->
       args: [ type: 'value', value: 'north', param: 'direction' ]
       params: []
     ]
-    act = @analyzer.analyze 'turn north'
+    act = @analyze 'turn north'
     act.should.deep.equal exp
     @isValidForTurn.calledOnceWith('north').should.be.true
     @analyzer.errors.should.deep.equal []
@@ -56,11 +59,13 @@ describe 'Command Analyzer', () ->
       args: [ type: 'value', value: 'forth', param: 'direction' ]
       params: []
     ]
-    act = @analyzer.analyze 'turn forth'
+    act = @analyze 'turn forth'
     act.should.deep.equal exp
     @isValidForTurn.calledOnceWith('forth').should.be.true
     @analyzer.errors.should.deep.equal [
-      'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
+      type: 'error'
+      text: 'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
+      loc: '1:6-1:10'
     ]
 
   it 'call a command with more arguments than parameters', () ->
@@ -74,10 +79,14 @@ describe 'Command Analyzer', () ->
       ]
       params: []
     ]
-    act = @analyzer.analyze 'turn north south'
+    act = @analyze 'turn north south'
     act.should.deep.equal exp
     @isValidForTurn.calledOnceWith('north').should.be.true
-    @analyzer.errors.should.deep.equal ['Bad number of arguments to "turn": it takes 1 but was given 2']
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Bad number of arguments to "turn": it takes 1 but was given 2'
+      loc: '1:1-1:16'
+    ]
 
   it 'call a command with less arguments than parameters', () ->
     exp = [
@@ -87,9 +96,13 @@ describe 'Command Analyzer', () ->
       args: []
       params: []
     ]
-    act = @analyzer.analyze 'turn'
+    act = @analyze 'turn'
     act.should.deep.equal exp
-    @analyzer.errors.should.deep.equal ['Bad number of arguments to "turn": it takes 1 but was given 0']
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Bad number of arguments to "turn": it takes 1 but was given 0'
+      loc: '1:1-1:4'
+    ]
 
   it 'call a command that does not exist', () ->
     exp = [
@@ -97,10 +110,14 @@ describe 'Command Analyzer', () ->
       args: [ type: 'value', value: 'north' ]
       params: []
     ]
-    act = @analyzer.analyze 'burn north'
+    act = @analyze 'burn north'
     act.should.deep.equal exp
     @isValidForTurn.callCount.should.equal 0
-    @analyzer.errors.should.deep.equal ['Command not found: "burn"']
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Command not found: "burn"'
+      loc: '1:1-1:10'
+    ]
 
   it 'call a command that does not exist, with a valid nested command', () ->
     exp = [
@@ -111,10 +128,14 @@ describe 'Command Analyzer', () ->
       ]
       params: []
     ]
-    act = @analyzer.analyze 'run (turn north)'
+    act = @analyze 'run (turn north)'
     act.should.deep.equal exp
     @isValidForTurn.calledOnceWith('north').should.be.true
-    @analyzer.errors.should.deep.equal ['Command not found: "run"']
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Command not found: "run"'
+      loc: '1:1-1:16'
+    ]
 
   it 'call a command that does not exist, with an invalid but existing nested command', () ->
     @isValidForTurn.returns false
@@ -126,21 +147,29 @@ describe 'Command Analyzer', () ->
       ]
       params: []
     ]
-    act = @analyzer.analyze 'run (turn forth)'
+    act = @analyze 'run (turn forth)'
     act.should.deep.equal exp
     @isValidForTurn.calledOnceWith('forth').should.be.true
     @analyzer.errors.should.deep.equal [
-      'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
-      'Command not found: "run"'
+      {
+        type: 'error'
+        text: 'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
+        loc: '1:11-1:15'
+      }
+      {
+        type: 'error'
+        text: 'Command not found: "run"'
+        loc: '1:1-1:16'
+      }
     ]
 
   it 'call a command using a variable', () ->
     exp = [
       type: 'command', name: 'turn', value: @turn
       args: [ type: 'variable', name: 'where', param: 'direction' ]
-      params: [ name: 'where', validate: @isValidForTurn ]
+      params: [ type: 'param', name: 'where', validate: @isValidForTurn ]
     ]
-    act = @analyzer.analyze 'turn :where'
+    act = @analyze 'turn :where'
     act.should.deep.equal exp
     @isValidForTurn.callCount.should.equal 0
     @analyzer.errors.should.deep.equal []
@@ -155,7 +184,7 @@ describe 'Command Analyzer', () ->
       ]
       params: []
     ]
-    act = @analyzer.analyze 'do 1 2 3'
+    act = @analyze 'do 1 2 3'
     act.should.deep.equal exp
     @isValidForDo.calledWith(1).should.be.true
     @isValidForDo.calledWith(2).should.be.true
@@ -172,14 +201,22 @@ describe 'Command Analyzer', () ->
       ]
       params: []
     ]
-    act = @analyzer.analyze 'do 1 2'
+    act = @analyze 'do 1 2'
     act.should.deep.equal exp
     @isValidForDo.calledWith(1).should.be.true
     @isValidForDo.calledWith(2).should.be.true
     @isValidForDo.callCount.should.equal 2
     @analyzer.errors.should.deep.equal [
-      'Bad value "1" to "do" parameter 1 ("rest"), must be a good value'
-      'Bad value "2" to "do" parameter 1 ("rest"), must be a good value'
+      {
+        type: 'error'
+        text: 'Bad value "1" to "do" parameter 1 ("rest"), must be a good value'
+        loc: '1:4-1:4'
+      }
+      {
+        type: 'error'
+        text: 'Bad value "2" to "do" parameter 1 ("rest"), must be a good value'
+        loc: '1:6-1:6'
+      }
     ]
 
   it 'call a command using variables for a rest parameter', () ->
@@ -190,11 +227,11 @@ describe 'Command Analyzer', () ->
         { type: 'variable', name: 'to-do', param: 'rest' }
       ]
       params: [
-        { name: 'what', validate: @isValidForDo }
-        { name: 'to-do', validate: @isValidForDo }
+        { type: 'param', name: 'what', validate: @isValidForDo }
+        { type: 'param', name: 'to-do', validate: @isValidForDo }
       ]
     ]
-    act = @analyzer.analyze 'do :what :to-do'
+    act = @analyze 'do :what :to-do'
     act.should.deep.equal exp
     @isValidForDo.callCount.should.equal 0
     @analyzer.errors.should.deep.equal []
@@ -206,9 +243,9 @@ describe 'Command Analyzer', () ->
         type: 'command', name: 'turn', value: @turn, param: 'rest'
         args: [ type: 'variable', name: 'where', param: 'direction' ]
       ]
-      params: [ name: 'where', validate: @isValidForTurn ]
+      params: [ type: 'param', name: 'where', validate: @isValidForTurn ]
     ]
-    act = @analyzer.analyze 'do (turn :where)'
+    act = @analyze 'do (turn :where)'
     act.should.deep.equal exp
     @isValidForTurn.callCount.should.equal 0
     @isValidForDo.calledOnceWith(@turn).should.be.true
@@ -228,11 +265,11 @@ describe 'Command Analyzer', () ->
         }
       ]
       params: [
-        { name: 'where', validate: @isValidForTurn }
-        { name: 'amount', validate: @isValidForMove }
+        { type: 'param', name: 'where', validate: @isValidForTurn }
+        { type: 'param', name: 'amount', validate: @isValidForMove }
       ]
     ]
-    act = @analyzer.analyze 'do (turn :where) (move :amount)'
+    act = @analyze 'do (turn :where) (move :amount)'
     act.should.deep.equal exp
     @isValidForTurn.callCount.should.equal 0
     @isValidForMove.callCount.should.equal 0
@@ -255,7 +292,7 @@ describe 'Command Analyzer', () ->
         }
       ]
     ]
-    act = @analyzer.analyze 'do (turn :where) (move :where)'
+    act = @analyze 'do (turn :where) (move :where)'
     params = act[0].params # save params for later
     delete act[0].params # don't compare with params
     act.should.deep.equal exp
@@ -279,29 +316,33 @@ describe 'Command Analyzer', () ->
       {
         type: 'command', name: 'turn', value: @turn
         args: [ type: 'variable', name: 'where', param: 'direction' ]
-        params: [ name: 'where', validate: @isValidForTurn ]
+        params: [ type: 'param', name: 'where', validate: @isValidForTurn ]
       }
       {
         type: 'command', name: 'move', value: @move
         args: [ type: 'variable', name: 'where', param: 'how-much' ]
-        params: [ name: 'where', validate: @isValidForMove ]
+        params: [ type: 'param', name: 'where', validate: @isValidForMove ]
       }
     ]
-    act = @analyzer.analyze '(turn :where) (move :where)'
+    act = @analyze '(turn :where) (move :where)'
     act.should.deep.equal exp
     @isValidForTurn.callCount.should.equal 0
     @isValidForMove.callCount.should.equal 0
     @analyzer.errors.should.deep.equal []
 
+  it 'null "nodes", when a syntax error occurs in the underlying parser', () ->
+    act = @analyzer.analyze null
+    should.not.exist act
+
   describe 'def', () ->
 
-    it 'define a command', () ->
+    xit 'define a command', () ->
       @commands.def = # TODO: intrinsic to the analyser
         name: 'def'
         isMacro: yes # TODO?
         params: [
-          { name: 'name', validate: () -> yes }
-          { name: 'command', validate: () -> yes }
+          { type: 'param', name: 'name', validate: () -> yes }
+          { type: 'param', name: 'command', validate: () -> yes }
         ]
       exp = [ # TODO: desired structure?
         type: 'define', name: 'turn-north'
@@ -323,7 +364,7 @@ describe 'Command Analyzer', () ->
           }
         ]
       ]
-      act = @analyzer.analyze 'def turn-north (turn north)'
+      act = @analyze 'def turn-north (turn north)'
       act.should.deep.equal exp
       @isValidForTurn.calledOnceWith('north').should.be.true
       # TODO @commands['turn-north'].should.equal exp[0]
@@ -332,14 +373,20 @@ describe 'Command Analyzer', () ->
     xit 'define a command with a parameter', () ->
       exp = [
         type: 'define', name: 'turn-2'
-        params: [ name: 'where', validate: @isValidForTurn ]
+        params: [ type: 'param', name: 'where', validate: @isValidForTurn ]
         value: [
           type: 'command', name: 'turn', value: @turn
           args: [ type: 'variable', name: 'where', param: 'direction' ]
         ]
       ]
-      act = @analyzer.analyze 'def turn-2 (turn :where)'
+      act = @analyze 'def turn-2 (turn :where)'
       act.should.deep.equal exp
       @isValidForTurn.callCount.should.equal 0
       @commands['turn-2'].should.equal exp[0]
       @analyzer.errors.should.deep.equal []
+
+    xit 'defined command name cannot be a number', () ->
+    xit 'defined command name cannot be a variable', () ->
+    xit 'define must be at the top level', () ->
+    xit 'defined command validation', () ->
+    xit 'defined command as a variable', () ->

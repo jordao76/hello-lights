@@ -14,6 +14,7 @@
     "doc": "opn web/doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
     "peg": "pegjs -o src/parsing/command-peg-parser.js src/parsing/command-grammar.pegjs",
+    "postpeg": "pegjs -o src/commands/peg-parser.js src/commands/grammar.pegjs",
     "mocha-solo": "mocha --require coffeescript/register",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
     "pretest": "npm run peg",
@@ -53,7 +54,8 @@
   },
   "nyc": {
     "exclude": [
-      "src/parsing/command-peg-parser.js"
+      "src/parsing/command-peg-parser.js",
+      "src/commands/peg-parser.js"
     ]
   }
 }

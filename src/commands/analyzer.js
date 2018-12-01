@@ -1,21 +1,21 @@
-const {and} = require('./validation');
+const {and} = require('../parsing/validation');
 
 /////////////////////////////////////////////////////////////////////////////
 
 class Analyzer {
 
-  constructor(parser, commands) {
-    this.parser = parser;
+  constructor(commands) {
     this.commands = commands;
   }
 
-  analyze(text) {
+  analyze(nodes) {
     this.errors = [];
-    let nodes = this.parser.parse(text);
+    if (!nodes) return null;
     return nodes.map(node => {
       this.params = [];
       node = this.recur(node);
       node.params = this.params;
+      delete this.params;
       return node;
     });
   }
@@ -25,9 +25,6 @@ class Analyzer {
   }
 
   command(node) {
-    // rename params -> args // TODO change the parser!
-    node.args = node.params; delete node.params;
-
     // recurse on the command arguments
     node.args.forEach(arg => this.recur(arg));
 
@@ -45,12 +42,20 @@ class Analyzer {
   variable(node) {
     let param = this.params.find(p => p.name === node.name);
     if (!param) {
-      this.params.push({ name: node.name });
+      this.params.push({
+        type: 'param',
+        name: node.name,
+        uses: [node.loc] // uses: places where the param is used
+      });
+    } else {
+      param.uses.push(node.loc);
     }
     return node;
   }
 
 }
+
+/////////////////////////////////////////////////////////////////////////////
 
 class Validator {
 
@@ -64,7 +69,7 @@ class Validator {
     let name = node.name;
 
     let command = this.commands[name];
-    if (!command) return [badCommand(name)];
+    if (!command) return [badCommand(name, node.loc)];
     node.value = command;
 
     let args = node.args;
@@ -74,7 +79,7 @@ class Validator {
     // check arity
     let hasRest = params.length > 0 && params[params.length - 1].isRest;
     if ((!hasRest && params.length !== args.length) || (hasRest && params.length > args.length)) {
-      errors.push(badArity(name, params.length, args.length));
+      errors.push(badArity(name, params.length, args.length, node.loc));
     }
 
     // check arguments against the parameters
@@ -95,11 +100,10 @@ class Validator {
 
   _validateArg(arg, param, i, j) {
     arg.param = param.name;
-    if (isVar(arg)) {
+    if (arg.type === 'variable') {
       this._combine(arg.name, param.validate);
-    }
-    else if (!isValid(param.validate, arg)) {
-      return badValue(this.node, i, j);
+    } else if (!param.validate(arg.value)) {
+      return badValue(this.node, i, j, arg.loc);
     }
   }
 
@@ -111,29 +115,25 @@ class Validator {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Argument utils
-/////////////////////////////////////////////////////////////////////////////
-
-const isVar = a => a && a.type === 'variable';
-
-const isValid = (validate, a) => {
-  if (!a) return false;
-  return validate(a.value);
-};
-
-/////////////////////////////////////////////////////////////////////////////
 // Errors
 /////////////////////////////////////////////////////////////////////////////
 
-const badCommand = (name) => `Command not found: "${name}"`;
+const badCommand = (name, loc) => ({
+  type: 'error', loc,
+  text: `Command not found: "${name}"`
+});
 
-const badArity = (name, exp, act) =>
-  `Bad number of arguments to "${name}": it takes ${exp} but was given ${act}`;
+const badArity = (name, exp, act, loc) => ({
+  type: 'error', loc,
+  text: `Bad number of arguments to "${name}": it takes ${exp} but was given ${act}`
+});
 
-const badValue = (node, i, j) => {
+const badValue = (node, i, j, loc) => {
   let arg = node.args[j], param = node.value.params[i];
-  if (arg === undefined) return null;
-  return `Bad value "${arg.value}" to "${node.name}" parameter ${i+1} ("${param.name}"), must be ${param.validate.exp}`;
+  return {
+    type: 'error', loc,
+    text: `Bad value "${arg.value}" to "${node.name}" parameter ${i+1} ("${param.name}"), must be ${param.validate.exp}`
+  };
 };
 
 /////////////////////////////////////////////////////////////////////////////
