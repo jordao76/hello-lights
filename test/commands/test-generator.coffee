@@ -98,3 +98,7 @@ describe 'Command Generator', () ->
     moveCmd @ctx # move(@ctx, [2])
     @turn.calledOnceWith(@ctx, [1]).should.be.true
     @move.calledOnceWith(@ctx, [2]).should.be.true
+
+  it 'null "nodes"', () ->
+    act = @generator.generate null
+    should.not.exist act

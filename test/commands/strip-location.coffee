@@ -1,7 +1,7 @@
 # strips location information from a parse tree
 class StripLocation
 
-  process: (nodes) -> @recur node for node in nodes
+  process: (nodes) -> @recur node for node in nodes if nodes
 
   recur: (node) -> @[node.type] node
 

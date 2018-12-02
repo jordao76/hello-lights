@@ -11,13 +11,18 @@ class Analyzer {
   analyze(nodes) {
     this.errors = [];
     if (!nodes) return null;
-    return nodes.map(node => {
+    nodes = nodes.map(node => {
+      this.root = node;
       this.params = [];
       node = this.recur(node);
+      if (!node) return null;
       node.params = this.params;
-      delete this.params;
       return node;
-    });
+    }).filter(node => !!node); // macros can remove the node by returning null
+    delete this.params;
+    delete this.root;
+    if (nodes.length === 0) return null;
+    return nodes;
   }
 
   recur(node) {
@@ -26,13 +31,29 @@ class Analyzer {
 
   command(node) {
     // recurse on the command arguments
-    node.args.forEach(arg => this.recur(arg));
+    node.args = node.args
+      .map(arg => this.recur(arg))
+      .filter(arg => !!arg); // macros can remove the node by returning null
 
     // validate the command node
     let errors = new Validator(this.commands, this.params).validate(node);
     this.errors.push(...errors);
 
+    // check and run if it's a macro
+    if (errors.length === 0 && node.value.isMacro) {
+      return this.runMacro(node);
+    }
+
     return node;
+  }
+
+  runMacro(node) {
+    let macro = node.value;
+    return macro({
+      root: this.root,
+      node: node,
+      commands: this.commands
+    });
   }
 
   value(node) {

@@ -334,12 +334,49 @@ describe 'Command Analyzer', () ->
     act = @analyzer.analyze null
     should.not.exist act
 
+  describe 'macros', () ->
+
+    beforeEach () ->
+      @macro = sinon.stub()
+      @macro.name = 'macro'
+      @macro.isMacro = yes
+      @macro.params = []
+      @commands.macro = @macro
+
+    it 'should be passed the context of the parse tree: node, root node and commands', () ->
+      @macro.returns null # removes itself from the tree
+      act = @analyze 'macro'
+      should.not.exist(act) # nothing left on the tree
+      @macro.callCount.should.equal 1
+      macroArg = @macro.getCall(0).args[0]
+      macroArg.commands.should.deep.equal @commands
+      macroArg.root.type.should.equal 'command'
+      macroArg.root.name.should.equal 'macro'
+      macroArg.node.type.should.equal 'command'
+      macroArg.node.name.should.equal 'macro'
+
+    it 'its return node gets added to the tree in its place', () ->
+      @macro.returns { type: 'value', name: 'anything' }
+      act = @analyze 'do (macro)'
+      act.should.deep.equal [
+        type: 'command', name: 'do', value: @do, params: []
+        args: [ type: 'value', name: 'anything', param: 'rest' ]
+      ]
+
+    it 'removes itself as a nested node', () ->
+      @macro.returns null # removes itself
+      act = @analyze 'do (macro)'
+      act.should.deep.equal [
+        type: 'command', name: 'do', value: @do, params: []
+        args: [] # removed from here
+      ]
+
   describe 'def', () ->
 
     xit 'define a command', () ->
-      @commands.def = # TODO: intrinsic to the analyser
+      @commands.def =
         name: 'def'
-        isMacro: yes # TODO?
+        isMacro: yes
         params: [
           { type: 'param', name: 'name', validate: () -> yes }
           { type: 'param', name: 'command', validate: () -> yes }
