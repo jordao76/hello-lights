@@ -110,21 +110,23 @@ class Validator {
   }
 
   _validateArgs(node, args, params) {
-    return params
+    let argGroups = params
       .slice(0, args.length) // only parameters for which there are arguments
-      .map((param, i) => param.isRest ? args.slice(i) : [args[i]]) // group arguments per parameter
+      .map((param, i) => param.isRest ? args.slice(i) : [args[i]]); // group arguments per parameter
+    let errors = argGroups
       .map((group, i) => group
-        .map((arg, j) => this._validateArg(arg, params[i], i, j)) // validate each argument group
+        .map(arg => this._validateArg(arg, params[i], i)) // validate each argument group
         .filter(e => !!e)) // only keep validation errors (non null)
       .reduce((acc, val) => acc.concat(val), []); // flatten all errors
+    return errors;
   }
 
-  _validateArg(arg, param, i, j) {
+  _validateArg(arg, param, paramIdx) {
     arg.param = param.name;
     if (arg.type === 'variable') {
       this._combine(arg.name, param.validate);
     } else if (!param.validate(arg.value)) {
-      return badValue(this.node, i, j, arg.loc);
+      return badValue(this.node, paramIdx, arg);
     }
   }
 
@@ -149,11 +151,11 @@ const badArity = (name, exp, act, loc) => ({
   text: `Bad number of arguments to "${name}": it takes ${exp} but was given ${act}`
 });
 
-const badValue = (node, i, j, loc) => {
-  let arg = node.args[j], param = node.value.params[i];
+const badValue = (node, paramIdx, arg) => {
+  let param = node.value.params[paramIdx];
   return {
-    type: 'error', loc,
-    text: `Bad value "${arg.value}" to "${node.name}" parameter ${i+1} ("${param.name}"), must be ${param.validate.exp}`
+    type: 'error', loc: arg.loc,
+    text: `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
   };
 };
 

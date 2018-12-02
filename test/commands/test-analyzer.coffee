@@ -4,7 +4,7 @@ parser = require '../../src/commands/peg-parser'
 {Analyzer} = require '../../src/commands/analyzer'
 _and = require('../../src/parsing/validation')['and']
 should = require('chai').should()
-sinon = require('sinon')
+sinon = require 'sinon'
 
 describe 'Command Analyzer', () ->
 
@@ -17,6 +17,12 @@ describe 'Command Analyzer', () ->
     @isValidForMove.exp = 'a good move'
     @isValidForDo = sinon.stub().returns true
     @isValidForDo.exp = 'a good value'
+    @isValidP1 = sinon.stub().returns true
+    @isValidP1.exp = 'a good P1'
+    @isValidP2 = sinon.stub().returns true
+    @isValidP2.exp = 'a good P2'
+    @isValidP3 = sinon.stub().returns true
+    @isValidP3.exp = 'a good P3'
 
     # commands
     @turn =
@@ -28,9 +34,16 @@ describe 'Command Analyzer', () ->
     @do =
       name: 'do'
       params: [ name: 'rest', validate: @isValidForDo, isRest: yes ]
+    @mixed = # mixed validation
+      name: 'mixed'
+      params: [
+        { name: 'p1', validate: @isValidP1 }
+        { name: 'p2', validate: @isValidP2 }
+        { name: 'p3', validate: @isValidP3, isRest: yes }
+      ]
 
     # symbol table, all known commands
-    @commands = { @turn, @move, @do }
+    @commands = { @turn, @move, @do, @mixed }
 
     # analyzer
     stripLocation = new StripLocation
@@ -334,6 +347,24 @@ describe 'Command Analyzer', () ->
     act = @analyzer.analyze null
     should.not.exist act
 
+  it 'validates multiple arguments', () ->
+    @analyze 'mixed "some value" 42 asdf 43'
+    @analyzer.errors.should.deep.equal []
+    @isValidP1.calledOnceWith('some value').should.be.true
+    @isValidP2.calledOnceWith(42).should.be.true
+    @isValidP3.callCount.should.equal 2
+    @isValidP3.calledWith('asdf').should.be.true
+    @isValidP3.calledWith(43).should.be.true
+
+  it 'validates multiple arguments with errors', () ->
+    @isValidP2.returns false
+    @isValidP3.withArgs(43).returns false
+    @analyze 'mixed "some value" 42 asdf 43'
+    @analyzer.errors.should.deep.equal [
+      { loc: '1:20-1:21', text: 'Bad value "42" to "mixed" parameter 2 ("p2"), must be a good P2', type: 'error' }
+      { loc: '1:28-1:29', text: 'Bad value "43" to "mixed" parameter 3 ("p3"), must be a good P3', type: 'error' }
+    ]
+
   describe 'macros', () ->
 
     beforeEach () ->
@@ -346,7 +377,7 @@ describe 'Command Analyzer', () ->
     it 'should be passed the context of the parse tree: node, root node and commands', () ->
       @macro.returns null # removes itself from the tree
       act = @analyze 'macro'
-      should.not.exist(act) # nothing left on the tree
+      should.not.exist act # nothing left on the tree
       @macro.callCount.should.equal 1
       macroArg = @macro.getCall(0).args[0]
       macroArg.commands.should.deep.equal @commands
@@ -370,60 +401,3 @@ describe 'Command Analyzer', () ->
         type: 'command', name: 'do', value: @do, params: []
         args: [] # removed from here
       ]
-
-  describe 'def', () ->
-
-    xit 'define a command', () ->
-      @commands.def =
-        name: 'def'
-        isMacro: yes
-        params: [
-          { type: 'param', name: 'name', validate: () -> yes }
-          { type: 'param', name: 'command', validate: () -> yes }
-        ]
-      exp = [ # TODO: desired structure?
-        type: 'define', name: 'turn-north'
-        params: []
-        value: [
-          type: 'command', name: 'turn', value: @turn
-          args: [ type: 'value', value: 'north', param: 'direction' ]
-        ]
-      ]
-      exp = [
-        type: 'command', name: 'def'
-        params: []
-        value: @commands.def
-        args: [
-          { type: 'value', value: 'turn-north', param: 'name' }
-          {
-            type: 'command', name: 'turn', value: @turn, param: 'command'
-            args: [ type: 'value', value: 'north', param: 'direction' ]
-          }
-        ]
-      ]
-      act = @analyze 'def turn-north (turn north)'
-      act.should.deep.equal exp
-      @isValidForTurn.calledOnceWith('north').should.be.true
-      # TODO @commands['turn-north'].should.equal exp[0]
-      @analyzer.errors.should.deep.equal []
-
-    xit 'define a command with a parameter', () ->
-      exp = [
-        type: 'define', name: 'turn-2'
-        params: [ type: 'param', name: 'where', validate: @isValidForTurn ]
-        value: [
-          type: 'command', name: 'turn', value: @turn
-          args: [ type: 'variable', name: 'where', param: 'direction' ]
-        ]
-      ]
-      act = @analyze 'def turn-2 (turn :where)'
-      act.should.deep.equal exp
-      @isValidForTurn.callCount.should.equal 0
-      @commands['turn-2'].should.equal exp[0]
-      @analyzer.errors.should.deep.equal []
-
-    xit 'defined command name cannot be a number', () ->
-    xit 'defined command name cannot be a variable', () ->
-    xit 'define must be at the top level', () ->
-    xit 'defined command validation', () ->
-    xit 'defined command as a variable', () ->
