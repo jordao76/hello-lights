@@ -1,18 +1,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 const {isIdentifier, isCommand} = require('../parsing/validation');
+const {Generator} = require('./generator');
 
 /////////////////////////////////////////////////////////////////////////////
 
 function def({root, node, commands}) {
-  let [nameArg, commandArg] = node.args;
-  let name    = nameArg.value
-    , command = commandArg.value;
-  let args = commandArg.args.map(arg => arg.value);
+  let name = node.args[0].value;
+  let commandNode = node.args[1];
 
-  let defined = ctx => command(ctx, args);
-  defined.name = defined.doc = name;
-  commands[name] = defined;
+  let [command] = new Generator().generate([commandNode]);
+  command.name = command.doc = name;
+  command.params = node.params;
+  commands[name] = command;
 
   return null;
 }

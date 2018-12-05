@@ -13,11 +13,8 @@ class Analyzer {
     if (!nodes) return null;
     nodes = nodes.map(node => {
       this.root = node;
-      this.params = [];
-      node = this.recur(node);
-      if (!node) return null;
-      node.params = this.params;
-      return node;
+      this.params = []; // TODO: stack of params, use them for all commands?
+      return this.recur(node);
     }).filter(node => !!node); // macros can remove the node by returning null
     delete this.params;
     delete this.root;
@@ -39,6 +36,9 @@ class Analyzer {
     let errors = new Validator(this.commands, this.params).validate(node);
     this.errors.push(...errors);
 
+    if (node === this.root) {
+      node.params = this.params;
+    }
     // check and run if it's a macro
     if (errors.length === 0 && node.value.isMacro) {
       return this.runMacro(node);
