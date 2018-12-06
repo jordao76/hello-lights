@@ -30,7 +30,10 @@ class Generator {
   command(node) {
     let command = node.value;
     let args = node.args.map(arg => this.recur(arg));
-    return (ctx, vars = []) => command(ctx, resolve(args, vars));
+    return (ctx) => {
+      let {scope = {}} = ctx;
+      return command(ctx, resolve(scope, args));
+    };
   }
 
   value(node) {
@@ -47,10 +50,8 @@ class Generator {
 
 const isVar = arg => arg.type === 'variable';
 
-const resolve = (args, vars) => {
-  let varIdx = 0;
-  return args.map(arg => isVar(arg) ? vars[varIdx++] : arg);
-};
+const resolve = (scope, args) =>
+  args.map(arg => isVar(arg) ? scope[arg.name] : arg);
 
 /////////////////////////////////////////////////////////////////////////////
 

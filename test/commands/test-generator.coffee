@@ -37,7 +37,7 @@ describe 'Command Generator', () ->
     @generator.errors.length.should.equal 0
     act.length.should.equal 1
     cmd = act[0]
-    cmd(@ctx)
+    cmd @ctx
     @turn.calledOnceWith(@ctx, ['north']).should.be.true
 
   it 'call a command with an undefined variable', () ->
@@ -78,7 +78,7 @@ describe 'Command Generator', () ->
     @generator.errors.length.should.equal 0
     act.length.should.equal 1
     cmd = act[0]
-    cmd(@ctx)
+    cmd @ctx
     @do.calledOnceWith(@ctx, [1, 2, 3]).should.be.true
 
   it 'call a command with a rest param and nested commands', () ->

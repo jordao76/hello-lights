@@ -49,11 +49,24 @@ class Analyzer {
 
   runMacro(node) {
     let macro = node.value;
-    return macro({
+    let res = macro({
       root: this.root,
       node: node,
       commands: this.commands
     });
+    if (res) {
+      if (Array.isArray(res) && isError(res[0])) {
+        // multiple errors
+        this.errors.push(...res);
+        return node;
+      }
+      if (isError(res)) {
+        // single error
+        this.errors.push(res);
+        return node;
+      }
+    }
+    return res;
   }
 
   value(node) {
@@ -140,6 +153,8 @@ class Validator {
 /////////////////////////////////////////////////////////////////////////////
 // Errors
 /////////////////////////////////////////////////////////////////////////////
+
+const isError = node => node.type === 'error';
 
 const badCommand = (name, loc) => ({
   type: 'error', loc,

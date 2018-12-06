@@ -401,3 +401,21 @@ describe 'Command Analyzer', () ->
         type: 'command', name: 'do', value: @do, params: []
         args: [] # removed from here
       ]
+
+    it 'returns an error to the analyzer', () ->
+      @macro.returns { type: 'error', text: 'Error message', loc: '1:5-1:9' }
+      act = @analyze 'macro'
+      @analyzer.errors.should.deep.equal [
+        type: 'error', text: 'Error message', loc: '1:5-1:9'
+      ]
+
+    it 'returns multiple errors to the analyzer', () ->
+      @macro.returns [
+        { type: 'error', text: 'Error message', loc: '1:5-1:9' }
+        { type: 'error', text: 'Another error message', loc: '1:5-1:9' }
+      ]
+      act = @analyze 'macro'
+      @analyzer.errors.should.deep.equal [
+        { type: 'error', text: 'Error message', loc: '1:5-1:9' }
+        { type: 'error', text: 'Another error message', loc: '1:5-1:9' }
+      ]

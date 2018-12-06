@@ -51,7 +51,7 @@ describe 'Command Analyzer - define', () ->
       res = cmd @ctx
       @turn.callCount.should.equal 1
       turnCall = @turn.getCall(0)
-      turnCall.args[0].should.deep.equal @ctx
+      turnCall.args[0].should.deep.equal scope: {}
       turnCall.args[1].should.deep.equal ['north']
       res.should.equal 42
 
@@ -73,7 +73,7 @@ describe 'Command Analyzer - define', () ->
       @isValidForTurn.callCount.should.equal 0 # validation only happens when calling "within the language"
       @turn.callCount.should.equal 1
       turnCall = @turn.getCall(0)
-      turnCall.args[0].should.deep.equal @ctx
+      turnCall.args[0].should.deep.equal scope: { where: 'south' }
       turnCall.args[1].should.deep.equal ['south']
       res.should.equal 42
       # check the newly defined command, call it through the language
@@ -99,12 +99,84 @@ describe 'Command Analyzer - define', () ->
       cmd @ctx
       @isValidForTurn.callCount.should.equal 2 # validation already happened on definition
       @turn.callCount.should.equal 2
-      @turn.calledWith(@ctx, ['north']).should.be.true
-      @turn.calledWith(@ctx, ['south']).should.be.true
+      expCtx = scope: {}
+      @turn.calledWith(expCtx, ['north']).should.be.true
+      @turn.calledWith(expCtx, ['south']).should.be.true
 
-    xit 'define a command with nested commands with parameters', () ->
-    xit 'defined command name cannot be a number', () ->
-    xit 'defined command name cannot be a variable', () ->
-    xit 'define must be at the top level', () ->
-    xit 'defined command validation', () ->
-    xit 'defined command as a variable', () ->
+    it 'define a command with nested commands with parameters', () ->
+      act = @analyze 'def turn-m (do (turn :first) (turn :second))'
+      @analyzer.errors.should.deep.equal []
+      should.not.exist act
+      @isValidForTurn.callCount.should.equal 0
+      should.exist @commands['turn-m']
+      # check the newly defined command, call it directly
+      @turn.callCount.should.equal 0
+      cmd = @commands['turn-m']
+      cmd.params.length.should.equal 2
+      cmd @ctx, ['north', 'south']
+      @isValidForTurn.callCount.should.equal 0 # validation only happens "in the language"
+      @turn.callCount.should.equal 2
+      expCtx = scope: { first: 'north', second: 'south' }
+      @turn.calledWith(expCtx, ['north']).should.be.true
+      @turn.calledWith(expCtx, ['south']).should.be.true
+      # check the newly defined command, call it through the language
+      act = @analyze 'turn-m east west'
+      @isValidForTurn.callCount.should.equal 2
+      @isValidForTurn.calledWith('east').should.be.true
+      @isValidForTurn.calledWith('west').should.be.true
+      act.should.deep.equal [
+        type: 'command', name: 'turn-m', params: [], value: cmd
+        args: [
+          { type: 'value', value: 'east', param: 'first' }
+          { type: 'value', value: 'west', param: 'second' }
+        ]
+      ]
+
+    it 'defined command name must not be a number', () ->
+      act = @analyze 'def 42 (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad value "42" to "def" parameter 1 ("name"), must be a valid identifier'
+        loc: '1:5-1:6'
+      ]
+
+    it 'defined command name must not be a variable', () ->
+      act = @analyze 'def :name (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad value ":name" to "def" parameter 1 ("name"), must be a valid identifier'
+        loc: '1:5-1:9'
+      ]
+
+    it 'define must be at the top level', () ->
+      act = @analyze 'do (def turn-2 (turn north))'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: '"def" cannot be nested'
+        loc: '1:5-1:27'
+      ]
+
+    it 'define must be at the top level and must not be a variable', () ->
+      act = @analyze 'do (def :var (turn north))'
+      @analyzer.errors.should.deep.equal [
+        { type: 'error', text: 'Bad value ":var" to "def" parameter 1 ("name"), must be a valid identifier', loc: '1:9-1:12' }
+        { type: 'error', text: '"def" cannot be nested', loc: '1:5-1:25' }
+      ]
+
+    it 'defined command as a variable', () ->
+      act = @analyze 'def generic :cmd'
+      @analyzer.errors.should.deep.equal []
+      should.not.exist act
+      should.exist @commands['generic']
+      # check the newly defined command
+      act = @analyze 'generic (turn north)'
+      @isValidForTurn.calledOnceWith('north').should.be.true
+      act.should.deep.equal [
+        type: 'command', name: 'generic', params: [], value: @commands['generic']
+        args: [
+          type: 'command', name: 'turn', param: 'cmd', value: @turn
+          args: [
+            type: 'value', value: 'north', param: 'direction'
+          ]
+        ]
+      ]
