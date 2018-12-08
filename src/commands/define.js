@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
-const {isIdentifier, isCommand} = require('../parsing/validation');
+const {isIdentifier, isCommand} = require('./validation');
 const {Generator} = require('./generator');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,6 +52,8 @@ const validate = (node, root) => {
   let errors = [];
   if (isVar(nameArg)) {
     errors.push(badVariable(node, 0, nameArg));
+  } else if (nameArg.value === 'def') {
+    errors.push(badRedefine(node, nameArg));
   }
   if (node !== root) {
     errors.push(badPosition(node));
@@ -72,6 +74,12 @@ const badPosition = node => ({
   type: 'error',
   loc: node.loc,
   text: '"def" cannot be nested'
+});
+
+const badRedefine = (node, arg) => ({
+  type: 'error',
+  loc: node.loc,
+  text: `"${arg.value}" cannot be redefined`
 });
 
 /////////////////////////////////////////////////////////////////////////////

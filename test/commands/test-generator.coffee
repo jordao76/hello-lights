@@ -1,7 +1,5 @@
 require '../setup-unhandled-rejection'
-parser = require '../../src/commands/peg-parser'
-{Analyzer} = require '../../src/commands/analyzer'
-{Generator} = require '../../src/commands/generator'
+{Parser, Analyzer, Generator} = require '../../src/commands'
 should = require('chai').should()
 sinon = require('sinon')
 
@@ -27,6 +25,7 @@ describe 'Command Generator', () ->
     @commands = { @turn, @move, @do }
 
     # generator
+    parser = new Parser()
     analyzer = new Analyzer(@commands)
     @generator = new Generator()
     @generate = (text) => @generator.generate analyzer.analyze parser.parse text

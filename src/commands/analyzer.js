@@ -1,4 +1,4 @@
-const {and} = require('../parsing/validation');
+const {and} = require('./validation');
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ class Analyzer {
     if (!nodes) return null;
     nodes = nodes.map(node => {
       this.root = node;
-      this.params = []; // TODO: stack of params, use them for all commands?
+      this.params = [];
       return this.recur(node);
     }).filter(node => !!node); // macros can remove the node by returning null
     delete this.params;
@@ -136,7 +136,7 @@ class Validator {
 
   _validateArg(arg, param, paramIdx) {
     arg.param = param.name;
-    if (arg.type === 'variable') {
+    if (isVar(arg)) {
       this._combine(arg.name, param.validate);
     } else if (!param.validate(arg.value)) {
       return badValue(this.node, paramIdx, arg);
@@ -154,6 +154,7 @@ class Validator {
 // Errors
 /////////////////////////////////////////////////////////////////////////////
 
+const isVar = node => node.type === 'variable';
 const isError = node => node.type === 'error';
 
 const badCommand = (name, loc) => ({

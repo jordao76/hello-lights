@@ -163,6 +163,12 @@ describe 'Command Analyzer - define', () ->
         { type: 'error', text: '"def" cannot be nested', loc: '1:5-1:25' }
       ]
 
+    it 'cannot redefine def', () ->
+      act = @analyze 'def def (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error', text: '"def" cannot be redefined', loc: '1:1-1:20'
+      ]
+
     it 'defined command as a variable', () ->
       act = @analyze 'def generic :cmd'
       @analyzer.errors.should.deep.equal []

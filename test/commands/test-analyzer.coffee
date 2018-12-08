@@ -1,8 +1,6 @@
 require '../setup-unhandled-rejection'
 {StripLocation} = require './strip-location'
-parser = require '../../src/commands/peg-parser'
-{Analyzer} = require '../../src/commands/analyzer'
-_and = require('../../src/parsing/validation')['and']
+{Parser, Analyzer} = require '../../src/commands'
 should = require('chai').should()
 sinon = require 'sinon'
 
@@ -47,6 +45,7 @@ describe 'Command Analyzer', () ->
 
     # analyzer
     stripLocation = new StripLocation
+    parser = new Parser()
     @analyzer = new Analyzer(@commands)
     @analyze = (text) => stripLocation.process @analyzer.analyze parser.parse text
 

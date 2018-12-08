@@ -1,5 +1,5 @@
 require '../setup-unhandled-rejection'
-{Parser} = require '../../src/commands/parser'
+{Parser} = require '../../src/commands'
 {StripLocation} = require './strip-location'
 should = require('chai').should()
 
