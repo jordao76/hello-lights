@@ -35,8 +35,9 @@
     "dev:server": "node dev/lights-server"
   },
   "devDependencies": {
-    "browserify": "^16.2.2",
+    "browserify": "^16.2.3",
     "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
     "coffeelint": "^2.1.0",
     "coffeescript": "^2.3.1",
     "cpy-cli": "^2.0.0",
