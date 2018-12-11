@@ -16,29 +16,101 @@ describe 'Command Interpreter', () ->
     @turn = sinon.stub().returns 42
     @turn.name = 'turn'
     @turn.params = [ name: 'direction', validate: @isValid ]
+    @loop = ({handle, ct}) ->
+      i = 0 # number of loop counts
+      while ++i
+        return i if ct.isCancelled # exit with the loop count if cancelled
+        await handle() # wait for handle() to resolve
+    @loop.name = 'loop'
+    @loop.params = []
 
     # symbol table, all known commands
-    @commands = { @turn }
+    @commands = { @turn, @loop }
 
     # interpreter
     @interpreter = new Interpreter(@commands)
+    @ct = isCancelled: no
 
   it 'call a command', () ->
+    res = await @interpreter.execute 'turn north', {}, @ct
+    res.should.deep.equal [42]
+    @turn.calledOnceWith({@ct}, ['north']).should.be.true
+
+  it 'call with default cancellation token', () ->
+    res = await @interpreter.execute 'turn north', {}
+    res.should.deep.equal [42]
+    @turn.callCount.should.equal 1
+    ctx = @turn.getCall(0).args[0]
+    should.exist ctx.ct
+    ctx.ct.isCancelled.should.be.false
+    @turn.getCall(0).args[1].should.deep.equal ['north']
+
+  it 'call and cancel in the middle of a command execution', () ->
+    resolve = null
+    handle = () -> new Promise((r) -> resolve = r)
+    promise = @interpreter.execute 'loop', {handle}
+    @interpreter.cancel() # cancels the loop
+    @interpreter.ct.isCancelled.should.be.false # cancellation token re-instantiated
+    resolve() # resolves the promise
+    res = await promise
+    res.should.deep.equal [2] # two passes through the loop
+
+  it 'call and cancel external cancellation token', () ->
+    resolve = null
+    handle = () -> new Promise((r) -> resolve = r)
+    ct = { isCancelled: no, cancel: () -> @isCancelled = yes }
+    promise = @interpreter.execute 'loop', {handle}, ct
+    @interpreter.cancel ct # cancels the loop
+    ct.isCancelled.should.be.true # external cancellation token not re-instantiated
+    resolve() # resolves the promise
+    res = await promise
+    res.should.deep.equal [2] # two passes through the loop
+
+  it 'call and cancel the interpreter token directly in the middle of a command execution', () ->
+    resolve = null
+    handle = () -> new Promise((r) -> resolve = r)
+    promise = @interpreter.execute '(loop) (turn north)', {handle}
+    @interpreter.ct.cancel() # cancel directly, bypassing @interpreter.cancel()
+    @interpreter.ct.isCancelled.should.be.true
+    resolve() # resolves the promise
+    res = await promise
+    @interpreter.ct.isCancelled.should.be.false # cancellation token re-instantiated
+    res.should.deep.equal [2] # two passes through the loop
+    @turn.callCount.should.equal 0 # didn't reach '(turn north)'
+
+  it 'call with default context and cancellation token', () ->
     res = await @interpreter.execute 'turn north'
     res.should.deep.equal [42]
-    @turn.calledOnceWith({}, ['north']).should.be.true
+    @turn.callCount.should.equal 1
+    ctx = @turn.getCall(0).args[0]
+    should.exist ctx
+    should.exist ctx.ct
+    ctx.ct.isCancelled.should.be.false
+    @turn.getCall(0).args[1].should.deep.equal ['north']
 
-  it 'call a command with a context', () ->
-    ctx = { anything: 'goes' }
-    res = await @interpreter.execute 'turn north', ctx
+  it 'call with cancelled cancellation token', () ->
+    res = await @interpreter.execute 'turn north', {}, {isCancelled: yes}
+    res.should.deep.equal [] # no results
+    @turn.callCount.should.equal 0
+
+  it 'cancel with cancelled cancellation token', () ->
+    ct = { isCancelled: yes, cancel: sinon.stub() }
+    await @interpreter.execute 'turn north', {}, ct
+    @interpreter.cancel ct
+    ct.cancel.callCount.should.equal 0 # ct.cancel() not called since it was already cancelled
+    @turn.callCount.should.equal 0
+
+  it 'call a command with a context; the cancellation token is added to the context', () ->
+    ctx = {anything: 'goes'}
+    res = await @interpreter.execute 'turn north', ctx, @ct
     res.should.deep.equal [42]
-    @turn.calledOnceWith(ctx, ['north']).should.be.true
+    @turn.calledOnceWith({...ctx, @ct}, ['north']).should.be.true
 
   it 'call multiple commands', () ->
-    res = await @interpreter.execute '(turn north)(turn south)'
+    res = await @interpreter.execute '(turn north)(turn south)', {}, @ct
     res.should.deep.equal [42, 42]
-    @turn.calledWith({}, ['north']).should.be.true
-    @turn.calledWith({}, ['south']).should.be.true
+    @turn.calledWith({@ct}, ['north']).should.be.true
+    @turn.calledWith({@ct}, ['south']).should.be.true
 
   it 'syntax error', () ->
     res = @interpreter.execute '(turn $)'
@@ -53,6 +125,6 @@ describe 'Command Interpreter', () ->
     res.should.be.rejectedWith '1:7-1:12: "where" is not defined'
 
   it 'define and call', () ->
-    res = await @interpreter.execute '(def turning (turn :where)) (turning north)'
+    res = await @interpreter.execute '(def turning (turn :where)) (turning north)', {}, @ct
     res.should.deep.equal [42]
-    @turn.calledWith({ scope: { where: 'north' } }, ['north']).should.be.true
+    @turn.calledWith({ @ct, scope: { where: 'north' } }, ['north']).should.be.true

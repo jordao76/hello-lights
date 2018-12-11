@@ -8,5 +8,6 @@ module.exports = {
   ...require('./analyzer'),
   ...require('./generator'),
   ...require('./interpreter'),
+  ...require('./cancellable'),
   validation: require('./validation')
 };
