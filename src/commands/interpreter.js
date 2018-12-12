@@ -12,7 +12,7 @@ const define = require('./define');
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * Command interpreter.
+ * Command interpreter to execute command strings.
  * @memberof commands
  */
 class Interpreter {
@@ -47,6 +47,7 @@ class Interpreter {
    *   commands' context, together with the cancellation token.
    *   This context cannot have key 'ct', since it would be overwritten anyway.
    * @param {commands.Cancellable} [ct] - Cancellation token.
+   * @throws Throws an error for any syntax or semantic errors in the text.
    * @returns {*[]} Array with the results of the executions of the commands.
    */
   async execute(text, ctx = {}, ct = this.ct) {

@@ -14,15 +14,17 @@ describe 'Command Interpreter', () ->
 
     # commands
     @turn = sinon.stub().returns 42
-    @turn.name = 'turn'
-    @turn.params = [ name: 'direction', validate: @isValid ]
+    @turn.meta =
+      name: 'turn'
+      params: [ name: 'direction', validate: @isValid ]
     @loop = ({handle, ct}) ->
       i = 0 # number of loop counts
       while ++i
         return i if ct.isCancelled # exit with the loop count if cancelled
         await handle() # wait for handle() to resolve
-    @loop.name = 'loop'
-    @loop.params = []
+    @loop.meta =
+      name: 'loop'
+      params: []
 
     # symbol table, all known commands
     @commands = { @turn, @loop }

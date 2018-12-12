@@ -12,14 +12,17 @@ describe 'Command Generator', () ->
 
     # commands
     @turn = sinon.stub()
-    @turn.name = 'turn'
-    @turn.params = [ name: 'direction', validate: @isValid ]
+    @turn.meta =
+      name: 'turn'
+      params: [ name: 'direction', validate: @isValid ]
     @move = sinon.stub()
-    @move.name = 'move'
-    @move.params = [ name: 'how-much', validate: @isValid ]
+    @move.meta =
+      name: 'move'
+      params: [ name: 'how-much', validate: @isValid ]
     @do = sinon.stub()
-    @do.name = 'do'
-    @do.params = [ name: 'rest', validate: @isValid, isRest: yes ]
+    @do.meta =
+      name: 'do'
+      params: [ name: 'rest', validate: @isValid, isRest: yes ]
 
     # symbol table, all known commands
     @commands = { @turn, @move, @do }

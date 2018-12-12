@@ -40,7 +40,7 @@ class Analyzer {
       node.params = this.params;
     }
     // check and run if it's a macro
-    if (errors.length === 0 && node.value.isMacro) {
+    if (errors.length === 0 && node.value.meta.isMacro) {
       return this.runMacro(node);
     }
 
@@ -107,7 +107,7 @@ class Validator {
     node.value = command;
 
     let args = node.args;
-    let params = command.params;
+    let params = command.meta.params;
     let errors = [];
 
     // check arity
@@ -168,7 +168,7 @@ const badArity = (name, exp, act, loc) => ({
 });
 
 const badValue = (node, paramIdx, arg) => {
-  let param = node.value.params[paramIdx];
+  let param = node.value.meta.params[paramIdx];
   return {
     type: 'error', loc: arg.loc,
     text: `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`

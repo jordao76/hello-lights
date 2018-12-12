@@ -24,21 +24,25 @@ describe 'Command Analyzer', () ->
 
     # commands
     @turn =
-      name: 'turn'
-      params: [ name: 'direction', validate: @isValidForTurn ]
+      meta:
+        name: 'turn'
+        params: [ name: 'direction', validate: @isValidForTurn ]
     @move =
-      name: 'move'
-      params: [ name: 'how-much', validate: @isValidForMove ]
+      meta:
+        name: 'move'
+        params: [ name: 'how-much', validate: @isValidForMove ]
     @do =
-      name: 'do'
-      params: [ name: 'rest', validate: @isValidForDo, isRest: yes ]
+      meta:
+        name: 'do'
+        params: [ name: 'rest', validate: @isValidForDo, isRest: yes ]
     @mixed = # mixed validation
-      name: 'mixed'
-      params: [
-        { name: 'p1', validate: @isValidP1 }
-        { name: 'p2', validate: @isValidP2 }
-        { name: 'p3', validate: @isValidP3, isRest: yes }
-      ]
+      meta:
+        name: 'mixed'
+        params: [
+          { name: 'p1', validate: @isValidP1 }
+          { name: 'p2', validate: @isValidP2 }
+          { name: 'p3', validate: @isValidP3, isRest: yes }
+        ]
 
     # symbol table, all known commands
     @commands = { @turn, @move, @do, @mixed }
@@ -368,9 +372,10 @@ describe 'Command Analyzer', () ->
 
     beforeEach () ->
       @macro = sinon.stub()
-      @macro.name = 'macro'
-      @macro.isMacro = yes
-      @macro.params = []
+      @macro.meta =
+        name: 'macro'
+        isMacro: yes
+        params: []
       @commands.macro = @macro
 
     it 'should be passed the context of the parse tree: node, root node and commands', () ->

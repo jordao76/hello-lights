@@ -4,7 +4,7 @@ parser = require '../../src/commands/peg-parser'
 {Analyzer} = require '../../src/commands/analyzer'
 should = require('chai').should()
 sinon = require 'sinon'
-{def} = require '../../src/commands/define'
+{def, define} = require '../../src/commands/define'
 
 describe 'Command Analyzer - define', () ->
 
@@ -16,18 +16,20 @@ describe 'Command Analyzer - define', () ->
 
     # commands
     @turn = sinon.stub().returns 42
-    @turn.name = 'turn'
-    @turn.params = [ name: 'direction', validate: @isValidForTurn ]
+    @turn.meta =
+      name: 'turn'
+      params: [ name: 'direction', validate: @isValidForTurn ]
     @do = (ctx, commands) -> command(ctx) for command in commands
-    @do.name = 'do'
-    @do.params = [
-      name: 'commands'
-      validate: (c) -> typeof c is 'function'
-      isRest: yes
-    ]
+    @do.meta =
+      name: 'do'
+      params: [
+        name: 'commands'
+        validate: (c) -> typeof c is 'function'
+        isRest: yes
+      ]
 
     # symbol table, all known commands
-    @commands = { @turn, @do, def }
+    @commands = { @turn, @do, def, define }
 
     # analyzer
     stripLocation = new StripLocation
@@ -46,8 +48,10 @@ describe 'Command Analyzer - define', () ->
       # check the newly defined command
       @turn.callCount.should.equal 0
       cmd = @commands['turn-north']
-      cmd.params.length.should.equal 0
-      cmd.params.should.deep.equal []
+      cmd.meta.params.length.should.equal 0
+      cmd.meta.params.should.deep.equal []
+      cmd.meta.name.should.equal 'turn-north'
+      cmd.meta.desc.should.equal 'turn-north'
       res = cmd @ctx
       @turn.callCount.should.equal 1
       turnCall = @turn.getCall(0)
@@ -64,8 +68,8 @@ describe 'Command Analyzer - define', () ->
       # check the newly defined command, call it directly
       @turn.callCount.should.equal 0
       cmd = @commands['turn-2']
-      cmd.params.length.should.equal 1
-      cmd.params.should.deep.equal [
+      cmd.meta.params.length.should.equal 1
+      cmd.meta.params.should.deep.equal [
         type: 'param', name: 'where', validate: @isValidForTurn
         uses: ['1:18-1:23']
       ]
@@ -95,7 +99,7 @@ describe 'Command Analyzer - define', () ->
       # check the newly defined command, call it directly
       @turn.callCount.should.equal 0
       cmd = @commands['turn-m']
-      cmd.params.length.should.equal 0
+      cmd.meta.params.length.should.equal 0
       cmd @ctx
       @isValidForTurn.callCount.should.equal 2 # validation already happened on definition
       @turn.callCount.should.equal 2
@@ -112,7 +116,7 @@ describe 'Command Analyzer - define', () ->
       # check the newly defined command, call it directly
       @turn.callCount.should.equal 0
       cmd = @commands['turn-m']
-      cmd.params.length.should.equal 2
+      cmd.meta.params.length.should.equal 2
       cmd @ctx, ['north', 'south']
       @isValidForTurn.callCount.should.equal 0 # validation only happens "in the language"
       @turn.callCount.should.equal 2
@@ -185,4 +189,87 @@ describe 'Command Analyzer - define', () ->
             type: 'value', value: 'north', param: 'direction'
           ]
         ]
+      ]
+
+  describe 'define', () ->
+
+    it 'define a command', () ->
+      act = @analyze 'define turn-north "Turn north" (turn north)'
+      @analyzer.errors.should.deep.equal []
+      should.not.exist act
+      @isValidForTurn.calledOnceWith('north').should.be.true
+      should.exist @commands['turn-north']
+      # check the newly defined command
+      cmd = @commands['turn-north']
+      cmd.meta.params.length.should.equal 0
+      cmd.meta.params.should.deep.equal []
+      cmd.meta.name.should.equal 'turn-north'
+      cmd.meta.desc.should.equal 'Turn north'
+
+    it 'define a command with a parameter', () ->
+      act = @analyze 'define turn-2 "Another turn" (turn :where)'
+      @analyzer.errors.should.deep.equal []
+      should.not.exist act
+      @isValidForTurn.callCount.should.equal 0
+      should.exist @commands['turn-2']
+      # check the newly defined command
+      cmd = @commands['turn-2']
+      cmd.meta.params.length.should.equal 1
+      cmd.meta.params.should.deep.equal [
+        type: 'param', name: 'where', validate: @isValidForTurn
+        uses: ['1:36-1:41']
+      ]
+      cmd.meta.name.should.equal 'turn-2'
+      cmd.meta.desc.should.equal 'Another turn'
+
+    it 'define a command with nested commands', () ->
+      act = @analyze 'define turn-m "Multiple turns" (do (turn north) (turn south))'
+      @analyzer.errors.should.deep.equal []
+      should.not.exist act
+      @isValidForTurn.callCount.should.equal 2
+      @isValidForTurn.calledWith('north').should.be.true
+      @isValidForTurn.calledWith('south').should.be.true
+      should.exist @commands['turn-m']
+      # check the newly defined command
+      cmd = @commands['turn-m']
+      cmd.meta.params.length.should.equal 0
+      cmd.meta.name.should.equal 'turn-m'
+      cmd.meta.desc.should.equal 'Multiple turns'
+
+    it 'defined command name must not be a number', () ->
+      act = @analyze 'define 42 "The answer" (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad value "42" to "define" parameter 1 ("name"), must be a valid identifier'
+        loc: '1:8-1:9'
+      ]
+
+    it 'defined command name must not be a variable', () ->
+      act = @analyze 'define :name "Description" (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad value ":name" to "define" parameter 1 ("name"), must be a valid identifier'
+        loc: '1:8-1:12'
+      ]
+
+    it 'define description must not be a variable', () ->
+      act = @analyze 'define turn-north :doc (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad value ":doc" to "define" parameter 2 ("description"), must not be a variable'
+        loc: '1:19-1:22'
+      ]
+
+    it 'define must be at the top level', () ->
+      act = @analyze 'do (define turn-2 "Turn 2" (turn north))'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: '"define" cannot be nested'
+        loc: '1:5-1:39'
+      ]
+
+    it 'cannot redefine define', () ->
+      act = @analyze 'def define (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error', text: '"define" cannot be redefined', loc: '1:1-1:23'
       ]
