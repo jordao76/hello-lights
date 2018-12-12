@@ -84,6 +84,24 @@ describe 'Command Analyzer', () ->
       loc: '1:6-1:10'
     ]
 
+  it 'call a command with a command argument that fails validation', () ->
+    @isValidForTurn.returns false
+    exp = [
+      type: 'command', name: 'turn', value: @turn, params: []
+      args: [
+        type: 'command', name: 'do', value: @do, param: 'direction'
+        args: [ type: 'value', value: 1, param: 'rest' ]
+      ]
+    ]
+    act = @analyze 'turn (do 1)'
+    act.should.deep.equal exp
+    @isValidForTurn.calledOnceWith(@do).should.be.true
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Bad call to "do" for "turn" parameter 1 ("direction"), must be a good turn'
+      loc: '1:7-1:10'
+    ]
+
   it 'call a command with more arguments than parameters', () ->
     exp = [
       type: 'command'

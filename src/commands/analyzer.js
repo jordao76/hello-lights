@@ -169,10 +169,11 @@ const badArity = (name, exp, act, loc) => ({
 
 const badValue = (node, paramIdx, arg) => {
   let param = node.value.meta.params[paramIdx];
-  return {
-    type: 'error', loc: arg.loc,
-    text: `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
-  };
+  let isCommand = !!arg.value.meta; // commands have a "meta" property
+  let text = isCommand
+    ? `Bad call to "${arg.value.meta.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`;
+  return { type: 'error', loc: arg.loc, text };
 };
 
 /////////////////////////////////////////////////////////////////////////////
