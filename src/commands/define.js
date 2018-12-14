@@ -28,8 +28,13 @@ function exec({root, node, commands, descIdx, commandIdx}) {
     params.forEach((param, i) => scope[param.name] = args[i]);
     return command({...ctx, scope});
   };
-  res.meta = { name, desc, params };
+
   commands[name] = res;
+
+  res.meta = { name, desc, params };
+  if (commandNode.type === 'command') {
+    res.meta.returns = commandNode.value.meta.returns;
+  }
 
   return null;
 }
@@ -80,45 +85,45 @@ def.meta = {
 
 const isVar = arg => arg.type === 'variable';
 
-const validate = (node, root, descIdx) => {
+function validate(node, root, descIdx) {
   let errors = [];
+  validatePosition(node, root, errors);
+  validateName(node, errors);
+  validateDescription(node, descIdx, errors);
+  return errors;
+}
 
+function validateName(node, errors) {
   let nameArg = node.args[0];
   if (isVar(nameArg)) {
-    errors.push(badVariableAsName(node, nameArg));
-  } else if (nameArg.value === 'def' || nameArg.value === 'define') {
+    errors.push(badVariable(node, nameArg, 0));
+  } else if (nameArg.value === def.meta.name || nameArg.value === define.meta.name) {
     errors.push(badRedefine(node, nameArg));
   }
+}
 
-  if (descIdx > 0) {
-    let descArg = node.args[descIdx];
-    if (isVar(descArg)) {
-      errors.push(badVariableAsDesc(node, descArg));
-    }
+function validateDescription(node, descIdx, errors) {
+  if (descIdx === 0) return; // no description, just a name
+  let descArg = node.args[descIdx];
+  if (isVar(descArg)) {
+    errors.push(badVariable(node, descArg, descIdx));
   }
+}
 
+function validatePosition(node, root, errors) {
   if (node !== root) {
     errors.push(badPosition(node));
   }
+}
 
-  return errors;
-};
+/////////////////////////////////////////////////////////////////////////////
 
-const badVariableAsName = (node, arg) => {
-  let param = def.meta.params[0]; // "name" param, both "def" and "define" have the same
+const badVariable = (node, arg, paramIdx) => {
+  let param = define.meta.params[paramIdx];
   return {
     type: 'error',
     loc: arg.loc,
-    text: `Bad value ":${arg.name}" to "${node.name}" parameter 1 ("${param.name}"), must be ${param.validate.exp}`
-  };
-};
-
-const badVariableAsDesc = (node, arg) => {
-  let param = define.meta.params[1]; // "description" param
-  return {
-    type: 'error',
-    loc: arg.loc,
-    text: `Bad value ":${arg.name}" to "${node.name}" parameter 2 ("${param.name}"), must not be a variable`
+    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
   };
 };
 

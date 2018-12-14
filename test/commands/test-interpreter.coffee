@@ -126,6 +126,12 @@ describe 'Command Interpreter', () ->
     res = @interpreter.execute '(turn :where)'
     res.should.be.rejectedWith '1:7-1:12: "where" is not defined'
 
+  it 'define and call later', () ->
+    await @interpreter.execute 'def turning (turn :where)'
+    res = await @interpreter.execute 'turning north', {}, @ct
+    res.should.deep.equal [42]
+    @turn.calledWith({ @ct, scope: { where: 'north' } }, ['north']).should.be.true
+
   it 'define and call', () ->
     res = await @interpreter.execute '(def turning (turn :where)) (turning north)', {}, @ct
     res.should.deep.equal [42]

@@ -5,6 +5,7 @@ parser = require '../../src/commands/peg-parser'
 should = require('chai').should()
 sinon = require 'sinon'
 {def, define} = require '../../src/commands/define'
+{isCommand, isIdentifier, isString} = require '../../src/commands/validation'
 
 describe 'Command Analyzer - define', () ->
 
@@ -19,17 +20,24 @@ describe 'Command Analyzer - define', () ->
     @turn.meta =
       name: 'turn'
       params: [ name: 'direction', validate: @isValidForTurn ]
+
+    @name = () -> 'name'
+    @name.meta = name: 'name', params: [], returns: isIdentifier
+
+    @description = () -> 'a description'
+    @description.meta = name: 'description', params: [], returns: isString
+
     @do = (ctx, commands) -> command(ctx) for command in commands
     @do.meta =
       name: 'do'
       params: [
         name: 'commands'
-        validate: (c) -> typeof c is 'function'
+        validate: isCommand
         isRest: yes
       ]
 
     # symbol table, all known commands
-    @commands = { @turn, @do, def, define }
+    @commands = { @turn, @do, @name, @description, def, define }
 
     # analyzer
     stripLocation = new StripLocation
@@ -152,6 +160,14 @@ describe 'Command Analyzer - define', () ->
         loc: '1:5-1:9'
       ]
 
+    it 'defined command name must not be an identifier-returning command', () ->
+      act = @analyze 'def (name) (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad call to "name" for "def" parameter 1 ("name"), must be a valid identifier'
+        loc: '1:6-1:9'
+      ]
+
     it 'define must be at the top level', () ->
       act = @analyze 'do (def turn-2 (turn north))'
       @analyzer.errors.should.deep.equal [
@@ -163,8 +179,8 @@ describe 'Command Analyzer - define', () ->
     it 'define must be at the top level and must not be a variable', () ->
       act = @analyze 'do (def :var (turn north))'
       @analyzer.errors.should.deep.equal [
-        { type: 'error', text: 'Bad value ":var" to "def" parameter 1 ("name"), must be a valid identifier', loc: '1:9-1:12' }
         { type: 'error', text: '"def" cannot be nested', loc: '1:5-1:25' }
+        { type: 'error', text: 'Bad value ":var" to "def" parameter 1 ("name"), must be a valid identifier', loc: '1:9-1:12' }
       ]
 
     it 'cannot redefine def', () ->
@@ -256,8 +272,16 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'define turn-north :doc (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value ":doc" to "define" parameter 2 ("description"), must not be a variable'
+        text: 'Bad value ":doc" to "define" parameter 2 ("description"), must be a string'
         loc: '1:19-1:22'
+      ]
+
+    it 'defined description must not be a string-returning command', () ->
+      act = @analyze 'define turn-north (description) (turn north)'
+      @analyzer.errors.should.deep.equal [
+        type: 'error'
+        text: 'Bad call to "description" for "define" parameter 2 ("description"), must be a string'
+        loc: '1:20-1:30'
       ]
 
     it 'define must be at the top level', () ->

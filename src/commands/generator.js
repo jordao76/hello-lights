@@ -1,5 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
+const {isCommand} = require('./validation');
+
+/////////////////////////////////////////////////////////////////////////////
+
 class Generator {
 
   generate(nodes) {
@@ -29,11 +33,9 @@ class Generator {
 
   command(node) {
     let command = node.value;
+    let params = command.meta.params;
     let args = node.args.map(arg => this.recur(arg));
-    return (ctx) => {
-      let {scope = {}} = ctx;
-      return command(ctx, resolve(scope, args));
-    };
+    return ctx => command(ctx, resolve(ctx, params, args));
   }
 
   value(node) {
@@ -50,8 +52,27 @@ class Generator {
 
 const isVar = arg => arg.type === 'variable';
 
-const resolve = (scope, args) =>
-  args.map(arg => isVar(arg) ? scope[arg.name] : arg);
+const resolve = (ctx, params, args) =>
+  args.map((arg, i) => {
+
+    if (isVar(arg)) {
+      // lookup a variable in the scope
+      return ctx.scope[arg.name];
+    }
+
+    if (isCommand(arg)) {
+      // execute a command if the param doesn't expect one,
+      // which means the return value from the command is what should be
+      // passed to the param
+      let l = params.length;
+      let param = i < l ? params[i] : params[l - 1]; // take care of a rest parameter
+      if (param.validate !== isCommand) {
+        return arg(ctx); // no 'await', the command must not be asynchronous!
+      }
+    }
+
+    return arg;
+  });
 
 /////////////////////////////////////////////////////////////////////////////
 

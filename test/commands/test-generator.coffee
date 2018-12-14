@@ -1,5 +1,6 @@
 require '../setup-unhandled-rejection'
 {Parser, Analyzer, Generator} = require '../../src/commands'
+{isCommand} = require '../../src/commands/validation'
 should = require('chai').should()
 sinon = require('sinon')
 
@@ -22,7 +23,7 @@ describe 'Command Generator', () ->
     @do = sinon.stub()
     @do.meta =
       name: 'do'
-      params: [ name: 'rest', validate: @isValid, isRest: yes ]
+      params: [ name: 'rest', validate: isCommand, isRest: yes ]
 
     # symbol table, all known commands
     @commands = { @turn, @move, @do }

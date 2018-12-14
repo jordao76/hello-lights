@@ -99,7 +99,6 @@ class Validator {
   }
 
   validate(node) {
-    this.node = node;
     let name = node.name;
 
     let command = this.commands[name];
@@ -128,18 +127,27 @@ class Validator {
       .map((param, i) => param.isRest ? args.slice(i) : [args[i]]); // group arguments per parameter
     let errors = argGroups
       .map((group, i) => group
-        .map(arg => this._validateArg(arg, params[i], i)) // validate each argument group
+        .map(arg => this._validateArg(node, arg, params[i], i)) // validate each argument group
         .filter(e => !!e)) // only keep validation errors (non null)
       .reduce((acc, val) => acc.concat(val), []); // flatten all errors
     return errors;
   }
 
-  _validateArg(arg, param, paramIdx) {
+  _validateArg(node, arg, param, paramIdx) {
     arg.param = param.name;
     if (isVar(arg)) {
       this._combine(arg.name, param.validate);
-    } else if (!param.validate(arg.value)) {
-      return badValue(this.node, paramIdx, arg);
+    } else {
+      if (isCommand(arg) && !node.value.meta.isMacro && arg.value.meta.returns === param.validate) {
+        // no error since the argument is a command that returns
+        // a conforming value to the parameter validation function
+        // (they are the same validation function)
+        // (only if the command is not a macro)
+        return null;
+      }
+      if (!param.validate(arg.value)) {
+        return badValue(node, paramIdx, arg);
+      }
     }
   }
 
@@ -156,6 +164,7 @@ class Validator {
 
 const isVar = node => node.type === 'variable';
 const isError = node => node.type === 'error';
+const isCommand = node => node.type === 'command';
 
 const badCommand = (name, loc) => ({
   type: 'error', loc,
@@ -169,9 +178,8 @@ const badArity = (name, exp, act, loc) => ({
 
 const badValue = (node, paramIdx, arg) => {
   let param = node.value.meta.params[paramIdx];
-  let isCommand = !!arg.value.meta; // commands have a "meta" property
-  let text = isCommand
-    ? `Bad call to "${arg.value.meta.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+  let text = isCommand(arg)
+    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
     : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`;
   return { type: 'error', loc: arg.loc, text };
 };

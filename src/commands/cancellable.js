@@ -1,10 +1,12 @@
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
- * Commands should regularly check for the {@link Cancellable#isCancelled}
+ * Commands should regularly check for the
+ * {@link commands.Cancellable#isCancelled|isCancelled}
  * attribute and exit eagerly if true.
- * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
- * them all when {@link Cancellable#cancel} is called, setting the
- * {@link Cancellable#isCancelled} attribute to true.
+ * Keeps a list of timeout IDs issued by
+ * {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout}
+ * calls and cancels them all when {@link commands.Cancellable#cancel|cancel} is called,
+ * setting the {@link commands.Cancellable#isCancelled|isCancelled} attribute to true.
  * @memberof commands
  */
 class Cancellable {
@@ -18,12 +20,15 @@ class Cancellable {
   }
 
   /**
-   * Registers the given timeout ID and {@link Promise} resolve function.
+   * Registers the given timeout ID and
+   * {@link https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises|Promise}
+   * resolve function.
    * @package
    * @param timeoutID - Timeout ID, the result of calling
-   *   {@link setTimeout}, platform dependent.
-   * @param {function} resolve - Resolve function for a {@link Promise} to be
-   *   called if the timeout is cancelled.
+   *   {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout},
+   *   platform dependent.
+   * @param {function} resolve - Resolve function for a Promise to be called
+   *   if the timeout is cancelled.
    */
   add(timeoutID, resolve) {
     this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
@@ -40,9 +45,9 @@ class Cancellable {
   }
 
   /**
-   * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
-   * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
-   * calling the related resolve functions.
+   * Cancels all registered timeouts. Sets {@link commands.Cancellable#isCancelled|isCancelled} to true.
+   * Cancellation means calling {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/clearTimeout|clearTimeout}
+   * with the stored timeout IDs and calling the related resolve functions.
    */
   cancel() {
     this.isCancelled = true;

@@ -17,6 +17,10 @@ const define = require('./define');
  */
 class Interpreter {
 
+  /**
+   * @param {object.<string, commands.Command>} [commands] -
+   *   Base commands this interpreter recognizes.
+   */
   constructor(commands) {
     this.commands = {
       ...commands,
@@ -48,7 +52,7 @@ class Interpreter {
    *   This context cannot have key 'ct', since it would be overwritten anyway.
    * @param {commands.Cancellable} [ct] - Cancellation token.
    * @throws Throws an error for any syntax or semantic errors in the text.
-   * @returns {*[]} Array with the results of the executions of the commands.
+   * @returns {object[]} Array with the results of the executions of the commands.
    */
   async execute(text, ctx = {}, ct = this.ct) {
     let commands = this.process(text);
@@ -81,7 +85,7 @@ class Interpreter {
     let commands = this.generator.generate(nodes);
     this.raiseIfErrors(this.generator.errors);
 
-    return commands;
+    return commands || [];
   }
 
   raiseIfErrors(errors) {
