@@ -65,6 +65,22 @@ describe 'Command parser', () ->
       run ' (face north)(turn:degrees) ;comment'
       run ';comment\n\t(face north)\n;comments\n(turn\n;comments\n:degrees) ;'
 
+    it 'string parsing', () ->
+      exp = (expStr) -> [
+        type: 'command', name: 'open', args: [ type: 'value', value: expStr ]
+      ]
+      run = (text, expStr) => @parse(text).should.deep.equal exp expStr
+      run '(open "the door")', 'the door'
+      run '(open "")', '' # empty string
+      run '(open "\\"")', '"' # double-quote
+      run '(open "\\\\")', '\\' # backslash
+      run '(open "\\\\\\"")', '\\"' # backslash, double-quote
+      run '''
+        (open "the
+          door")
+      ''', 'the\n  door'
+      run '(open "the \\"door\\"")', 'the "door"' # double-quotes
+
   describe 'location aware', () ->
 
     it 'should parse a parameterless command', () ->
@@ -113,7 +129,7 @@ describe 'Command parser', () ->
       @parser.errors[0].text.should.match /^SyntaxError: Expected.+"\)".+but end of input found/
       @parser.errors[0].loc.should.equal '1:6-1:6'
 
-    it 'empty string', () ->
+    it 'empty text', () ->
       should.not.exist @parser.parse ''
       @parser.errors.length.should.equal 1
       @parser.errors[0].text.should.match /^SyntaxError: Expected.+but end of input found/

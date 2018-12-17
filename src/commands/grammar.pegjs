@@ -35,14 +35,21 @@ Variable
   = ":" name:Identifier { return name; }
 
 Identifier
-  = head:[a-z_]i tail:[a-z_0-9-]i* { return head + (tail || []).join(''); }
+  = head:[a-z_]i tail:[a-z_0-9-]i* { return head + tail.join(''); }
 
 Number
   = digits:[0-9]+ { return parseInt(digits.join(''), 10); }
 
 String
-  = '"' contents:[^"]* '"' { return (contents || []).join(''); }
+  = '"' contents:StringContents* '"' { return contents.join(''); }
 
+StringContents
+  = !('"' / '\\') char:. { return char; }
+  / '\\' char:EscapeChar { return char; }
+
+EscapeChar
+  = '"'
+  / '\\'
 _
   = Filler*
 
