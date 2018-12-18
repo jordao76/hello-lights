@@ -8,6 +8,7 @@ const {Cancellable} = require('./cancellable');
 /////////////////////////////////////////////////////////////////////////////
 
 const define = require('./define');
+const baseCommands = require('./base-commands');
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -19,12 +20,14 @@ class Interpreter {
 
   /**
    * @param {object.<string, commands.Command>} [commands] -
-   *   Base commands this interpreter recognizes.
+   *   Commands this interpreter recognizes.
+   *   (Intrinsic commands are already available)
    */
   constructor(commands) {
     this.commands = {
-      ...commands,
-      ...define.commands // add the 'define' commands
+      ...define.commands, // add the 'define' commands
+      ...baseCommands.commands, // add the base commands
+      ...commands
     };
     this.parser = new Parser();
     this.analyzer = new Analyzer(this.commands);
