@@ -229,8 +229,8 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   /**
    * Gets the traffic light indexes that are in use.
-   * If there are no traffic lights in use, or no traffic lights useable,
-   * returns and empty array.
+   * If there are no traffic lights in use, or no traffic lights are useable,
+   * returns an empty array.
    * @returns {number[]} The traffic light indexes that are in use.
    */
   using() {

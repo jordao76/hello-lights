@@ -122,7 +122,7 @@ describe 'Base Commands', () ->
         c2 = sinon.stub()
         await c.do {}, [c1, c2]
         c1.callCount.should.equal 1
-        c2.callCount.should.equal 0 # got cancelled before it had a change to run c2
+        c2.callCount.should.equal 0 # got cancelled before it had a chance to run c2
 
       it 'should NOT run when cancelled', () ->
         ct = new Cancellable
@@ -180,7 +180,7 @@ describe 'Base Commands', () ->
         c2 = sinon.stub()
         await c.repeat {}, [2, c1, c2]
         c1.callCount.should.equal 1
-        c2.callCount.should.equal 0 # got cancelled before it had a change to run c2
+        c2.callCount.should.equal 0 # got cancelled before it had a chance to run c2
 
       it 'should NOT run when cancelled', () ->
         ct = new Cancellable
