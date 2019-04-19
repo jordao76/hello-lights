@@ -160,6 +160,28 @@ repeat.meta = {
 };
 
 //////////////////////////////////////////////////////////////////////////////
+
+async function all(ctx, [...commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  if (ct.isCancelled) return;
+  await Promise.all(commands.map(command => {
+    // since the commands run in parallel, they must
+    // have separate scopes so as not to step in each other's toes
+    return command({...ctx, ct, scope: {...scope}});
+  }));
+}
+all.meta = {
+  name: 'all',
+  params: [{ name: 'command', validate: isCommand, isRest: true }],
+  desc: `
+    Executes the given commands in parallel, all at the same time.
+    @example
+    (all
+      (twinkle green 700)
+      (twinkle yellow 300))`
+};
+
+//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -169,7 +191,8 @@ const commands = {
   timeout,
   'do': $do,
   loop,
-  repeat
+  repeat,
+  all
 };
 
 /////////////////////////////////////////////////////////////////////////////

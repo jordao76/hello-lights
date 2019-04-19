@@ -52,7 +52,6 @@ describe 'Base Commands', () ->
         c.cancel()
 
       it 'should NOT pause if already cancelled', () ->
-        paused = false
         ct = new Cancellable
         ct.cancel()
         await c.pause {ct}, [500]
@@ -104,7 +103,39 @@ describe 'Base Commands', () ->
         # test shouldn't timeout
         command.callCount.should.equal 0
 
-    xdescribe 'all', () ->
+    describe 'all', () ->
+
+      it 'should run commands in parallel', (done) ->
+        c1CallCount = 0
+        c2CallCount = 0
+        c1 = ({tl, ct}) =>
+          c1CallCount++
+          c.pause {ct}, [500]
+        c2 = ({tl, ct}) =>
+          c2CallCount++
+          c.pause {ct}, [500]
+        run = () =>
+          await c.all {}, [c1, c2]
+        run().then () =>
+          c1CallCount.should.equal 1
+          c2CallCount.should.equal 1
+          done()
+        @clock.tick 500
+
+      it 'should NOT run commands in parallel if already cancelled', () ->
+        ct = new Cancellable
+        ct.cancel()
+        c1CallCount = 0
+        c2CallCount = 0
+        c1 = ({tl, ct}) =>
+          c1CallCount++
+          c.pause {ct}, [500]
+        c2 = ({tl, ct}) =>
+          c2CallCount++
+          c.pause {ct}, [500]
+        await c.all {ct}, [c1, c2]
+        c1CallCount.should.equal 0
+        c2CallCount.should.equal 0
 
   describe 'Sequencing commands', () ->
 
