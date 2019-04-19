@@ -108,15 +108,15 @@ describe 'Base Commands', () ->
       it 'should run commands in parallel', (done) ->
         c1CallCount = 0
         c2CallCount = 0
-        c1 = ({tl, ct}) =>
+        c1 = ({tl, ct}) ->
           c1CallCount++
           c.pause {ct}, [500]
-        c2 = ({tl, ct}) =>
+        c2 = ({tl, ct}) ->
           c2CallCount++
           c.pause {ct}, [500]
-        run = () =>
+        run = () ->
           await c.all {}, [c1, c2]
-        run().then () =>
+        run().then () ->
           c1CallCount.should.equal 1
           c2CallCount.should.equal 1
           done()
@@ -127,10 +127,10 @@ describe 'Base Commands', () ->
         ct.cancel()
         c1CallCount = 0
         c2CallCount = 0
-        c1 = ({tl, ct}) =>
+        c1 = ({tl, ct}) ->
           c1CallCount++
           c.pause {ct}, [500]
-        c2 = ({tl, ct}) =>
+        c2 = ({tl, ct}) ->
           c2CallCount++
           c.pause {ct}, [500]
         await c.all {ct}, [c1, c2]
