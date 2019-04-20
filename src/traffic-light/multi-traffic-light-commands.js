@@ -15,6 +15,15 @@ function use({tl, ct}, [indexes]) {
     tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
   }
 }
+use.meta = {
+  name: 'use',
+  params: [{ name: 'indexes', validate: isGreaterThanZero, isRest: true }],
+  desc: `
+    When using multiple traffic lights, uses the given numbered ones.
+    @example
+    (use 1 2)`
+};
+/** @deprecated */
 use.transformation = args => [args];
 use.paramNames = ['indexes'];
 use.validation = [each(isGreaterThanZero)];
@@ -32,6 +41,12 @@ function useNext({tl, ct}) {
     tl.next();
   }
 }
+useNext.meta = {
+  name: 'use-next',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the next one or ones to use.`
+};
+/** @deprecated */
 useNext.paramNames = [];
 useNext.validation = [];
 useNext.doc = {
@@ -47,6 +62,12 @@ function usePrevious({tl, ct}) {
     tl.previous();
   }
 }
+usePrevious.meta = {
+  name: 'use-previous',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the previous one or ones to use.`
+};
+/** @deprecated */
 usePrevious.paramNames = [];
 usePrevious.validation = [];
 usePrevious.doc = {
@@ -62,6 +83,12 @@ function useLast({tl, ct}) {
     tl.last();
   }
 }
+useLast.meta = {
+  name: 'use-last',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the last one to use.`
+};
+/** @deprecated */
 useLast.paramNames = [];
 useLast.validation = [];
 useLast.doc = {
@@ -77,6 +104,12 @@ function useNear({tl, ct}) {
     tl.near();
   }
 }
+useNear.meta = {
+  name: 'use-near',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the nearest one to use.`
+};
+/** @deprecated */
 useNear.paramNames = [];
 useNear.validation = [];
 useNear.doc = {
@@ -92,6 +125,12 @@ function useAll({tl, ct}) {
     tl.useAll();
   }
 }
+useAll.meta = {
+  name: 'use-all',
+  params: [],
+  desc: `When using multiple traffic lights, chooses all of them to use.`
+};
+/** @deprecated */
 useAll.paramNames = [];
 useAll.validation = [];
 useAll.doc = {

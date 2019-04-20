@@ -116,6 +116,18 @@ async function morse({tl, ct}, [light, text]) {
   }
 }
 
+morse.meta = {
+  name: 'morse',
+  params: [
+    { name: 'light', validate: isLight },
+    { name: 'text', validate: isString }
+  ],
+  desc: `
+    Morse code pattern with the given light and text.
+    @example
+    (morse green "hello-lights")`
+};
+/** @deprecated */
 morse.paramNames = ['light', 'text'];
 morse.validation = [isLight, isString];
 morse.doc = {

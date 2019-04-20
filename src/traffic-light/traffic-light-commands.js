@@ -11,6 +11,15 @@ function toggle({tl, ct}, [light]) {
   if (ct.isCancelled) return;
   tl[light].toggle();
 }
+toggle.meta = {
+  name: 'toggle',
+  params: [{ name: 'light', validate: isLight }],
+  desc: `
+    Toggles the given light.
+    @example
+    (toggle green)`
+};
+/** @deprecated */
 toggle.paramNames = ['light'];
 toggle.validation = [isLight];
 toggle.doc = {
@@ -24,6 +33,18 @@ function turn({tl, ct}, [light, on]) {
   if (ct.isCancelled) return;
   turnLight(tl[light], on);
 }
+turn.meta = {
+  name: 'turn',
+  params: [
+    { name: 'light', validate: isLight },
+    { name: 'state', validate: isState }
+  ],
+  desc: `
+    Turns the given light on or off.
+    @example
+    (turn green on)`
+};
+/** @deprecated */
 turn.paramNames = ['light', 'state'];
 turn.validation = [isLight, isState];
 turn.doc = {
@@ -38,6 +59,12 @@ async function reset({tl, ct}) {
   if (ct.isCancelled) return;
   await tl.reset();
 }
+reset.meta = {
+  name: 'reset',
+  params: [],
+  desc: `Sets all lights to off.`
+};
+/** @deprecated */
 reset.paramNames = []; // no parameters
 reset.validation = []; // validates number of parameters (zero)
 reset.doc = {

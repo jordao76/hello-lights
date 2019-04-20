@@ -46,7 +46,9 @@ describe 'Command Interpreter', () ->
 
   it 'add a new command', () ->
     newCommand = sinon.stub()
-    newCommand.meta = name: 'new-command'
+    newCommand.meta =
+      name: 'new-command'
+      params: []
     @interpreter.add 'new-command', newCommand
     names = @interpreter.commandNames
     names.should.deep.equal [
