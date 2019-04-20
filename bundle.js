@@ -870,9 +870,9 @@ run.transformation = args => [args];
 run.paramNames = ['commands'];
 run.validation = [each(isCommand)];
 run.doc = {
-  name: 'run',
+  name: 'do',
   desc: 'Executes the given commands in sequence:\n' +
-        '(run\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
+        '(do\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -988,7 +988,8 @@ ease.doc = {
 module.exports = {
   cancel,
   pause, timeout,
-  run, loop, repeat, all, ease
+  'do': run,
+  loop, repeat, all, ease
 };
 
 },{"./cancellable":4,"./validation":7}],4:[function(require,module,exports){
@@ -2468,6 +2469,18 @@ async function morse({tl, ct}, [light, text]) {
   }
 }
 
+morse.meta = {
+  name: 'morse',
+  params: [
+    { name: 'light', validate: isLight },
+    { name: 'text', validate: isString }
+  ],
+  desc: `
+    Morse code pattern with the given light and text.
+    @example
+    (morse green "hello-lights")`
+};
+/** @deprecated */
 morse.paramNames = ['light', 'text'];
 morse.validation = [isLight, isString];
 morse.doc = {
@@ -2515,6 +2528,15 @@ function use({tl, ct}, [indexes]) {
     tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
   }
 }
+use.meta = {
+  name: 'use',
+  params: [{ name: 'indexes', validate: isGreaterThanZero, isRest: true }],
+  desc: `
+    When using multiple traffic lights, uses the given numbered ones.
+    @example
+    (use 1 2)`
+};
+/** @deprecated */
 use.transformation = args => [args];
 use.paramNames = ['indexes'];
 use.validation = [each(isGreaterThanZero)];
@@ -2532,6 +2554,12 @@ function useNext({tl, ct}) {
     tl.next();
   }
 }
+useNext.meta = {
+  name: 'use-next',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the next one or ones to use.`
+};
+/** @deprecated */
 useNext.paramNames = [];
 useNext.validation = [];
 useNext.doc = {
@@ -2547,6 +2575,12 @@ function usePrevious({tl, ct}) {
     tl.previous();
   }
 }
+usePrevious.meta = {
+  name: 'use-previous',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the previous one or ones to use.`
+};
+/** @deprecated */
 usePrevious.paramNames = [];
 usePrevious.validation = [];
 usePrevious.doc = {
@@ -2562,6 +2596,12 @@ function useLast({tl, ct}) {
     tl.last();
   }
 }
+useLast.meta = {
+  name: 'use-last',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the last one to use.`
+};
+/** @deprecated */
 useLast.paramNames = [];
 useLast.validation = [];
 useLast.doc = {
@@ -2577,6 +2617,12 @@ function useNear({tl, ct}) {
     tl.near();
   }
 }
+useNear.meta = {
+  name: 'use-near',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the nearest one to use.`
+};
+/** @deprecated */
 useNear.paramNames = [];
 useNear.validation = [];
 useNear.doc = {
@@ -2592,6 +2638,12 @@ function useAll({tl, ct}) {
     tl.useAll();
   }
 }
+useAll.meta = {
+  name: 'use-all',
+  params: [],
+  desc: `When using multiple traffic lights, chooses all of them to use.`
+};
+/** @deprecated */
 useAll.paramNames = [];
 useAll.validation = [];
 useAll.doc = {
@@ -2856,8 +2908,8 @@ class FlexMultiTrafficLight extends TrafficLight {
 
   /**
    * Gets the traffic light indexes that are in use.
-   * If there are no traffic lights in use, or no traffic lights useable,
-   * returns and empty array.
+   * If there are no traffic lights in use, or no traffic lights are useable,
+   * returns an empty array.
    * @returns {number[]} The traffic light indexes that are in use.
    */
   using() {
@@ -2966,7 +3018,7 @@ module.exports = {
 (define lights
   "Set the lights to the given values (on or off):
   (lights off off on)"
-  (run
+  (do
     (turn red    :red)
     (turn yellow :yellow)
     (turn green  :green)))
@@ -2977,7 +3029,7 @@ module.exports = {
   "Flashes a light for the given duration.
   Toggle, wait, toggle back, wait again:
   (flash red 500)"
-  (run
+  (do
     (toggle :light) (pause :ms)
     (toggle :light) (pause :ms)))
 
@@ -3062,7 +3114,7 @@ module.exports = {
 (define up
   "Go up with the given duration:
   (up 200)"
-  (run
+  (do
     (toggle green)  (pause :ms) (toggle green)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)))
@@ -3072,7 +3124,7 @@ module.exports = {
 (define down
   "Go down with the given duration:
   (down 200)"
-  (run
+  (do
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle green)  (pause :ms) (toggle green)))
@@ -3111,7 +3163,7 @@ module.exports = {
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
   (activity 40000 10000 10000)"
-  (run
+  (do
     (blink 4 green 500)
     (turn green on)
     (pause :green-ms)
@@ -3137,6 +3189,15 @@ function toggle({tl, ct}, [light]) {
   if (ct.isCancelled) return;
   tl[light].toggle();
 }
+toggle.meta = {
+  name: 'toggle',
+  params: [{ name: 'light', validate: isLight }],
+  desc: `
+    Toggles the given light.
+    @example
+    (toggle green)`
+};
+/** @deprecated */
 toggle.paramNames = ['light'];
 toggle.validation = [isLight];
 toggle.doc = {
@@ -3150,6 +3211,18 @@ function turn({tl, ct}, [light, on]) {
   if (ct.isCancelled) return;
   turnLight(tl[light], on);
 }
+turn.meta = {
+  name: 'turn',
+  params: [
+    { name: 'light', validate: isLight },
+    { name: 'state', validate: isState }
+  ],
+  desc: `
+    Turns the given light on or off.
+    @example
+    (turn green on)`
+};
+/** @deprecated */
 turn.paramNames = ['light', 'state'];
 turn.validation = [isLight, isState];
 turn.doc = {
@@ -3164,6 +3237,12 @@ async function reset({tl, ct}) {
   if (ct.isCancelled) return;
   await tl.reset();
 }
+reset.meta = {
+  name: 'reset',
+  params: [],
+  desc: `Sets all lights to off.`
+};
+/** @deprecated */
 reset.paramNames = []; // no parameters
 reset.validation = []; // validates number of parameters (zero)
 reset.doc = {

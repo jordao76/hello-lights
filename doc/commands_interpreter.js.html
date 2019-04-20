@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: selectors/physical-multi-traffic-light-selector.js</title>
+    <title>JSDoc: Source: commands/interpreter.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: selectors/physical-multi-traffic-light-selector.js</h1>
+    <h1 class="page-title">Source: commands/interpreter.js</h1>
 
     
 
@@ -26,113 +26,130 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>const EventEmitter = require('events');
-const {FlexMultiTrafficLight} = require('../traffic-light/multi-traffic-light');
+            <pre class="prettyprint source linenums"><code>/////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////
+const {Parser} = require('./parser');
+const {Analyzer} = require('./analyzer');
+const {Generator} = require('./generator');
+const {Cancellable} = require('./cancellable');
 
-// the default device manager
-const {Manager} = require('../devices/cleware-switch1');
+/////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////
+const define = require('./define');
+const baseCommands = require('./base-commands');
+
+/////////////////////////////////////////////////////////////////////////////
 
 /**
- * Selects all available physical traffic lights to use in a composite.
- * @memberof selectors
- * @extends EventEmitter
- * @package
+ * Command interpreter to execute command strings.
+ * @memberof commands
  */
-class PhysicalMultiTrafficLightSelector extends EventEmitter {
+class Interpreter {
 
   /**
-   * Selects all available physical traffic lights to use.
-   * Checks-out and uses all available traffic lights to issue commands.
-   * @param {object} [options] - Options.
-   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
-   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
-   *   Used to define multi-traffic-light commands.
+   * @param {object.&lt;string, commands.Command>} [commands] -
+   *   Commands this interpreter recognizes.
+   *   (Intrinsic commands are already available)
    */
-  constructor({manager = Manager, parser = null} = {}) {
-    super();
-    this.manager = manager;
-    this._setupCommands(parser);
-    this._setupTrafficLight();
-  }
-
-  _setupTrafficLight() {
-    this.manager.startMonitoring();
-    this.trafficLight = new FlexMultiTrafficLight(this._retrieveTrafficLights());
-    this.trafficLight.on('enabled', () =>
-      /**
-       * Fired when the multi traffic light gets enabled.
-       * @event selectors.PhysicalMultiTrafficLightSelector#enabled
-       */
-      this.emit('enabled'));
-    this.trafficLight.on('disabled', () =>
-      /**
-       * Fired when the multi traffic light gets disabled.
-       * @event selectors.PhysicalMultiTrafficLightSelector#disabled
-       */
-      this.emit('disabled'));
-    this.trafficLight.on('interrupted', () =>
-      /**
-       * Fired when the multi traffic light gets interrupted.
-       * @event selectors.PhysicalMultiTrafficLightSelector#interrupted
-       */
-      this.emit('interrupted'));
-    this.manager.on('added', () => {
-      this._retrieveTrafficLights()
-        .forEach(tl => this.trafficLight.add(tl));
-    });
-  }
-
-  _setupCommands(parser) {
-    if (!parser) return;
-    const {defineCommands} = require('../traffic-light/multi-traffic-light-commands');
-    defineCommands(parser);
-  }
-
-  _retrieveTrafficLights() {
-    return this.manager.allDevices()
-      .map(device => device.trafficLight)
-      .filter(tl => tl.isAvailable);
+  constructor(commands) {
+    this.commands = {
+      ...define.commands, // add the 'define' commands
+      ...baseCommands.commands, // add the base commands
+      ...commands
+    };
+    this.parser = new Parser();
+    this.analyzer = new Analyzer(this.commands);
+    this.generator = new Generator();
+    this.ct = new Cancellable();
   }
 
   /**
-   * Called to close this instance and to stop monitoring for devices.
-   * Should be done as the last operation before exiting the process.
-   * @see physical.DeviceManager#stopMonitoring
+   * Command names this interpreter recognizes.
+   * @type {string[]}
    */
-  close() {
-    this.manager.stopMonitoring();
+  get commandNames() {
+    return Object.keys(this.commands);
   }
 
   /**
-   * Retrieves a multi traffic light for exclusive usage of the caller,
-   * or `null` if no traffic lights are available.
-   * @returns {trafficLight.FlexMultiTrafficLight} - A multi traffic light, or `null`.
+   * Adds a new command or redefines an existing one.
+   * @param {string} name - The command name. Should be the same as the command.meta.name property.
+   * @param {commands.Command} command - The command function.
    */
-  resolveTrafficLight() {
-    if (this.trafficLight.isEnabled) return this.trafficLight;
-    return null;
+  add(name, command) {
+    this.commands[name] = command;
   }
 
   /**
-   * Logs information about known devices.
-   * @param {object} [logger=console] - A Console-like object for logging.
+   * Cancels any executing commands.
+   * @param {commands.Cancellable} [ct] - Cancellation token.
    */
-  logInfo(logger = console) {
-    this.manager.logInfo(logger);
+  cancel(ct = this.ct) {
+    if (ct.isCancelled) return;
+    ct.cancel();
+    if (ct === this.ct) {
+      this.ct = new Cancellable();
+    }
+  }
+
+  /**
+   * Executes a command asynchronously.
+   * @param {string} text - Command text to execute.
+   * @param {object} [ctx] - Context object to be passed as part of the executed
+   *   commands' context, together with the cancellation token.
+   *   This context cannot have key 'ct', since it would be overwritten anyway.
+   * @param {commands.Cancellable} [ct] - Cancellation token.
+   * @throws Throws an error for any syntax or semantic errors in the text.
+   * @returns {object[]} Array with the results of the executions of the commands.
+   */
+  async execute(text, ctx = {}, ct = this.ct) {
+    let commands = this.process(text);
+
+    let res = [];
+    for (let i = 0; i &lt; commands.length; ++i) {
+      if (ct.isCancelled) break;
+      let command = commands[i];
+      res.push(await command({...ctx, ct}));
+    }
+
+    if (ct === this.ct &amp;&amp; ct.isCancelled) {
+      // this.ct was cancelled, so re-instantiate it
+      this.ct = new Cancellable();
+    }
+
+    return res;
+  }
+
+  process(text) {
+    // parse
+    let nodes = this.parser.parse(text);
+    this.raiseIfErrors(this.parser.errors);
+
+    // analyze
+    nodes = this.analyzer.analyze(nodes);
+    this.raiseIfErrors(this.analyzer.errors);
+
+    // generate
+    let commands = this.generator.generate(nodes);
+    this.raiseIfErrors(this.generator.errors);
+
+    return commands || [];
+  }
+
+  raiseIfErrors(errors) {
+    if (errors.length === 0) return;
+    throw new Error(errors.map(this.formatError).join('\n'));
+  }
+
+  formatError(error) {
+    return `${error.loc}: ${error.text}`;
   }
 
 }
 
-////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 
-module.exports = {
-  PhysicalMultiTrafficLightSelector,
-  SelectorCtor: PhysicalMultiTrafficLightSelector
-};
+module.exports = {Interpreter};
 </code></pre>
         </article>
     </section>

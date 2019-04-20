@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: trafficLight</title>
+    <title>JSDoc: Source: commands/cancellable.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,118 +17,81 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: trafficLight</h1>
+    <h1 class="page-title">Source: commands/cancellable.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>trafficLight</h2>
-        
-    
-</header>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * A Cancellation Token (ct) that commands can check for cancellation.
+ * Commands should regularly check for the
+ * {@link commands.Cancellable#isCancelled|isCancelled}
+ * attribute and exit eagerly if true.
+ * Keeps a list of timeout IDs issued by
+ * {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout}
+ * calls and cancels them all when {@link commands.Cancellable#cancel|cancel} is called,
+ * setting the {@link commands.Cancellable#isCancelled|isCancelled} attribute to true.
+ * @memberof commands
+ */
+class Cancellable {
 
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description">Traffic light base model.</div>
-        
+  /** Cancellable constructor. */
+  constructor() {
+    /** If the Cancellation Token is cancelled. Starts of as false. */
+    this.isCancelled = false;
+    // Object storing timeout IDs and related Promise resolve functions.
+    this._timeoutIDs = {};
+  }
 
-        
+  /**
+   * Registers the given timeout ID and
+   * {@link https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises|Promise}
+   * resolve function.
+   * @package
+   * @param timeoutID - Timeout ID, the result of calling
+   *   {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout},
+   *   platform dependent.
+   * @param {function} resolve - Resolve function for a Promise to be called
+   *   if the timeout is cancelled.
+   */
+  add(timeoutID, resolve) {
+    this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
+  }
 
+  /**
+   * Unregisters the given timeout ID, when the timeout is reached and
+   * does not need to be cancelled anymore, or if it was cancelled.
+   * @package
+   * @param timeoutID - Timeout ID to unregister.
+   */
+  del(timeoutID) {
+    delete this._timeoutIDs[timeoutID.id||timeoutID];
+  }
 
-<dl class="details">
+  /**
+   * Cancels all registered timeouts. Sets {@link commands.Cancellable#isCancelled|isCancelled} to true.
+   * Cancellation means calling {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/clearTimeout|clearTimeout}
+   * with the stored timeout IDs and calling the related resolve functions.
+   */
+  cancel() {
+    this.isCancelled = true;
+    for (let [, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
+      this.del(timeoutID);
+      clearTimeout(timeoutID);
+      resolve();
+    }
+  }
 
-    
+}
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_index.js.html">traffic-light/index.js</a>, <a href="traffic-light_index.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.Light.html">Light</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiLight.html">MultiLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.TrafficLight.html">TrafficLight</a></dt>
-            <dd></dd>
-        </dl>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+module.exports = {Cancellable};
+</code></pre>
+        </article>
+    </section>
 
 
 

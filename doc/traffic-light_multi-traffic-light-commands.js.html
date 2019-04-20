@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: traffic-light/morse.js</title>
+    <title>JSDoc: Source: traffic-light/multi-traffic-light-commands.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: traffic-light/morse.js</h1>
+    <h1 class="page-title">Source: traffic-light/multi-traffic-light-commands.js</h1>
 
     
 
@@ -26,162 +26,168 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/* eslint no-multi-spaces: 0 */
-
-const {isLight} = require('./validation');
-const {isString} = require('../parsing/validation');
-const {pause} = require('../parsing/base-commands');
-const {intersperse, flatten} = require('./utils');
-
+            <pre class="prettyprint source linenums"><code>//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-// ref: https://www.itu.int/dms_pubrec/itu-r/rec/m/R-REC-M.1677-1-200910-I!!PDF-E.pdf [PDF]
-
-const TIME_UNIT = 110; // in ms
-const
-  DOT_SIGNAL = 1,
-  DASH_SIGNAL = 3,
-  INTER_LETTER_GAP = 1,
-  LETTER_GAP = 3,
-  WORD_GAP = 7,
-  END_OF_INPUT_GAP = 7;
-
-const morseCode = {
-  // Letters
-  'a': '.-',    'i': '..',   'r': '.-.',
-  'b': '-...',  'j': '.---', 's': '...',
-  'c': '-.-.',  'k': '-.-',  't': '-',
-  'd': '-..',   'l': '.-..', 'u': '..-',
-  'e': '.',     'm': '--',   'v': '...-',
-  'é': '..-..', 'n': '-.',   'w': '.--',
-  'f': '..-.',  'o': '---',  'x': '-..-',
-  'g': '--.',   'p': '.--.', 'y': '-.--',
-  'h': '....',  'q': '--.-', 'z': '--..',
-  // Figures
-  '1': '.----', '6': '-....',
-  '2': '..---', '7': '--...',
-  '3': '...--', '8': '---..',
-  '4': '....-', '9': '----.',
-  '5': '.....', '0': '-----',
-  // Punctuation marks
-  '.': '.-.-.-',
-  ',': '--..--',
-  ':': '---...',
-  '?': '..--..',
-  '’': '.----.', "'": '.----.',
-  '–': '-....-', '-': '-....-', '−': '-....-',
-  '/': '-..-.',
-  '(': '-.--.',
-  ')': '-.--.-',
-  '“': '.-..-.', '”': '.-..-.', '"': '.-..-.',
-  '=': '-...-',
-  '+': '.-.-.',
-  '×': '-..-',
-  '@': '.--.-.'
-  // Miscellaneous signs
-  /*
-    Understood ...-.
-    Error ........
-    Invitation to transmit -.-
-    Wait .-...
-    End of work ...-.-
-    Starting signal (to precede every transmission) -.-.-
-  */
-};
+const {
+  isGreaterThanZero,
+  each
+} = require('../parsing/validation');
 
 //////////////////////////////////////////////////////////////////////////////
-
-function timecodeSignal(signal) {
-  if (signal === '.') return DOT_SIGNAL;
-  if (signal === '-') return DASH_SIGNAL;
-}
-
-function timecodeLetter(letter) {             // '.-'
-  let signals = letter.split('');             // ['.', '-']
-  let code = signals.map(timecodeSignal);     // [1, 3]
-  return intersperse(INTER_LETTER_GAP, code); // [1, 1, 3]
-}
-
-function timecodeWord(word) {               // ['.-', '.-']
-  let codes = word.map(timecodeLetter);     // [[1, 1, 3], [1, 1, 3]]
-  codes = intersperse([LETTER_GAP], codes); // [[1, 1, 3], [3], [1, 1, 3]]
-  return flatten(codes);                    // [1, 1, 3, 3, 1, 1, 3]
-}
-
-function timecodePhrase(phrase) {         // [['.-'], ['.-']]
-  let codes = phrase.map(timecodeWord);   // [[1, 1, 3], [1, 1, 3]]
-  codes = intersperse([WORD_GAP], codes); // [[1, 1, 3], [7], [1, 1, 3]]
-  return flatten(codes);                  // [1, 1, 3, 7, 1, 1, 3]
-}
-
-function encodeWord(word) {
-  return word                // 'aãa'
-    .split('')               // ['a','ã','a']
-    .map(c => morseCode[c])  // ['.-',undefined,'.-']
-    .filter(c => !!c);       // ['.-','.-']
-}
-
-function timecodeText(text) {
-  let phrase = text              // ' A A'
-    .toLowerCase()               // ' a a'
-    .split(/\s+/)                // ['', 'a', 'a']
-    .filter(w => !!w)            // ['a', 'a']
-    .map(encodeWord);            // [['.-'], ['.-']]
-  return timecodePhrase(phrase)  // [1, 1, 3, 7, 1, 1, 3]
-    .concat([END_OF_INPUT_GAP]); // [1, 1, 3, 7, 1, 1, 3, 7]
-}
-
 //////////////////////////////////////////////////////////////////////////////
 
-async function morse({tl, ct}, [light, text]) {
+function use({tl, ct}, [indexes]) {
   if (ct.isCancelled) return;
-  let times = timecodeText(text);
-  tl[light].turnOff(); // start as 'off'
-  for (let i = 0; i &lt; times.length; ++i) {
-    if (ct.isCancelled) break;
-    tl[light].toggle();
-    await pause({ct}, [times[i] * TIME_UNIT]);
+  if (tl.use) {
+    tl.use(indexes.map(i => i - 1)); // from 1-based to 0-based
   }
 }
-
-morse.meta = {
-  name: 'morse',
-  params: [
-    { name: 'light', validate: isLight },
-    { name: 'text', validate: isString }
-  ],
+use.meta = {
+  name: 'use',
+  params: [{ name: 'indexes', validate: isGreaterThanZero, isRest: true }],
   desc: `
-    Morse code pattern with the given light and text.
+    When using multiple traffic lights, uses the given numbered ones.
     @example
-    (morse green "hello-lights")`
+    (use 1 2)`
 };
 /** @deprecated */
-morse.paramNames = ['light', 'text'];
-morse.validation = [isLight, isString];
-morse.doc = {
-  name: 'morse',
-  desc: 'Morse code pattern with the given light and text:\n' +
-        '(morse green "hello-lights")'
+use.transformation = args => [args];
+use.paramNames = ['indexes'];
+use.validation = [each(isGreaterThanZero)];
+use.doc = {
+  name: 'use',
+  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
+        '(use 1 2)'
 };
 
+//////////////////////////////////////////////////////////////////////////////
+
+function useNext({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.next) {
+    tl.next();
+  }
+}
+useNext.meta = {
+  name: 'use-next',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the next one or ones to use.`
+};
+/** @deprecated */
+useNext.paramNames = [];
+useNext.validation = [];
+useNext.doc = {
+  name: 'use-next',
+  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function usePrevious({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.previous) {
+    tl.previous();
+  }
+}
+usePrevious.meta = {
+  name: 'use-previous',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the previous one or ones to use.`
+};
+/** @deprecated */
+usePrevious.paramNames = [];
+usePrevious.validation = [];
+usePrevious.doc = {
+  name: 'use-previous',
+  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useLast({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.last) {
+    tl.last();
+  }
+}
+useLast.meta = {
+  name: 'use-last',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the last one to use.`
+};
+/** @deprecated */
+useLast.paramNames = [];
+useLast.validation = [];
+useLast.doc = {
+  name: 'use-last',
+  desc: 'When using multiple traffic lights, chooses the last one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useNear({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.near) {
+    tl.near();
+  }
+}
+useNear.meta = {
+  name: 'use-near',
+  params: [],
+  desc: `When using multiple traffic lights, chooses the nearest one to use.`
+};
+/** @deprecated */
+useNear.paramNames = [];
+useNear.validation = [];
+useNear.doc = {
+  name: 'use-near',
+  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+function useAll({tl, ct}) {
+  if (ct.isCancelled) return;
+  if (tl.useAll) {
+    tl.useAll();
+  }
+}
+useAll.meta = {
+  name: 'use-all',
+  params: [],
+  desc: `When using multiple traffic lights, chooses all of them to use.`
+};
+/** @deprecated */
+useAll.paramNames = [];
+useAll.validation = [];
+useAll.doc = {
+  name: 'use-all',
+  desc: 'When using multiple traffic lights, chooses all of them to use.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 function defineCommands(cp) {
-  cp.add('morse', morse);
+  // add multi commands
+  cp.add('use', use);
+  cp.add('use-next', useNext);
+  cp.add('use-previous', usePrevious);
+  cp.add('use-last', useLast);
+  cp.add('use-near', useNear);
+  cp.add('use-all', useAll);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
-  // morse-utils
-  timecodeSignal,
-  timecodeLetter,
-  timecodeWord,
-  timecodePhrase,
-  encodeWord,
-  timecodeText,
-  // morse core
-  morse,
+  use,
+  'use-next': useNext,
+  'use-previous': usePrevious,
+  'use-last': useLast,
+  'use-near': useNear,
+  'use-all': useAll,
   defineCommands
 };
 </code></pre>

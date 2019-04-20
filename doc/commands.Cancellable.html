@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Light</title>
+    <title>JSDoc: Class: Cancellable</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Light</h1>
+    <h1 class="page-title">Class: Cancellable</h1>
 
     
 
@@ -29,9 +29,16 @@
 <header>
     
         <h2><span class="attribs"><span class="type-signature"></span></span>
-            <span class="ancestors"><a href="trafficLight.html">trafficLight</a>.</span>Light<span class="signature">()</span><span class="type-signature"></span></h2>
+            <span class="ancestors"><a href="commands.html">commands</a>.</span>Cancellable<span class="signature">()</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">A Light in a traffic light.</div>
+            <div class="class-description">A Cancellation Token (ct) that commands can check for cancellation.
+Commands should regularly check for the
+<a href="commands.Cancellable.html#isCancelled">isCancelled</a>
+attribute and exit eagerly if true.
+Keeps a list of timeout IDs issued by
+<a href="https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout">setTimeout</a>
+calls and cancels them all when <a href="commands.Cancellable.html#cancel">cancel</a> is called,
+setting the <a href="commands.Cancellable.html#isCancelled">isCancelled</a> attribute to true.</div>
         
     
 </header>
@@ -46,12 +53,16 @@
     
 
     
-    <h4 class="name" id="Light"><span class="type-signature"></span>new Light<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Cancellable"><span class="type-signature"></span>new Cancellable<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
 
 
+
+<div class="description">
+    Cancellable constructor.
+</div>
 
 
 
@@ -94,7 +105,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line7">line 7</a>
+        <a href="commands_cancellable.js.html">commands/cancellable.js</a>, <a href="commands_cancellable.js.html#line12">line 12</a>
     </li></ul></dd>
     
 
@@ -142,26 +153,16 @@
 
         
             
-<h4 class="name" id="off"><span class="type-signature"></span>off<span class="type-signature"> :boolean</span></h4>
+<h4 class="name" id="isCancelled"><span class="type-signature"></span>isCancelled<span class="type-signature"></span></h4>
 
 
 
 
 <div class="description">
-    If the light is off.
+    If the Cancellation Token is cancelled. Starts of as false.
 </div>
 
 
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">boolean</span>
-
-
-        </li>
-    </ul>
 
 
 
@@ -196,79 +197,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line19">line 19</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id="on"><span class="type-signature"></span>on<span class="type-signature"> :boolean</span></h4>
-
-
-
-
-<div class="description">
-    If the light is on.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type">boolean</span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line12">line 12</a>
+        <a href="commands_cancellable.js.html">commands/cancellable.js</a>, <a href="commands_cancellable.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -296,7 +225,7 @@
     
 
     
-    <h4 class="name" id="toggle"><span class="type-signature"></span>toggle<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="add"><span class="type-signature">(package) </span>add<span class="signature">(timeoutID, resolve)</span><span class="type-signature"></span></h4>
     
 
     
@@ -304,7 +233,9 @@
 
 
 <div class="description">
-    Toggles the light.
+    Registers the given timeout ID and
+<a href="https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises">Promise</a>
+resolve function.
 </div>
 
 
@@ -313,6 +244,76 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>timeoutID</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Timeout ID, the result of calling
+  <a href="https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout">setTimeout</a>,
+  platform dependent.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>resolve</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Resolve function for a Promise to be called
+  if the timeout is cancelled.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -348,7 +349,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line22">line 22</a>
+        <a href="commands_cancellable.js.html">commands/cancellable.js</a>, <a href="commands_cancellable.js.html#line33">line 33</a>
     </li></ul></dd>
     
 
@@ -382,7 +383,7 @@
     
 
     
-    <h4 class="name" id="turnOff"><span class="type-signature"></span>turnOff<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="cancel"><span class="type-signature"></span>cancel<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -390,7 +391,9 @@
 
 
 <div class="description">
-    Turns the light off.
+    Cancels all registered timeouts. Sets <a href="commands.Cancellable.html#isCancelled">isCancelled</a> to true.
+Cancellation means calling <a href="https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/clearTimeout">clearTimeout</a>
+with the stored timeout IDs and calling the related resolve functions.
 </div>
 
 
@@ -434,7 +437,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line28">line 28</a>
+        <a href="commands_cancellable.js.html">commands/cancellable.js</a>, <a href="commands_cancellable.js.html#line52">line 52</a>
     </li></ul></dd>
     
 
@@ -468,7 +471,7 @@
     
 
     
-    <h4 class="name" id="turnOn"><span class="type-signature"></span>turnOn<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="del"><span class="type-signature">(package) </span>del<span class="signature">(timeoutID)</span><span class="type-signature"></span></h4>
     
 
     
@@ -476,7 +479,8 @@
 
 
 <div class="description">
-    Turns the light on.
+    Unregisters the given timeout ID, when the timeout is reached and
+does not need to be cancelled anymore, or if it was cancelled.
 </div>
 
 
@@ -485,6 +489,50 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>timeoutID</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Timeout ID to unregister.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -520,7 +568,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line25">line 25</a>
+        <a href="commands_cancellable.js.html">commands/cancellable.js</a>, <a href="commands_cancellable.js.html#line43">line 43</a>
     </li></ul></dd>
     
 

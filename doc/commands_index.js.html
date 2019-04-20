@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: trafficLight</title>
+    <title>JSDoc: Source: commands/index.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,118 +17,31 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: trafficLight</h1>
+    <h1 class="page-title">Source: commands/index.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>trafficLight</h2>
-        
-    
-</header>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Parsing of commands and utilities.
+ * @namespace commands
+ */
 
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description">Traffic light base model.</div>
-        
-
-        
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_index.js.html">traffic-light/index.js</a>, <a href="traffic-light_index.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.Light.html">Light</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiLight.html">MultiLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.TrafficLight.html">TrafficLight</a></dt>
-            <dd></dd>
-        </dl>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+module.exports = {
+  ...require('./parser'),
+  ...require('./analyzer'),
+  ...require('./generator'),
+  ...require('./interpreter'),
+  ...require('./cancellable'),
+  validation: require('./validation')
+};
+</code></pre>
+        </article>
+    </section>
 
 
 

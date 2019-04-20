@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: parsing</title>
+    <title>JSDoc: Namespace: commands</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: parsing</h1>
+    <h1 class="page-title">Namespace: commands</h1>
 
     
 
@@ -28,7 +28,7 @@
 
 <header>
     
-        <h2>parsing</h2>
+        <h2>commands</h2>
         
     
 </header>
@@ -72,7 +72,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="parsing_index.js.html">parsing/index.js</a>, <a href="parsing_index.js.html#line1">line 1</a>
+        <a href="commands_index.js.html">commands/index.js</a>, <a href="commands_index.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -96,10 +96,10 @@
         <h3 class="subsection-title">Classes</h3>
 
         <dl>
-            <dt><a href="parsing.Cancellable.html">Cancellable</a></dt>
+            <dt><a href="commands.Cancellable.html">Cancellable</a></dt>
             <dd></dd>
         
-            <dt><a href="parsing.CommandParser.html">CommandParser</a></dt>
+            <dt><a href="commands.Interpreter.html">Interpreter</a></dt>
             <dd></dd>
         </dl>
     
@@ -123,7 +123,7 @@
     
 
     
-    <h4 class="name" id=".CommandFunction"><span class="type-signature"></span>CommandFunction<span class="signature">(ctx, params<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".Command"><span class="type-signature"></span>Command<span class="signature">(ctx, args<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {object}</span></h4>
     
 
     
@@ -227,7 +227,7 @@
             <td class="type">
             
                 
-<span class="param-type"><a href="parsing.Cancellable.html">parsing.Cancellable</a></span>
+<span class="param-type"><a href="commands.Cancellable.html">commands.Cancellable</a></span>
 
 
             
@@ -246,37 +246,6 @@
             
 
             <td class="description last">A cancellation token.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>scope</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Variable bindings for nested commands.</td>
         </tr>
 
     
@@ -325,7 +294,7 @@
 
         <tr>
             
-                <td class="name"><code>params</code></td>
+                <td class="name"><code>args</code></td>
             
 
             <td class="type">
@@ -351,7 +320,7 @@
 
             
 
-            <td class="description last">The command parameters.</td>
+            <td class="description last">The command arguments all packed in an array.</td>
         </tr>
 
     
@@ -377,8 +346,6 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
         
 
@@ -391,60 +358,13 @@
 
         <tr>
             
-                <td class="name"><code>doc</code></td>
+                <td class="name"><code>meta</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">object</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Name and description of the command.
-                <h6>Properties</h6>
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
+<span class="param-type"><a href="commands.html#.Meta">commands.Meta</a></span>
 
 
             
@@ -454,130 +374,7 @@
 
             
 
-            <td class="description last">Command name.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>desc</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Command description.</td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>transformation</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">function</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Transforms the parameters of the command.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>paramNames</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;string></span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Parameter names for the command.</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>validation</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Array.&lt;function()></span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-                </td>
-            
-
-            
-
-            <td class="description last">Validation functions for each parameter  after transformation.</td>
+            <td class="description last">Metadata about the command.</td>
         </tr>
 
     
@@ -616,7 +413,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="parsing_command-function.js.html">parsing/command-function.js</a>, <a href="parsing_command-function.js.html#line1">line 1</a>
+        <a href="commands_typing.js.html">commands/typing.js</a>, <a href="commands_typing.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -639,6 +436,679 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Optionally the command can return any value. If meta.returns  is set, the command <b>must</b> return a value that adheres to the meta.returns  validation function.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+            
+                
+<h4 class="name" id=".Meta">Meta</h4>
+
+
+
+
+<div class="description">
+    Metadata about a command.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Command name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>desc</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Command description.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>params</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="commands.html#.Param">commands.Param</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Parameter specification for the command.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>returns</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="commands.html#.Validate">commands.Validate</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Return "specification" of the command.  This validation function is never actually called, but it's used to check if  the "return" of a command adheres to the parameter validation function of another.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_typing.js.html">commands/typing.js</a>, <a href="commands_typing.js.html#line16">line 16</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+<h4 class="name" id=".Param">Param</h4>
+
+
+
+
+<div class="description">
+    Command parameter specification.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Parameter name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>validate</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="commands.html#.Validate">commands.Validate</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Parameter validation function.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>params</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="commands.html#.Param">commands.Param</a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">Parameter descriptions for the command.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>isRest</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">If the parameter is a rest parameter, i.e,  it accepts a variable number of arguments (1 or more). A rest parameter  <b>must</b> be the last parameter of a command.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_typing.js.html">commands/typing.js</a>, <a href="commands_typing.js.html#line28">line 28</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+            
+                
+
+    
+
+    
+    <h4 class="name" id=".Validate"><span class="type-signature"></span>Validate<span class="signature">(arg)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    A validation function for a command parameter.Can also be used to indicate the return "specification" of a command.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Argument to validate.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>exp</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The expected value for this validation function to  succeed. Used in error messages.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_typing.js.html">commands/typing.js</a>, <a href="commands_typing.js.html#line40">line 40</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    If the validation succeeds or not.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 

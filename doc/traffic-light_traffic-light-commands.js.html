@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Namespace: trafficLight</title>
+    <title>JSDoc: Source: traffic-light/traffic-light-commands.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,118 +17,111 @@
 
 <div id="main">
 
-    <h1 class="page-title">Namespace: trafficLight</h1>
+    <h1 class="page-title">Source: traffic-light/traffic-light-commands.js</h1>
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>trafficLight</h2>
-        
-    
-</header>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>//////////////////////////////////////////////////////////////////////////////
+// Defines base commands to control a Traffic Light.
+//////////////////////////////////////////////////////////////////////////////
 
-<article>
-    <div class="container-overview">
-    
-        
-            <div class="description">Traffic light base model.</div>
-        
+const {turnLight} = require('./utils');
+const {isLight, isState} = require('./validation');
 
-        
+//////////////////////////////////////////////////////////////////////////////
 
+function toggle({tl, ct}, [light]) {
+  if (ct.isCancelled) return;
+  tl[light].toggle();
+}
+toggle.meta = {
+  name: 'toggle',
+  params: [{ name: 'light', validate: isLight }],
+  desc: `
+    Toggles the given light.
+    @example
+    (toggle green)`
+};
+/** @deprecated */
+toggle.paramNames = ['light'];
+toggle.validation = [isLight];
+toggle.doc = {
+  name: 'toggle',
+  desc: 'Toggles the given light:\n(toggle green)'
+};
 
-<dl class="details">
+//////////////////////////////////////////////////////////////////////////////
 
-    
+function turn({tl, ct}, [light, on]) {
+  if (ct.isCancelled) return;
+  turnLight(tl[light], on);
+}
+turn.meta = {
+  name: 'turn',
+  params: [
+    { name: 'light', validate: isLight },
+    { name: 'state', validate: isState }
+  ],
+  desc: `
+    Turns the given light on or off.
+    @example
+    (turn green on)`
+};
+/** @deprecated */
+turn.paramNames = ['light', 'state'];
+turn.validation = [isLight, isState];
+turn.doc = {
+  name: 'turn',
+  desc: 'Turns the given light on or off:\n' +
+        '(turn green on)'
+};
 
-    
+//////////////////////////////////////////////////////////////////////////////
 
-    
+async function reset({tl, ct}) {
+  if (ct.isCancelled) return;
+  await tl.reset();
+}
+reset.meta = {
+  name: 'reset',
+  params: [],
+  desc: `Sets all lights to off.`
+};
+/** @deprecated */
+reset.paramNames = []; // no parameters
+reset.validation = []; // validates number of parameters (zero)
+reset.doc = {
+  name: 'reset',
+  desc: 'Sets all lights to off.'
+};
 
-    
+//////////////////////////////////////////////////////////////////////////////
 
-    
+function defineCommands(cp) {
+  // add base commands
+  cp.add('toggle', toggle);
+  cp.add('turn', turn);
+  cp.add('reset', reset);
+  // add other commands
+  require('./morse').defineCommands(cp);
+  // add higher-level commands
+  require('./traffic-light-commands.cljs')(cp);
+}
 
-    
+//////////////////////////////////////////////////////////////////////////////
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="traffic-light_index.js.html">traffic-light/index.js</a>, <a href="traffic-light_index.js.html#line1">line 1</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-        
-    
-    </div>
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.Light.html">Light</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiLight.html">MultiLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a></dt>
-            <dd></dd>
-        
-            <dt><a href="trafficLight.TrafficLight.html">TrafficLight</a></dt>
-            <dd></dd>
-        </dl>
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-</article>
-
-</section>
+module.exports = {
+  toggle, turn, reset,
+  defineCommands
+};
+</code></pre>
+        </article>
+    </section>
 
 
 
