@@ -50,6 +50,7 @@ StringContents
 EscapeChar
   = '"'
   / '\\'
+
 _
   = Filler*
 

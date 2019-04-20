@@ -33,6 +33,28 @@ describe 'Command Interpreter', () ->
     @interpreter = new Interpreter(@commands)
     @ct = isCancelled: no
 
+  it 'list all commands names', () ->
+    names = @interpreter.commandNames
+    names.should.deep.equal [
+      # base commands
+      'def', 'define', 'cancel', 'pause', 'timeout', 'do',
+      'loop', # loop was overwritten
+      'repeat', 'all',
+      # specific commands
+      'turn'
+    ]
+
+  it 'add a new command', () ->
+    newCommand = sinon.stub()
+    newCommand.meta = name: 'new-command'
+    @interpreter.add 'new-command', newCommand
+    names = @interpreter.commandNames
+    names.should.deep.equal [
+      'def', 'define', 'cancel', 'pause', 'timeout', 'do',
+      'loop', 'repeat', 'all',
+      'turn', 'new-command'
+    ]
+
   it 'call a command', () ->
     res = await @interpreter.execute 'turn north', {}, @ct
     res.should.deep.equal [42]

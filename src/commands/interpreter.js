@@ -36,6 +36,23 @@ class Interpreter {
   }
 
   /**
+   * Command names this interpreter recognizes.
+   * @type {string[]}
+   */
+  get commandNames() {
+    return Object.keys(this.commands);
+  }
+
+  /**
+   * Adds a new command or redefines an existing one.
+   * @param {string} name - The command name. Should be the same as the command.meta.name property.
+   * @param {commands.Command} command - The command function.
+   */
+  add(name, command) {
+    this.commands[name] = command;
+  }
+
+  /**
    * Cancels any executing commands.
    * @param {commands.Cancellable} [ct] - Cancellation token.
    */
