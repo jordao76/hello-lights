@@ -172,4 +172,4 @@ describe 'Traffic light commands', () =>
       """
 
     it 'parse a command name with no space to its parameter-command', () =>
-      @cp.parse 'run(toggle green)'
+      @cp.parse 'do(toggle green)'

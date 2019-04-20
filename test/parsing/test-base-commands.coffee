@@ -128,7 +128,7 @@ describe 'Commands', () =>
       @move.calledOnceWith(@ctx, ['left']).should.be.true
 
     it 'define complex command', () =>
-      await @exec 'define left-and-right "Left and right." (run (move left) (pause 50) (move right))'
+      await @exec 'define left-and-right "Left and right." (do (move left) (pause 50) (move right))'
       await @exec 'left-and-right'
       @move.calledTwice.should.be.true
       @move.calledWith(@ctx, ['left']).should.be.true
@@ -136,7 +136,7 @@ describe 'Commands', () =>
       @pause.calledOnceWith(@ctx, [50]).should.be.true
 
     it 'define complex command with variables', () =>
-      await @exec 'define move-pause-move "Move twice." (run (move :d1) (pause :ms) (move :d2))'
+      await @exec 'define move-pause-move "Move twice." (do (move :d1) (pause :ms) (move :d2))'
       await @exec 'move-pause-move right 42 left'
       @move.calledTwice.should.be.true
       @move.calledWith(@ctx, ['right']).should.be.true
@@ -144,7 +144,7 @@ describe 'Commands', () =>
       @pause.calledOnceWith(@ctx, [42]).should.be.true
 
     it 'define complex command with shared variables', () =>
-      await @exec 'define move-pause-move-again "Move twice." (run (move :d) (pause :ms) (move :d))'
+      await @exec 'define move-pause-move-again "Move twice." (do (move :d) (pause :ms) (move :d))'
       await @exec 'move-pause-move-again right 42'
       @move.calledTwice.should.be.true
       @move.getCall(0).calledWith(@ctx, ['right']).should.be.true
@@ -160,7 +160,7 @@ describe 'Commands', () =>
 
         (define move-back
           "Moves back."
-          (run
+          (do
             (move-left) (move-left)))
 
       '''

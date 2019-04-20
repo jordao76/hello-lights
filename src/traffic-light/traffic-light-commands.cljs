@@ -8,7 +8,7 @@
 (define lights
   "Set the lights to the given values (on or off):
   (lights off off on)"
-  (run
+  (do
     (turn red    :red)
     (turn yellow :yellow)
     (turn green  :green)))
@@ -19,7 +19,7 @@
   "Flashes a light for the given duration.
   Toggle, wait, toggle back, wait again:
   (flash red 500)"
-  (run
+  (do
     (toggle :light) (pause :ms)
     (toggle :light) (pause :ms)))
 
@@ -104,7 +104,7 @@
 (define up
   "Go up with the given duration:
   (up 200)"
-  (run
+  (do
     (toggle green)  (pause :ms) (toggle green)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)))
@@ -114,7 +114,7 @@
 (define down
   "Go down with the given duration:
   (down 200)"
-  (run
+  (do
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle green)  (pause :ms) (toggle green)))
@@ -153,7 +153,7 @@
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
   (activity 40000 10000 10000)"
-  (run
+  (do
     (blink 4 green 500)
     (turn green on)
     (pause :green-ms)

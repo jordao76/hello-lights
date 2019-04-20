@@ -106,9 +106,9 @@ run.transformation = args => [args];
 run.paramNames = ['commands'];
 run.validation = [each(isCommand)];
 run.doc = {
-  name: 'run',
+  name: 'do',
   desc: 'Executes the given commands in sequence:\n' +
-        '(run\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
+        '(do\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -224,5 +224,6 @@ ease.doc = {
 module.exports = {
   cancel,
   pause, timeout,
-  run, loop, repeat, all, ease
+  'do': run,
+  loop, repeat, all, ease
 };
