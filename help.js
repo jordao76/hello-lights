@@ -22,9 +22,9 @@ class WebCommandFormatter {
   formatSample(sample) {
     sample = sample.replace(/^\s*?\n/s, ''); // remove first empty lines
     let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
-    sample = sample.
-      replace(new RegExp(`^[ \\t]{${indentSize}}`, "gm"), ''). // unindent
-      replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
+    sample = sample
+      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
+      .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
     return `<br /><div class="sample">${sample}</div>`;
   }
 

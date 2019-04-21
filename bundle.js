@@ -702,7 +702,7 @@ class Commander {
 
   /**
    * All supported commands indexed by their names.
-   * @type {object.<string, parsing.CommandFunction>}
+   * @type {object.<string, commands.Command>}
    */
   get commands() {
     return this.interpreter.commands;
@@ -756,7 +756,7 @@ Commander.multi = (options = {}) => {
 
 module.exports = {Commander};
 
-},{"./commands/interpreter":8,"./traffic-light/traffic-light-commands":19}],3:[function(require,module,exports){
+},{"./commands/interpreter":8,"./traffic-light/traffic-light-commands":16}],3:[function(require,module,exports){
 const {and} = require('./validation');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2675,370 +2675,11 @@ module.exports = {
 };
 
 },{}],12:[function(require,module,exports){
-//////////////////////////////////////////////////////////////////////////////
-// Defines base commands to control a Device.
-// The commands are cancellable by a Cancellation Token.
-// Cancellation Tokens are instances of Cancellable.
-//////////////////////////////////////////////////////////////////////////////
-
-const {
-  isIdentifier,
-  isNumber,
-  isGreaterThanZero,
-  isPeriod,
-  isCommand,
-  each
-} = require('./validation');
-
-//////////////////////////////////////////////////////////////////////////////
-// Base commands
-//////////////////////////////////////////////////////////////////////////////
-
-let {Cancellable} = require('./cancellable');
-
-// Default Cancellation Token used for all commands
-let cancellable = new Cancellable;
-
-// Cancels all commands that are being executed in the context of a
-// Cancellation Token.
-function cancel({ct = cancellable} = {}) {
-  if (ct.isCancelled) return;
-  ct.cancel();
-  if (ct === cancellable) {
-    cancellable = new Cancellable;
-  }
-}
-cancel.paramNames = []; // no parameters
-cancel.validation = []; // validates number of parameters (zero)
-cancel.doc = {
-  name: 'cancel',
-  desc: 'Cancels all executing commands.'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-// Pauses execution for the given duration.
-// Returns a Promise that resolves when the pause duration is complete,
-// or if it's cancelled. Even if the pause is cancelled, the Promise
-// is resolved, never rejected.
-function pause(ctx, params) {
-  // allow the first parameter to be omitted
-  // => pause({ct}, [500]) OR pause([500])
-  let ct = ctx.ct || cancellable;
-  if (ct.isCancelled) return;
-  let [ms] = params || ctx;
-  return new Promise(resolve => {
-    let timeoutID = setTimeout(() => {
-      ct.del(timeoutID);
-      resolve();
-    }, ms);
-    ct.add(timeoutID, resolve);
-  });
-}
-pause.paramNames = ['ms'];
-pause.validation = [isPeriod];
-pause.doc = {
-  name: 'pause',
-  desc: 'Pauses execution for the given duration in milliseconds:\n' +
-        '(pause 500)'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-// Executes a command with a timeout
-async function timeout(ctx, [ms, command]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  let timeoutC = new Cancellable;
-  let timeoutP = pause({ct}, [ms]);
-  // race the cancellable-command against the timeout
-  let res = await Promise.race([command({...ctx, ct: timeoutC, scope}), timeoutP]);
-  // check if the timeout was reached
-  let racer = {}; // arbitrary object to race against the timeout
-  let value = await Promise.race([timeoutP, racer]);
-  if (value !== racer || ct.isCancelled) {
-    // the timeout was reached (value !== racer) OR the timeout was cancelled
-    timeoutC.cancel();
-  }
-  return res;
-}
-timeout.paramNames = ['ms', 'command'];
-timeout.validation = [isPeriod, isCommand];
-timeout.doc = {
-  name: 'timeout',
-  desc: 'Executes a command with a timeout:\n' +
-        '(timeout 5000 (twinkle red 400))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function run(ctx, [commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  for (let i = 0; i < commands.length; ++i) {
-    if (ct.isCancelled) return;
-    let command = commands[i];
-    await command({...ctx, ct, scope});
-  }
-}
-run.transformation = args => [args];
-run.paramNames = ['commands'];
-run.validation = [each(isCommand)];
-run.doc = {
-  name: 'do',
-  desc: 'Executes the given commands in sequence:\n' +
-        '(do\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function loop(ctx, [commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  if (!commands || commands.length === 0) return;
-  while (true) {
-    if (ct.isCancelled) return;
-    await run({...ctx, ct, scope}, [commands]);
-  }
-}
-loop.transformation = args => [args];
-loop.paramNames = ['commands'];
-loop.validation = [each(isCommand)];
-loop.doc = {
-  name: 'loop',
-  desc: 'Executes the given commands in sequence, starting over forever:\n' +
-        '(loop\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function repeat(ctx, [times, commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  while (times-- > 0) {
-    if (ct.isCancelled) return;
-    await run({...ctx, ct, scope}, [commands]);
-  }
-}
-repeat.transformation = args => [args[0], args.slice(1)];
-repeat.paramNames = ['times', 'commands'];
-repeat.validation = [isGreaterThanZero, each(isCommand)];
-repeat.doc = {
-  name: 'repeat',
-  desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
-        '(repeat 5\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function all(ctx, [commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  if (ct.isCancelled) return;
-  await Promise.all(commands.map(command => {
-    // since the commands run in parallel, they must
-    // have separate scopes so as not to step in each other's toes
-    return command({...ctx, ct, scope: {...scope}});
-  }));
-}
-all.transformation = args => [args];
-all.paramNames = ['commands'];
-all.validation = [each(isCommand)];
-all.doc = {
-  name: 'all',
-  desc: 'Executes the given commands in parallel, all at the same time:\n' +
-        '(all\n  (twinkle green 700)\n  (twinkle yellow 300))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-// Ease validation
-//////////////////////////////////////////////////////////////////////////////
-
-let Easing = {
-  linear: t => t,
-  easeIn: t => t*t,
-  easeOut: t => t*(2-t),
-  easeInOut: t => t<0.5 ? 2*t*t : -1+(4-2*t)*t
-};
-
-let isEasing = e => !!Easing[e];
-isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function ease(ctx, [easing, ms, what, from, to, command]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  let start = Date.now();
-  let end = start + ms;
-  let next = () => {
-    let now = Date.now();
-    let c = Easing[easing]((now - start) / ms);
-    let curr = c * (to - from) + from;
-    return curr | 0; // double -> int
-  };
-  // `[what]` is a "live" variable, so it's defined as a property
-  Object.defineProperty(scope, what, {
-    configurable: true, // allow the property to be deleted or redefined
-    get: next,
-    set: () => {} // no-op
-  });
-  while (true) {
-    if (ct.isCancelled) break;
-    let now = Date.now();
-    let max = end - now;
-    if (max <= 0) break;
-    await timeout({...ctx, ct, scope}, [max, command]);
-  }
-}
-ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
-ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
-ease.doc = {
-  name: 'ease',
-  desc: "Ease the 'what' variable to 'command'.\n" +
-        "In the duration 'ms', go from 'from' to 'to' using the 'easing' function:\n" +
-        '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-
-module.exports = {
-  cancel,
-  pause, timeout,
-  'do': run,
-  loop, repeat, all, ease
-};
-
-},{"./cancellable":13,"./validation":14}],13:[function(require,module,exports){
-/**
- * A Cancellation Token (ct) that commands can check for cancellation.
- * Commands should regularly check for the {@link Cancellable#isCancelled}
- * attribute and exit eagerly if true.
- * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
- * them all when {@link Cancellable#cancel} is called, setting the
- * {@link Cancellable#isCancelled} attribute to true.
- * @memberof parsing
- */
-class Cancellable {
-
-  /** Cancellable constructor. */
-  constructor() {
-    /** If the Cancellation Token is cancelled. Starts of as false. */
-    this.isCancelled = false;
-    // Object storing timeout IDs and related Promise resolve functions.
-    this._timeoutIDs = {};
-  }
-
-  /**
-   * Registers the given timeout ID and {@link Promise} resolve function.
-   * @package
-   * @param timeoutID - Timeout ID, the result of calling
-   *   {@link setTimeout}, platform dependent.
-   * @param {function} resolve - Resolve function for a {@link Promise} to be
-   *   called if the timeout is cancelled.
-   */
-  add(timeoutID, resolve) {
-    this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
-  }
-
-  /**
-   * Unregisters the given timeout ID, when the timeout is reached and
-   * does not need to be cancelled anymore, or if it was cancelled.
-   * @package
-   * @param timeoutID - Timeout ID to unregister.
-   */
-  del(timeoutID) {
-    delete this._timeoutIDs[timeoutID.id||timeoutID];
-  }
-
-  /**
-   * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
-   * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
-   * calling the related resolve functions.
-   */
-  cancel() {
-    this.isCancelled = true;
-    for (let [, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
-      this.del(timeoutID);
-      clearTimeout(timeoutID);
-      resolve();
-    }
-  }
-
-}
-
-module.exports = {Cancellable};
-
-},{}],14:[function(require,module,exports){
-//////////////////////////////////////////////////////////////////////////////
-// Validation functions
-//////////////////////////////////////////////////////////////////////////////
-
-// A negative look behind to check for a string that does NOT end with a dash
-// is only supported on node 8.9.4 with the --harmony flag
-// https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
-// /^[a-z_][a-z_0-9-]*(?<!-)$/i
-const isIdentifier = s =>
-  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
-isIdentifier.exp = 'a valid identifier';
-
-const isString = s => typeof s === 'string';
-isString.exp = 'a string';
-
-const isNumber = n => typeof n === 'number';
-isNumber.exp = 'a number';
-
-const isGreaterThan = n => {
-  let v = x => isNumber(x) && x > n;
-  v.exp = `a number (> ${n})`;
-  return v;
-};
-const isGreaterThanZero = isGreaterThan(0);
-
-const isGreaterThanOrEqual = n => {
-  let v = x => isNumber(x) && x >= n;
-  v.exp = `a number (>= ${n})`;
-  return v;
-};
-const isGreaterThanOrEqualZero = isGreaterThanOrEqual(0);
-
-const isPeriod = isGreaterThanOrEqualZero;
-
-const isCommand = f => typeof f === 'function';
-isCommand.exp = 'a command';
-
-const each = vf => {
-  let v = a => Array.isArray(a) && a.length > 0 && a.every(e => vf(e));
-  v.exp = `each is ${vf.exp} (and at least 1)`;
-  return v;
-};
-
-const and = (...vfs) => {
-  vfs = [...new Set(vfs)]; // remove duplicates
-  if (vfs.length === 1) return vfs[0];
-  let v = e => vfs.every(vf => vf(e));
-  v.exp = vfs.map(vf => vf.exp).join(' and ');
-  return v;
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-module.exports = {
-  isIdentifier,
-  isString,
-  isNumber,
-  isGreaterThan,
-  isGreaterThanZero,
-  isGreaterThanOrEqual,
-  isGreaterThanOrEqualZero,
-  isPeriod,
-  isCommand,
-  each,
-  and
-};
-
-},{}],15:[function(require,module,exports){
 /* eslint no-multi-spaces: 0 */
 
 const {isLight} = require('./validation');
-const {isString} = require('../parsing/validation');
-const {pause} = require('../parsing/base-commands');
+const {isString} = require('../commands/validation');
+const {pause} = require('../commands/base-commands');
 const {intersperse, flatten} = require('./utils');
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3163,14 +2804,6 @@ morse.meta = {
     @example
     (morse green "hello-lights")`
 };
-/** @deprecated */
-morse.paramNames = ['light', 'text'];
-morse.validation = [isLight, isString];
-morse.doc = {
-  name: 'morse',
-  desc: 'Morse code pattern with the given light and text:\n' +
-        '(morse green "hello-lights")'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3193,14 +2826,13 @@ module.exports = {
   defineCommands
 };
 
-},{"../parsing/base-commands":12,"../parsing/validation":14,"./utils":21,"./validation":22}],16:[function(require,module,exports){
+},{"../commands/base-commands":4,"../commands/validation":11,"./utils":18,"./validation":19}],13:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isGreaterThanZero,
-  each
-} = require('../parsing/validation');
+  isNumber
+} = require('../commands/validation');
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -3213,20 +2845,11 @@ function use({tl, ct}, [indexes]) {
 }
 use.meta = {
   name: 'use',
-  params: [{ name: 'indexes', validate: isGreaterThanZero, isRest: true }],
+  params: [{ name: 'indexes', validate: isNumber, isRest: true }],
   desc: `
     When using multiple traffic lights, uses the given numbered ones.
     @example
     (use 1 2)`
-};
-/** @deprecated */
-use.transformation = args => [args];
-use.paramNames = ['indexes'];
-use.validation = [each(isGreaterThanZero)];
-use.doc = {
-  name: 'use',
-  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
-        '(use 1 2)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3242,13 +2865,6 @@ useNext.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the next one or ones to use.`
 };
-/** @deprecated */
-useNext.paramNames = [];
-useNext.validation = [];
-useNext.doc = {
-  name: 'use-next',
-  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3262,13 +2878,6 @@ usePrevious.meta = {
   name: 'use-previous',
   params: [],
   desc: `When using multiple traffic lights, chooses the previous one or ones to use.`
-};
-/** @deprecated */
-usePrevious.paramNames = [];
-usePrevious.validation = [];
-usePrevious.doc = {
-  name: 'use-previous',
-  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3284,13 +2893,6 @@ useLast.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the last one to use.`
 };
-/** @deprecated */
-useLast.paramNames = [];
-useLast.validation = [];
-useLast.doc = {
-  name: 'use-last',
-  desc: 'When using multiple traffic lights, chooses the last one to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3305,13 +2907,6 @@ useNear.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the nearest one to use.`
 };
-/** @deprecated */
-useNear.paramNames = [];
-useNear.validation = [];
-useNear.doc = {
-  name: 'use-near',
-  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3325,13 +2920,6 @@ useAll.meta = {
   name: 'use-all',
   params: [],
   desc: `When using multiple traffic lights, chooses all of them to use.`
-};
-/** @deprecated */
-useAll.paramNames = [];
-useAll.validation = [];
-useAll.doc = {
-  name: 'use-all',
-  desc: 'When using multiple traffic lights, chooses all of them to use.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3359,7 +2947,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../parsing/validation":14}],17:[function(require,module,exports){
+},{"../commands/validation":11}],14:[function(require,module,exports){
 const {Light, TrafficLight} = require('./traffic-light');
 
 ///////////////
@@ -3690,7 +3278,7 @@ module.exports = {
   MultiLight, MultiTrafficLight, FlexMultiTrafficLight
 };
 
-},{"./traffic-light":20}],18:[function(require,module,exports){
+},{"./traffic-light":17}],15:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -3862,7 +3450,7 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],19:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
@@ -3884,13 +3472,6 @@ toggle.meta = {
     @example
     (toggle green)`
 };
-/** @deprecated */
-toggle.paramNames = ['light'];
-toggle.validation = [isLight];
-toggle.doc = {
-  name: 'toggle',
-  desc: 'Toggles the given light:\n(toggle green)'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3909,14 +3490,6 @@ turn.meta = {
     @example
     (turn green on)`
 };
-/** @deprecated */
-turn.paramNames = ['light', 'state'];
-turn.validation = [isLight, isState];
-turn.doc = {
-  name: 'turn',
-  desc: 'Turns the given light on or off:\n' +
-        '(turn green on)'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3928,13 +3501,6 @@ reset.meta = {
   name: 'reset',
   params: [],
   desc: `Sets all lights to off.`
-};
-/** @deprecated */
-reset.paramNames = []; // no parameters
-reset.validation = []; // validates number of parameters (zero)
-reset.doc = {
-  name: 'reset',
-  desc: 'Sets all lights to off.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -3957,7 +3523,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./morse":15,"./traffic-light-commands.cljs":18,"./utils":21,"./validation":22}],20:[function(require,module,exports){
+},{"./morse":12,"./traffic-light-commands.cljs":15,"./utils":18,"./validation":19}],17:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -4088,7 +3654,7 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],21:[function(require,module,exports){
+},{"events":1}],18:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4125,7 +3691,7 @@ module.exports = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],22:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4142,7 +3708,7 @@ module.exports = {isLight, isState};
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],23:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 ////////////////////////////////////////////////////////
 
 class WebCommandFormatter {
@@ -4167,9 +3733,9 @@ class WebCommandFormatter {
   formatSample(sample) {
     sample = sample.replace(/^\s*?\n/s, ''); // remove first empty lines
     let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
-    sample = sample.
-      replace(new RegExp(`^[ \\t]{${indentSize}}`, "gm"), ''). // unindent
-      replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
+    sample = sample
+      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
+      .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
     return `<br /><div class="sample">${sample}</div>`;
   }
 
@@ -4222,7 +3788,7 @@ module.exports = {
   setUpHelp
 };
 
-},{}],24:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 const {Commander} = require('../src/commander');
 const {setUpHelp} = require('./help');
 const {MultiTrafficLightSelector} = require('./web-traffic-light');
@@ -4323,7 +3889,7 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/commander":2,"./help":23,"./web-traffic-light":25}],25:[function(require,module,exports){
+},{"../src/commander":2,"./help":20,"./web-traffic-light":22}],22:[function(require,module,exports){
 const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
 const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
 
@@ -4436,4 +4002,4 @@ module.exports = {
   MultiTrafficLightSelector
 };
 
-},{"../src/traffic-light/multi-traffic-light":17,"../src/traffic-light/multi-traffic-light-commands":16,"../src/traffic-light/traffic-light":20,"events":1}]},{},[24]);
+},{"../src/traffic-light/multi-traffic-light":14,"../src/traffic-light/multi-traffic-light-commands":13,"../src/traffic-light/traffic-light":17,"events":1}]},{},[21]);
