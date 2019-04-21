@@ -221,3 +221,13 @@ describe 'Base Commands', () ->
         await c.repeat {ct}, [2, c1, c2]
         c1.callCount.should.equal 0
         c2.callCount.should.equal 0
+
+    describe 'conversions', () ->
+
+      it 'should convert from seconds to milliseconds', () ->
+        act = await c.seconds {}, [2]
+        act.should.equal 2000
+
+      it 'should convert from minutes to milliseconds', () ->
+        act = await c.minutes {}, [42]
+        act.should.equal 42 * 60 * 1000
