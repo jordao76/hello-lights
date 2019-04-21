@@ -138,7 +138,7 @@ class Validator {
     if (isVar(arg)) {
       this._combine(arg.name, param.validate);
     } else {
-      if (isCommand(arg) && !node.value.meta.isMacro && arg.value.meta.returns === param.validate) {
+      if (isCommand(arg) && !node.value.meta.isMacro && arg.value && arg.value.meta.returns === param.validate) {
         // no error since the argument is a command that returns
         // a conforming value to the parameter validation function
         // (they are the same validation function)

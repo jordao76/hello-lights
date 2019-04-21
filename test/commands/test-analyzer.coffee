@@ -153,6 +153,23 @@ describe 'Command Analyzer', () ->
       loc: '1:1-1:10'
     ]
 
+  it 'call a nested command that does not exist', () ->
+    exp = [
+      type: 'command', name: 'turn', value: @turn
+      args: [
+        type: 'command', name: 'run', param: 'direction'
+        args: []
+      ]
+      params: []
+    ]
+    act = @analyze 'turn (run)'
+    act.should.deep.equal exp
+    @analyzer.errors.should.deep.equal [
+      type: 'error'
+      text: 'Command not found: "run"'
+      loc: '1:7-1:9'
+    ]
+
   it 'call a command that does not exist, with a valid nested command', () ->
     exp = [
       type: 'command', name: 'run'
