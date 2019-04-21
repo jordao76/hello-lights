@@ -33,7 +33,7 @@ const logger = {
 function execute(commandStr) {
   clearError();
   window.commander.run(commandStr);
-  if (commandStr.match(/define/)) {
+  if (commandStr.match(/def(ine)?/)) {
     setTimeout(showHelp, 0); // yield
   }
 }

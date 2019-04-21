@@ -1042,6 +1042,28 @@ timeout.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
+function seconds(ctx, [sec]) {
+  return sec * 1000;
+}
+seconds.meta = {
+  name: 'seconds',
+  params: [{ name: 'sec', validate: isNumber }],
+  returns: isNumber,
+  desc: `Converts the given number of seconds to milliseconds.`
+};
+
+function minutes(ctx, [min]) {
+  return min * 60 * 1000;
+}
+minutes.meta = {
+  name: 'minutes',
+  params: [{ name: 'min', validate: isNumber }],
+  returns: isNumber,
+  desc: `Converts the given number of minutes to milliseconds.`
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 async function $do(ctx, [...commands]) {
   let {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
@@ -1139,6 +1161,7 @@ const commands = {
   cancel,
   pause,
   timeout,
+  seconds, minutes,
   'do': $do,
   loop,
   repeat,
@@ -3437,7 +3460,10 @@ module.exports = {
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
   @example
-  (activity 40000 10000 10000)"
+  (activity
+    (seconds 40)
+    (seconds 10)
+    (seconds 10))"
   (do
     (blink 4 green 500)
     (turn green on)
@@ -3824,7 +3850,7 @@ const logger = {
 function execute(commandStr) {
   clearError();
   window.commander.run(commandStr);
-  if (commandStr.match(/define/)) {
+  if (commandStr.match(/def(ine)?/)) {
     setTimeout(showHelp, 0); // yield
   }
 }
