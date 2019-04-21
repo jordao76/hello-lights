@@ -1,8 +1,8 @@
 /* eslint no-multi-spaces: 0 */
 
 const {isLight} = require('./validation');
-const {isString} = require('../parsing/validation');
-const {pause} = require('../parsing/base-commands');
+const {isString} = require('../commands/validation');
+const {pause} = require('../commands/base-commands');
 const {intersperse, flatten} = require('./utils');
 
 //////////////////////////////////////////////////////////////////////////////
@@ -126,14 +126,6 @@ morse.meta = {
     Morse code pattern with the given light and text.
     @example
     (morse green "hello-lights")`
-};
-/** @deprecated */
-morse.paramNames = ['light', 'text'];
-morse.validation = [isLight, isString];
-morse.doc = {
-  name: 'morse',
-  desc: 'Morse code pattern with the given light and text:\n' +
-        '(morse green "hello-lights")'
 };
 
 //////////////////////////////////////////////////////////////////////////////

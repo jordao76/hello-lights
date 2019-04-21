@@ -93,14 +93,6 @@ class ChromiumDeviceManager extends DeviceManager {
       params: [],
       desc: 'Opens a new chromium device.'
     };
-    /** @deprecated */
-    newDevice.doc = {
-      name: 'new-device',
-      desc: 'Opens a new chromium device.'
-    };
-    newDevice.paramNames = [];
-    newDevice.validation = [];
-    cp.add('new-device', newDevice);
   }
 
 }

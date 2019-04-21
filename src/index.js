@@ -1,7 +1,7 @@
 const {Commander} = require('./commander');
 
 module.exports = {
-  parsing: require('./parsing'),
+  commands: require('./commands'),
   trafficLight: require('./traffic-light'),
   physical: require('./physical'),
   devices: require('./devices'),

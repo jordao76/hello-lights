@@ -1,4 +1,3 @@
-src/parsing/command-peg-parser.js
 src/commands/peg-parser.js
 web/bundle.js
 web/doc

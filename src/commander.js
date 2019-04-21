@@ -176,7 +176,7 @@ class Commander {
 
   /**
    * All supported commands indexed by their names.
-   * @type {object.<string, parsing.CommandFunction>}
+   * @type {object.<string, commands.Command>}
    */
   get commands() {
     return this.interpreter.commands;

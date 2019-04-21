@@ -2,9 +2,8 @@
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isGreaterThanZero,
-  each
-} = require('../parsing/validation');
+  isNumber
+} = require('../commands/validation');
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -17,20 +16,11 @@ function use({tl, ct}, [indexes]) {
 }
 use.meta = {
   name: 'use',
-  params: [{ name: 'indexes', validate: isGreaterThanZero, isRest: true }],
+  params: [{ name: 'indexes', validate: isNumber, isRest: true }],
   desc: `
     When using multiple traffic lights, uses the given numbered ones.
     @example
     (use 1 2)`
-};
-/** @deprecated */
-use.transformation = args => [args];
-use.paramNames = ['indexes'];
-use.validation = [each(isGreaterThanZero)];
-use.doc = {
-  name: 'use',
-  desc: 'When using multiple traffic lights, uses the given numbered ones:\n' +
-        '(use 1 2)'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -46,13 +36,6 @@ useNext.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the next one or ones to use.`
 };
-/** @deprecated */
-useNext.paramNames = [];
-useNext.validation = [];
-useNext.doc = {
-  name: 'use-next',
-  desc: 'When using multiple traffic lights, chooses the next one or ones to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -66,13 +49,6 @@ usePrevious.meta = {
   name: 'use-previous',
   params: [],
   desc: `When using multiple traffic lights, chooses the previous one or ones to use.`
-};
-/** @deprecated */
-usePrevious.paramNames = [];
-usePrevious.validation = [];
-usePrevious.doc = {
-  name: 'use-previous',
-  desc: 'When using multiple traffic lights, chooses the previous one or ones to use.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -88,13 +64,6 @@ useLast.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the last one to use.`
 };
-/** @deprecated */
-useLast.paramNames = [];
-useLast.validation = [];
-useLast.doc = {
-  name: 'use-last',
-  desc: 'When using multiple traffic lights, chooses the last one to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -109,13 +78,6 @@ useNear.meta = {
   params: [],
   desc: `When using multiple traffic lights, chooses the nearest one to use.`
 };
-/** @deprecated */
-useNear.paramNames = [];
-useNear.validation = [];
-useNear.doc = {
-  name: 'use-near',
-  desc: 'When using multiple traffic lights, chooses the nearest one to use.'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -129,13 +91,6 @@ useAll.meta = {
   name: 'use-all',
   params: [],
   desc: `When using multiple traffic lights, chooses all of them to use.`
-};
-/** @deprecated */
-useAll.paramNames = [];
-useAll.validation = [];
-useAll.doc = {
-  name: 'use-all',
-  desc: 'When using multiple traffic lights, chooses all of them to use.'
 };
 
 //////////////////////////////////////////////////////////////////////////////

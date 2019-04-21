@@ -13,8 +13,7 @@
     "predoc": "jsdoc src --readme README.md -r -d web/doc",
     "doc": "opn web/doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
-    "peg": "pegjs -o src/parsing/command-peg-parser.js src/parsing/command-grammar.pegjs",
-    "postpeg": "pegjs -o src/commands/peg-parser.js src/commands/grammar.pegjs",
+    "peg": "pegjs -o src/commands/peg-parser.js src/commands/grammar.pegjs",
     "mocha-solo": "mocha --require coffeescript/register",
     "mocha-grep": "mocha --require coffeescript/register \"test/**/*.coffee\" --grep",
     "mocha": "mocha --require coffeescript/register \"test/**/*.coffee\"",
@@ -56,7 +55,6 @@
   },
   "nyc": {
     "exclude": [
-      "src/parsing/command-peg-parser.js",
       "src/commands/peg-parser.js"
     ]
   }

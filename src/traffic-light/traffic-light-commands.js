@@ -19,13 +19,6 @@ toggle.meta = {
     @example
     (toggle green)`
 };
-/** @deprecated */
-toggle.paramNames = ['light'];
-toggle.validation = [isLight];
-toggle.doc = {
-  name: 'toggle',
-  desc: 'Toggles the given light:\n(toggle green)'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -44,14 +37,6 @@ turn.meta = {
     @example
     (turn green on)`
 };
-/** @deprecated */
-turn.paramNames = ['light', 'state'];
-turn.validation = [isLight, isState];
-turn.doc = {
-  name: 'turn',
-  desc: 'Turns the given light on or off:\n' +
-        '(turn green on)'
-};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -63,13 +48,6 @@ reset.meta = {
   name: 'reset',
   params: [],
   desc: `Sets all lights to off.`
-};
-/** @deprecated */
-reset.paramNames = []; // no parameters
-reset.validation = []; // validates number of parameters (zero)
-reset.doc = {
-  name: 'reset',
-  desc: 'Sets all lights to off.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
