@@ -546,11 +546,11 @@ const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector')
 
 ////////////////////////////////////////////////
 
-const {CommandParser} = require('./parsing/command-parser');
+const {Interpreter} = require('./commands/interpreter');
 const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
-// the default command parser
-const Parser = new CommandParser();
-defineCommands(Parser);
+// the default command interpreter
+const DefaultInterpreter = new Interpreter();
+defineCommands(DefaultInterpreter);
 
 ////////////////////////////////////////////////
 
@@ -564,7 +564,7 @@ class Commander {
    * @param {object} [options] - Commander options.
    * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+   * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
    *   Takes precedence over `options.selectorCtor`.
    * @param {function} [options.selectorCtor] - The constructor of a traffic
@@ -580,14 +580,14 @@ class Commander {
   constructor(options = {}) {
     let {
       logger = console,
-      parser = Parser,
+      interpreter = DefaultInterpreter,
       selector = null,
       selectorCtor = SelectorCtor
     } = options;
     this.logger = logger;
-    this.parser = parser;
+    this.interpreter = interpreter;
 
-    this.selector = selector || new selectorCtor({...options, logger, parser}); // eslint-disable-line new-cap
+    this.selector = selector || new selectorCtor({...options, logger, interpreter}); // eslint-disable-line new-cap
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
     this.selector.on('interrupted', () => this._interrupt());
@@ -605,13 +605,13 @@ class Commander {
    * Cancels any currently executing command.
    */
   cancel() {
-    this.parser.cancel();
+    this.interpreter.cancel();
   }
 
   _interrupt() {
     if (!this.running) return;
     this.isInterrupted = true;
-    this.parser.cancel();
+    this.interpreter.cancel();
   }
 
   /**
@@ -646,7 +646,7 @@ class Commander {
   async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
     this.logger.log(`${tl}: cancel '${this.running}'`);
-    this.parser.cancel();
+    this.interpreter.cancel();
     await tl.reset();
   }
 
@@ -660,7 +660,7 @@ class Commander {
     if (reset) await tl.reset();
     this.logger.log(`${tl}: running '${command}'`);
     this.running = command;
-    let res = await this.parser.execute(command, {tl});
+    let res = await this.interpreter.execute(command, {tl});
     if (command === this.running) this.running = null;
     this._finishedExecution(command, tl);
     return res;
@@ -697,7 +697,7 @@ class Commander {
    * @type {string[]}
    */
   get commandNames() {
-    return this.parser.commandNames;
+    return this.interpreter.commandNames;
   }
 
   /**
@@ -705,7 +705,7 @@ class Commander {
    * @type {object.<string, parsing.CommandFunction>}
    */
   get commands() {
-    return this.parser.commands;
+    return this.interpreter.commands;
   }
 
   /**
@@ -713,21 +713,16 @@ class Commander {
    * @param {string} commandName - Name of the command to log help info.
    */
   help(commandName) {
-    let command = this.parser.commands[commandName];
+    let command = this.interpreter.commands[commandName];
     if (!command) {
       this.logger.error(`Command not found: "${commandName}"`);
       return;
     }
-    let paramNames = command.paramNames, params = '';
-    const validationText = i => {
-      if (!command.validation) return '';
-      return ` (${command.validation[i].exp})`;
-    };
-    if (paramNames && paramNames.length > 0) {
-      params = ' ' + paramNames.map((n, i) => ':' + n + validationText(i)).join(' ');
-    }
-    this.logger.log(`${command.doc.name}${params}`);
-    this.logger.log(command.doc.desc);
+    const validationText = p => p.validate ? ` (${p.validate.exp})` : '';
+    let params = command.meta.params.map(p => ':' + p.name + validationText(p)).join(' ');
+    if (params.length > 0) params = ' ' + params;
+    this.logger.log(`${command.meta.name}${params}`);
+    this.logger.log(command.meta.desc);
   }
 
   /**
@@ -748,7 +743,7 @@ class Commander {
  * @param {object} [options] - Commander options.
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
- * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+ * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
  * @returns {Commander} A multi-traffic-light commander.
  */
 Commander.multi = (options = {}) => {
@@ -761,7 +756,198 @@ Commander.multi = (options = {}) => {
 
 module.exports = {Commander};
 
-},{"./parsing/command-parser":5,"./traffic-light/traffic-light-commands":12}],3:[function(require,module,exports){
+},{"./commands/interpreter":8,"./traffic-light/traffic-light-commands":19}],3:[function(require,module,exports){
+const {and} = require('./validation');
+
+/////////////////////////////////////////////////////////////////////////////
+
+class Analyzer {
+
+  constructor(commands) {
+    this.commands = commands;
+  }
+
+  analyze(nodes) {
+    this.errors = [];
+    if (!nodes) return null;
+    nodes = nodes.map(node => {
+      this.root = node;
+      this.params = [];
+      return this.recur(node);
+    }).filter(node => !!node); // macros can remove the node by returning null
+    delete this.params;
+    delete this.root;
+    if (nodes.length === 0) return null;
+    return nodes;
+  }
+
+  recur(node) {
+    return this[node.type](node);
+  }
+
+  command(node) {
+    // recurse on the command arguments
+    node.args = node.args
+      .map(arg => this.recur(arg))
+      .filter(arg => !!arg); // macros can remove the node by returning null
+
+    // validate the command node
+    let errors = new Validator(this.commands, this.params).validate(node);
+    this.errors.push(...errors);
+
+    if (node === this.root) {
+      node.params = this.params;
+    }
+    // check and run if it's a macro
+    if (errors.length === 0 && node.value.meta.isMacro) {
+      return this.runMacro(node);
+    }
+
+    return node;
+  }
+
+  runMacro(node) {
+    let macro = node.value;
+    let res = macro({
+      root: this.root,
+      node: node,
+      commands: this.commands
+    });
+    if (res) {
+      if (Array.isArray(res) && isError(res[0])) {
+        // multiple errors
+        this.errors.push(...res);
+        return node;
+      }
+      if (isError(res)) {
+        // single error
+        this.errors.push(res);
+        return node;
+      }
+    }
+    return res;
+  }
+
+  value(node) {
+    return node;
+  }
+
+  variable(node) {
+    let param = this.params.find(p => p.name === node.name);
+    if (!param) {
+      this.params.push({
+        type: 'param',
+        name: node.name,
+        uses: [node.loc] // uses: places where the param is used
+      });
+    } else {
+      param.uses.push(node.loc);
+    }
+    return node;
+  }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+class Validator {
+
+  constructor(commands, params) {
+    this.commands = commands;
+    this.params = params;
+  }
+
+  validate(node) {
+    let name = node.name;
+
+    let command = this.commands[name];
+    if (!command) return [badCommand(name, node.loc)];
+    node.value = command;
+
+    let args = node.args;
+    let params = command.meta.params;
+    let errors = [];
+
+    // check arity
+    let hasRest = params.length > 0 && params[params.length - 1].isRest;
+    if ((!hasRest && params.length !== args.length) || (hasRest && params.length > args.length)) {
+      errors.push(badArity(name, params.length, args.length, node.loc));
+    }
+
+    // check arguments against the parameters
+    errors.push(...this._validateArgs(node, args, params));
+
+    return errors;
+  }
+
+  _validateArgs(node, args, params) {
+    let argGroups = params
+      .slice(0, args.length) // only parameters for which there are arguments
+      .map((param, i) => param.isRest ? args.slice(i) : [args[i]]); // group arguments per parameter
+    let errors = argGroups
+      .map((group, i) => group
+        .map(arg => this._validateArg(node, arg, params[i], i)) // validate each argument group
+        .filter(e => !!e)) // only keep validation errors (non null)
+      .reduce((acc, val) => acc.concat(val), []); // flatten all errors
+    return errors;
+  }
+
+  _validateArg(node, arg, param, paramIdx) {
+    arg.param = param.name;
+    if (isVar(arg)) {
+      this._combine(arg.name, param.validate);
+    } else {
+      if (isCommand(arg) && !node.value.meta.isMacro && arg.value.meta.returns === param.validate) {
+        // no error since the argument is a command that returns
+        // a conforming value to the parameter validation function
+        // (they are the same validation function)
+        // (only if the command is not a macro)
+        return null;
+      }
+      if (!param.validate(arg.value)) {
+        return badValue(node, paramIdx, arg);
+      }
+    }
+  }
+
+  _combine(paramName, validate) {
+    let param = this.params.find(p => p.name === paramName); // global param
+    param.validate = param.validate ? and(param.validate, validate) : validate;
+  }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Errors
+/////////////////////////////////////////////////////////////////////////////
+
+const isVar = node => node.type === 'variable';
+const isError = node => node.type === 'error';
+const isCommand = node => node.type === 'command';
+
+const badCommand = (name, loc) => ({
+  type: 'error', loc,
+  text: `Command not found: "${name}"`
+});
+
+const badArity = (name, exp, act, loc) => ({
+  type: 'error', loc,
+  text: `Bad number of arguments to "${name}": it takes ${exp} but was given ${act}`
+});
+
+const badValue = (node, paramIdx, arg) => {
+  let param = node.value.meta.params[paramIdx];
+  let text = isCommand(arg)
+    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`;
+  return { type: 'error', loc: arg.loc, text };
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = {Analyzer};
+
+},{"./validation":11}],4:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -769,12 +955,8 @@ module.exports = {Commander};
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isIdentifier,
   isNumber,
-  isGreaterThanZero,
-  isPeriod,
-  isCommand,
-  each
+  isCommand
 } = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
@@ -795,10 +977,9 @@ function cancel({ct = cancellable} = {}) {
     cancellable = new Cancellable;
   }
 }
-cancel.paramNames = []; // no parameters
-cancel.validation = []; // validates number of parameters (zero)
-cancel.doc = {
+cancel.meta = {
   name: 'cancel',
+  params: [],
   desc: 'Cancels all executing commands.'
 };
 
@@ -822,12 +1003,10 @@ function pause(ctx, params) {
     ct.add(timeoutID, resolve);
   });
 }
-pause.paramNames = ['ms'];
-pause.validation = [isPeriod];
-pause.doc = {
+pause.meta = {
   name: 'pause',
-  desc: 'Pauses execution for the given duration in milliseconds:\n' +
-        '(pause 500)'
+  params: [{ name: 'ms', validate: isNumber }],
+  desc: `Pauses execution for the given duration in milliseconds.`
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -835,6 +1014,7 @@ pause.doc = {
 // Executes a command with a timeout
 async function timeout(ctx, [ms, command]) {
   let {ct = cancellable, scope = {}} = ctx;
+  if (ct.isCancelled) return;
   let timeoutC = new Cancellable;
   let timeoutP = pause({ct}, [ms]);
   // race the cancellable-command against the timeout
@@ -848,17 +1028,21 @@ async function timeout(ctx, [ms, command]) {
   }
   return res;
 }
-timeout.paramNames = ['ms', 'command'];
-timeout.validation = [isPeriod, isCommand];
-timeout.doc = {
+timeout.meta = {
   name: 'timeout',
-  desc: 'Executes a command with a timeout:\n' +
-        '(timeout 5000 (twinkle red 400))'
+  params: [
+    { name: 'ms', validate: isNumber },
+    { name: 'command', validate: isCommand }
+  ],
+  desc: `
+    Executes a command with a timeout.
+    @example
+    (timeout 5000 (twinkle red 400))`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function run(ctx, [commands]) {
+async function $do(ctx, [...commands]) {
   let {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
@@ -866,55 +1050,68 @@ async function run(ctx, [commands]) {
     await command({...ctx, ct, scope});
   }
 }
-run.transformation = args => [args];
-run.paramNames = ['commands'];
-run.validation = [each(isCommand)];
-run.doc = {
+$do.meta = {
   name: 'do',
-  desc: 'Executes the given commands in sequence:\n' +
-        '(do\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
+  params: [{ name: 'command', validate: isCommand, isRest: true }],
+  desc: `
+    Executes the given commands in sequence.
+    @example
+    (do
+      (toggle red)
+      (pause 1000)
+      (toggle red))`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop(ctx, [commands]) {
+async function loop(ctx, params) {
   let {ct = cancellable, scope = {}} = ctx;
-  if (!commands || commands.length === 0) return;
   while (true) {
     if (ct.isCancelled) return;
-    await run({...ctx, ct, scope}, [commands]);
+    await $do({...ctx, ct, scope}, params);
   }
 }
-loop.transformation = args => [args];
-loop.paramNames = ['commands'];
-loop.validation = [each(isCommand)];
-loop.doc = {
+loop.meta = {
   name: 'loop',
-  desc: 'Executes the given commands in sequence, starting over forever:\n' +
-        '(loop\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
+  params: [{ name: 'command', validate: isCommand, isRest: true }],
+  desc: `
+    Executes the given commands in sequence, starting over forever.
+    @example
+    (loop
+      (toggle green)
+      (pause 400)
+      (toggle red)
+      (pause 400))`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function repeat(ctx, [times, commands]) {
+async function repeat(ctx, [times, ...commands]) {
   let {ct = cancellable, scope = {}} = ctx;
   while (times-- > 0) {
     if (ct.isCancelled) return;
-    await run({...ctx, ct, scope}, [commands]);
+    await $do({...ctx, ct, scope}, [...commands]);
   }
 }
-repeat.transformation = args => [args[0], args.slice(1)];
-repeat.paramNames = ['times', 'commands'];
-repeat.validation = [isGreaterThanZero, each(isCommand)];
-repeat.doc = {
+repeat.meta = {
   name: 'repeat',
-  desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
-        '(repeat 5\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
+  params: [
+    { name: 'times', validate: isNumber },
+    { name: 'command', validate: isCommand, isRest: true }
+  ],
+  desc: `
+    Executes the commands in sequence, repeating the given number of times.
+    @example
+    (repeat 5
+      (toggle green)
+      (pause 400)
+      (toggle red)
+      (pause 400))`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function all(ctx, [commands]) {
+async function all(ctx, [...commands]) {
   let {ct = cancellable, scope = {}} = ctx;
   if (ct.isCancelled) return;
   await Promise.all(commands.map(command => {
@@ -923,84 +1120,48 @@ async function all(ctx, [commands]) {
     return command({...ctx, ct, scope: {...scope}});
   }));
 }
-all.transformation = args => [args];
-all.paramNames = ['commands'];
-all.validation = [each(isCommand)];
-all.doc = {
+all.meta = {
   name: 'all',
-  desc: 'Executes the given commands in parallel, all at the same time:\n' +
-        '(all\n  (twinkle green 700)\n  (twinkle yellow 300))'
-};
-
-//////////////////////////////////////////////////////////////////////////////
-// Ease validation
-//////////////////////////////////////////////////////////////////////////////
-
-let Easing = {
-  linear: t => t,
-  easeIn: t => t*t,
-  easeOut: t => t*(2-t),
-  easeInOut: t => t<0.5 ? 2*t*t : -1+(4-2*t)*t
-};
-
-let isEasing = e => !!Easing[e];
-isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
-
-//////////////////////////////////////////////////////////////////////////////
-
-async function ease(ctx, [easing, ms, what, from, to, command]) {
-  let {ct = cancellable, scope = {}} = ctx;
-  let start = Date.now();
-  let end = start + ms;
-  let next = () => {
-    let now = Date.now();
-    let c = Easing[easing]((now - start) / ms);
-    let curr = c * (to - from) + from;
-    return curr | 0; // double -> int
-  };
-  // `[what]` is a "live" variable, so it's defined as a property
-  Object.defineProperty(scope, what, {
-    configurable: true, // allow the property to be deleted or redefined
-    get: next,
-    set: () => {} // no-op
-  });
-  while (true) {
-    if (ct.isCancelled) break;
-    let now = Date.now();
-    let max = end - now;
-    if (max <= 0) break;
-    await timeout({...ctx, ct, scope}, [max, command]);
-  }
-}
-ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
-ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
-ease.doc = {
-  name: 'ease',
-  desc: "Ease the 'what' variable to 'command'.\n" +
-        "In the duration 'ms', go from 'from' to 'to' using the 'easing' function:\n" +
-        '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
+  params: [{ name: 'command', validate: isCommand, isRest: true }],
+  desc: `
+    Executes the given commands in parallel, all at the same time.
+    @example
+    (all
+      (twinkle green 700)
+      (twinkle yellow 300))`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-module.exports = {
+const commands = {
   cancel,
-  pause, timeout,
-  'do': run,
-  loop, repeat, all, ease
+  pause,
+  timeout,
+  'do': $do,
+  loop,
+  repeat,
+  all
 };
 
-},{"./cancellable":4,"./validation":7}],4:[function(require,module,exports){
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = {...commands, commands};
+
+/////////////////////////////////////////////////////////////////////////////
+
+},{"./cancellable":5,"./validation":11}],5:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
- * Commands should regularly check for the {@link Cancellable#isCancelled}
+ * Commands should regularly check for the
+ * {@link commands.Cancellable#isCancelled|isCancelled}
  * attribute and exit eagerly if true.
- * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
- * them all when {@link Cancellable#cancel} is called, setting the
- * {@link Cancellable#isCancelled} attribute to true.
- * @memberof parsing
+ * Keeps a list of timeout IDs issued by
+ * {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout}
+ * calls and cancels them all when {@link commands.Cancellable#cancel|cancel} is called,
+ * setting the {@link commands.Cancellable#isCancelled|isCancelled} attribute to true.
+ * @memberof commands
  */
 class Cancellable {
 
@@ -1013,12 +1174,15 @@ class Cancellable {
   }
 
   /**
-   * Registers the given timeout ID and {@link Promise} resolve function.
+   * Registers the given timeout ID and
+   * {@link https://developer.mozilla.org/docs/Web/JavaScript/Guide/Using_promises|Promise}
+   * resolve function.
    * @package
    * @param timeoutID - Timeout ID, the result of calling
-   *   {@link setTimeout}, platform dependent.
-   * @param {function} resolve - Resolve function for a {@link Promise} to be
-   *   called if the timeout is cancelled.
+   *   {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/setTimeout|setTimeout},
+   *   platform dependent.
+   * @param {function} resolve - Resolve function for a Promise to be called
+   *   if the timeout is cancelled.
    */
   add(timeoutID, resolve) {
     this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
@@ -1035,9 +1199,9 @@ class Cancellable {
   }
 
   /**
-   * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
-   * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
-   * calling the related resolve functions.
+   * Cancels all registered timeouts. Sets {@link commands.Cancellable#isCancelled|isCancelled} to true.
+   * Cancellation means calling {@link https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/clearTimeout|clearTimeout}
+   * with the stored timeout IDs and calling the related resolve functions.
    */
   cancel() {
     this.isCancelled = true;
@@ -1052,37 +1216,287 @@ class Cancellable {
 
 module.exports = {Cancellable};
 
-},{}],5:[function(require,module,exports){
-const baseCommands = require('./base-commands');
-const {Cancellable} = require('./cancellable');
-const parser = require('./command-peg-parser');
-const {isIdentifier, isString, isCommand, and} = require('./validation');
+},{}],6:[function(require,module,exports){
+/////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
+const {isIdentifier, isString, isCommand} = require('./validation');
+const {Generator} = require('./generator');
+
+/////////////////////////////////////////////////////////////////////////////
+
+function define({root, node, commands}) {
+  return exec({root, node, commands, descIdx: 1, commandIdx: 2});
+}
+
+function def({root, node, commands}) {
+  return exec({root, node, commands, descIdx: 0, commandIdx: 1});
+}
+
+function exec({root, node, commands, descIdx, commandIdx}) {
+  let errors = validate(node, root, descIdx);
+  if (errors.length > 0) return errors;
+
+  let name = node.args[0].value;
+  let desc = node.args[descIdx].value;
+  let commandNode = node.args[commandIdx];
+  let params = node.params;
+
+  let [command] = new Generator().generate([commandNode]);
+  let res = (ctx, args) => {
+    let {scope = {}} = ctx;
+    params.forEach((param, i) => scope[param.name] = args[i]);
+    return command({...ctx, scope});
+  };
+
+  commands[name] = res;
+
+  res.meta = { name, desc, params };
+  if (commandNode.type === 'command') {
+    res.meta.returns = commandNode.value.meta.returns;
+  }
+
+  return null;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+define.meta = {
+  name: 'define',
+  isMacro: true,
+  params: [
+    { name: 'name', validate: isIdentifier },
+    { name: 'description', validate: isString },
+    { name: 'command', validate: isCommand }
+  ],
+  desc: `
+    Defines a new command or redefines an existing one,
+    where variables (identifiers starting with :) become parameters.
+    @example
+    (define burst
+      "Burst of light"
+      (twinkle :light 80))
+
+    ; use the new command
+    (burst red)`
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+def.meta = {
+  name: 'def',
+  isMacro: true,
+  params: [
+    { name: 'name', validate: isIdentifier },
+    { name: 'command', validate: isCommand }
+  ],
+  desc: `
+    Defines a new command or redefines an existing one,
+    where variables (identifiers starting with :) become parameters.
+    @example
+    (def burst
+      (twinkle :light 80))
+
+    ; use the new command
+    (burst red)`
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+const isVar = arg => arg.type === 'variable';
+
+function validate(node, root, descIdx) {
+  let errors = [];
+  validatePosition(node, root, errors);
+  validateName(node, errors);
+  validateDescription(node, descIdx, errors);
+  return errors;
+}
+
+function validateName(node, errors) {
+  let nameArg = node.args[0];
+  if (isVar(nameArg)) {
+    errors.push(badVariable(node, nameArg, 0));
+  } else if (nameArg.value === def.meta.name || nameArg.value === define.meta.name) {
+    errors.push(badRedefine(node, nameArg));
+  }
+}
+
+function validateDescription(node, descIdx, errors) {
+  if (descIdx === 0) return; // no description, just a name
+  let descArg = node.args[descIdx];
+  if (isVar(descArg)) {
+    errors.push(badVariable(node, descArg, descIdx));
+  }
+}
+
+function validatePosition(node, root, errors) {
+  if (node !== root) {
+    errors.push(badPosition(node));
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+const badVariable = (node, arg, paramIdx) => {
+  let param = define.meta.params[paramIdx];
+  return {
+    type: 'error',
+    loc: arg.loc,
+    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+  };
+};
+
+const badPosition = node => ({
+  type: 'error',
+  loc: node.loc,
+  text: `"${node.name}" cannot be nested`
+});
+
+const badRedefine = (node, arg) => ({
+  type: 'error',
+  loc: node.loc,
+  text: `"${arg.value}" cannot be redefined`
+});
+
+/////////////////////////////////////////////////////////////////////////////
+
+const commands = {def, define};
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = {...commands, commands};
+
+/////////////////////////////////////////////////////////////////////////////
+
+},{"./generator":7,"./validation":11}],7:[function(require,module,exports){
+/////////////////////////////////////////////////////////////////////////////
+
+const {isCommand} = require('./validation');
+
+/////////////////////////////////////////////////////////////////////////////
+
+class Generator {
+
+  generate(nodes) {
+    this.errors = [];
+    if (!nodes) return null;
+    nodes = nodes.map(node => {
+      if (!this.validateTopLevel(node)) return null;
+      return this.recur(node);
+    });
+    if (this.errors.length > 0) return null;
+    return nodes;
+  }
+
+  validateTopLevel(node) {
+    if (!node.params) return true;
+    // process undefined parameters
+    let errors = node.params
+      .map(p => badParameter(p.name, p.uses))
+      .reduce((acc, val) => acc.concat(val), []); // flatten all errors
+    this.errors.push(...errors);
+    return node.params.length === 0;
+  }
+
+  recur(node) {
+    return this[node.type](node);
+  }
+
+  command(node) {
+    let command = node.value;
+    let params = command.meta.params;
+    let args = node.args.map(arg => this.recur(arg));
+    return ctx => command(ctx, resolve(ctx, params, args));
+  }
+
+  value(node) {
+    return node.value;
+  }
+
+  variable(node) {
+    return node; // unchanged
+  }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+const isVar = arg => arg.type === 'variable';
+
+const resolve = (ctx, params, args) =>
+  args.map((arg, i) => {
+
+    if (isVar(arg)) {
+      // lookup a variable in the scope
+      return ctx.scope[arg.name];
+    }
+
+    if (isCommand(arg)) {
+      // execute a command if the param doesn't expect one,
+      // which means the return value from the command is what should be
+      // passed to the param
+      let l = params.length;
+      let param = i < l ? params[i] : params[l - 1]; // take care of a rest parameter
+      if (param.validate !== isCommand) {
+        return arg(ctx); // no 'await', the command must not be asynchronous!
+      }
+    }
+
+    return arg;
+  });
+
+/////////////////////////////////////////////////////////////////////////////
+
+const badParameter = (name, locs) =>
+  locs.map(loc => ({
+    type: 'error', loc,
+    text: `"${name}" is not defined`
+  }));
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = {Generator};
+
+},{"./validation":11}],8:[function(require,module,exports){
+/////////////////////////////////////////////////////////////////////////////
+
+const {Parser} = require('./parser');
+const {Analyzer} = require('./analyzer');
+const {Generator} = require('./generator');
+const {Cancellable} = require('./cancellable');
+
+/////////////////////////////////////////////////////////////////////////////
+
+const define = require('./define');
+const baseCommands = require('./base-commands');
+
+/////////////////////////////////////////////////////////////////////////////
 
 /**
- * Parses and executes commands.
- * @memberof parsing
+ * Command interpreter to execute command strings.
+ * @memberof commands
  */
-class CommandParser {
+class Interpreter {
 
   /**
-   * @param {object.<string, parsing.CommandFunction>} [commands] -
-   *   Base commands this parser recognizes.
+   * @param {object.<string, commands.Command>} [commands] -
+   *   Commands this interpreter recognizes.
+   *   (Intrinsic commands are already available)
    */
-  constructor(commands = baseCommands) {
-    if (commands === baseCommands) {
-      // clone base-commands so it's not changed if new commands are added
-      this.commands = {...commands};
-    } else {
-      this.commands = commands;
-    }
-    this._addDefine();
-    this.ct = new Cancellable;
+  constructor(commands) {
+    this.commands = {
+      ...define.commands, // add the 'define' commands
+      ...baseCommands.commands, // add the base commands
+      ...commands
+    };
+    this.parser = new Parser();
+    this.analyzer = new Analyzer(this.commands);
+    this.generator = new Generator();
+    this.ct = new Cancellable();
   }
 
   /**
-   * Command names this parser recognizes.
+   * Command names this interpreter recognizes.
    * @type {string[]}
    */
   get commandNames() {
@@ -1090,285 +1504,125 @@ class CommandParser {
   }
 
   /**
-   * Cancels any executing commands.
-   * @param {parsing.Cancellable} [ct] - Cancellation token.
-   */
-  cancel(ct = this.ct) {
-    if (ct.isCancelled) return;
-    ct.cancel();
-    if (ct === this.ct) {
-      this.ct = new Cancellable;
-    }
-  }
-
-  /**
-   * Executes a command.
-   * @param {string} commandStr - Command string to execute.
-   * @param {object} [ctx] - Context object to be passed as part of the executed
-   *   commands context, together with the cancellation token and the scope.
-   *   This context cannot have keys 'ct' and 'scope', since they would be
-   *   overwritten anyway.
-   * @param {parsing.Cancellable} [ct] - Cancellation token.
-   * @param {object} [scope] - Scope for variables in the command.
-   */
-  async execute(commandStr, ctx = {}, ct = this.ct, scope = {}) {
-    if (ct.isCancelled) return;
-    let asts = parser.parse(commandStr);
-    let generator = new Generator(this);
-    let res;
-    for (let i = 0; i < asts.length; ++i) {
-      let command = generator.execute(asts[i]);
-      res = await command({...ctx, ct, scope});
-    }
-    if (ct === this.ct && ct.isCancelled) {
-      // the command 'cancel' was executed on this.ct, so re-instantiate it
-      this.ct = new Cancellable;
-    }
-    return res; // returns the last execution result
-  }
-
-  /**
-   * Parses a command string.
-   * @package
-   * @param {string} commandStr - Command string to execute.
-   * @returns {(parsing.CommandFunction|parsing.CommandFunction[])}
-   *   One or many command functions.
-   */
-  parse(commandStr) {
-    let asts = parser.parse(commandStr);
-    let generator = new Generator(this);
-    let commands = asts.map(ast => generator.execute(ast));
-    if (commands.length === 1) return commands[0];
-    return commands;
-  }
-
-  /**
    * Adds a new command or redefines an existing one.
-   * @param {string} name - The command name.
-   * @param {parsing.CommandFunction} command - The command function.
+   * @param {string} name - The command name. Should be the same as the command.meta.name property.
+   * @param {commands.Command} command - The command function.
    */
   add(name, command) {
     this.commands[name] = command;
   }
 
-  // Defines a new command or redefines an existing one.
-  // Used by the 'define' command.
-  _define(name, command, desc = '') {
-    let paramNames = command.paramNames || [];
-    let newCommand = (ctx, params = []) => {
-      let {scope = {}} = ctx;
-      Validator.validate(newCommand, params);
-      params.forEach((p, i) => scope[paramNames[i]] = p);
-      return command({...ctx, scope});
-    };
-    newCommand.doc = {name, desc};
-    newCommand.paramNames = paramNames;
-    newCommand.validation = command.validation;
-    newCommand.toString = () => `${name}`;
-    return this.commands[name] = newCommand;
+  /**
+   * Cancels any executing commands.
+   * @param {commands.Cancellable} [ct] - Cancellation token.
+   */
+  cancel(ct = this.ct) {
+    if (ct.isCancelled) return;
+    ct.cancel();
+    if (ct === this.ct) {
+      this.ct = new Cancellable();
+    }
   }
 
-  _addDefine() {
-    // add the 'define' command, which is intrinsic to the CommandParser
-    let define = (ctx, [name, desc, command]) => this._define(name, command, desc);
-    define.doc = {
-      name: 'define',
-      desc: 'Defines a new command or redefines an existing one, where variables become parameters:\n' +
-            '(define burst\n  "Burst of light: (burst red)"\n  (twinkle :light 70))\n\n(burst red)'
-    };
-    define.paramNames = ['name', 'desc', 'command'];
-    define.validation = [isIdentifier, isString, isCommand];
-    this.add('define', define);
+  /**
+   * Executes a command asynchronously.
+   * @param {string} text - Command text to execute.
+   * @param {object} [ctx] - Context object to be passed as part of the executed
+   *   commands' context, together with the cancellation token.
+   *   This context cannot have key 'ct', since it would be overwritten anyway.
+   * @param {commands.Cancellable} [ct] - Cancellation token.
+   * @throws Throws an error for any syntax or semantic errors in the text.
+   * @returns {object[]} Array with the results of the executions of the commands.
+   */
+  async execute(text, ctx = {}, ct = this.ct) {
+    let commands = this.process(text);
+
+    let res = [];
+    for (let i = 0; i < commands.length; ++i) {
+      if (ct.isCancelled) break;
+      let command = commands[i];
+      res.push(await command({...ctx, ct}));
+    }
+
+    if (ct === this.ct && ct.isCancelled) {
+      // this.ct was cancelled, so re-instantiate it
+      this.ct = new Cancellable();
+    }
+
+    return res;
+  }
+
+  process(text) {
+    // parse
+    let nodes = this.parser.parse(text);
+    this.raiseIfErrors(this.parser.errors);
+
+    // analyze
+    nodes = this.analyzer.analyze(nodes);
+    this.raiseIfErrors(this.analyzer.errors);
+
+    // generate
+    let commands = this.generator.generate(nodes);
+    this.raiseIfErrors(this.generator.errors);
+
+    return commands || [];
+  }
+
+  raiseIfErrors(errors) {
+    if (errors.length === 0) return;
+    throw new Error(errors.map(this.formatError).join('\n'));
+  }
+
+  formatError(error) {
+    return `${error.loc}: ${error.text}`;
   }
 
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// argument utils
-//////////////////////////////////////////////////////////////////////////////
-// an argument is either a variable, a value or a command:
-//   1. variable :: { type: 'variable', name: <variable name>, validation: [...] }
-//   2. value    :: any
-//   3. command  :: CommandFunction
-//////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
 
-const isVar = a => a && a.type === 'variable';
+module.exports = {Interpreter};
 
-const isValid = (vf, a) => {
-  if (!a) return false;
-  if (isVar(a)) return true;
-  return vf(a);
-};
+},{"./analyzer":3,"./base-commands":4,"./cancellable":5,"./define":6,"./generator":7,"./parser":9}],9:[function(require,module,exports){
+const parser = require('./peg-parser');
 
-const getValue = (a, scope = null) => {
-  if (Array.isArray(a)) return a.map(a => getValue(a, scope));
-  if (isVar(a)) {
-    if (scope) return scope[a.name];
-    return ':' + a.name;
-  }
-  return a;
-};
+/////////////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////////////
+class Parser {
 
-class Vars {
-  constructor(args) {
-    this.args = args;
-  }
-  resolve(scope) {
-    return this.args.map(a => getValue(a, scope));
-  }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-class Generator {
-
-  constructor(parser) {
-    this.parser = parser;
-    this.commands = parser.commands;
-  }
-
-  execute(ast) {
-    this.variables = new Map();
+  parse(text) {
     this.errors = [];
-    let res = this.recur(ast);
-    Validator.raiseIf(this.errors);
-    return res;
+    try {
+      return parser.parse(text);
+    } catch (e) {
+      this.errors.push(parseError(e));
+      return null;
+    }
   }
 
-  recur(node) {
-    // possible types: command, variable, value
-    return this[node.type](node);
-  }
+}
 
-  command(node) {
-    // get the command components: its name and its arguments
-    let commandName = node.name;
-    let args = node.params;
+/////////////////////////////////////////////////////////////////////////////
 
-    // collect errors
-    let errors;
+function parseError(e) {
+  return {
+    type: 'error',
+    text: e.toString(),
+    loc: formatLocation(e.location)
+  };
+}
 
-    // recurse on parameters
-    args = args.map(a => this.recur(a));
+function formatLocation(location) {
+  let start = location.start;
+  let end = location.end;
+  return `${start.line}:${start.column}-${end.line}:${end.column}`;
+}
 
-    // get the command
-    let command = this.commands[commandName];
-    if (command) {
-      // transform the command arguments
-      args = this._transform(command, args);
-      // validate the command arguments
-      errors = Validator.collect(command, args);
-    } else {
-      // invalid command
-      errors = [`Command not found: "${commandName}"`];
-    }
+/////////////////////////////////////////////////////////////////////////////
 
-    // check for errors
-    if (errors.length > 0) {
-      this.errors.push(...errors);
-      return;
-    }
+module.exports = {Parser};
 
-    // collect validation functions
-    if (command.validation) {
-      args
-        .map((a, i) => isVar(a) ? { name: a.name, vf: command.validation[i] } : null)
-        .filter(v => !!v) // remove nulls
-        .forEach(v => {
-          let vf = this.variables.get(v.name).validation;
-          this.variables.get(v.name).validation = vf ? and(vf, v.vf) : v.vf;
-        });
-    }
-
-    // return a command that takes a context including an
-    // optional scope with variable bindings
-    let vars = new Vars(args);
-    let res = (ctx) => {
-      let {scope = {}} = ctx;
-      let params = vars.resolve(scope);
-      Validator.validate(command, params);
-      return command(ctx, params);
-    };
-    // note: these are ALL the variables collected so far,
-    // not only the ones relevant for this command
-    // e.g. (run (toggle :l1) (pause :ms) (toggle :l2))
-    //   'pause' will have [l1, ms]
-    //   the second 'toggle' will have [l1, ms, l2]
-    res.paramNames = Array.from(this.variables.keys());
-    if (command.validation) {
-      res.validation = Array.from(this.variables.values()).map(v => v.validation);
-    }
-    res.toString = () => `${commandName}`;
-    return res;
-  }
-
-  variable(node) {
-    let name = node.name, vs = this.variables;
-    if (!vs.has(name)) {
-      vs.set(name, node);
-    }
-    return vs.get(name);
-  }
-
-  value(node) {
-    return node.value;
-  }
-
-  _transform(command, args) {
-    if (command.transformation) {
-      return command.transformation(args);
-    }
-    return args;
-  }
-
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-const Validator = {
-
-  validate(command, args) {
-    let errors = this.collect(command, args);
-    this.raiseIf(errors);
-  },
-
-  raiseIf(errors) {
-    if (errors.length > 0) throw new Error(errors.join('\n'));
-  },
-
-  collect(command, args) {
-    const badArity = (exp, act) =>
-      `Bad number of arguments to "${commandName}"; it takes ${exp} but was given ${act}`;
-    const badValue = (i) => {
-      if (args[i] === undefined) return null;
-      return `Bad value "${getValue(args[i])}" to "${commandName}" parameter ${i+1} ("${pns[i]}"); must be: ${vfs[i].exp}`;
-    };
-
-    let commandName = command.doc ? command.doc.name : command.name;
-    let pns = command.paramNames; // pns = Parameter NameS
-    let es = []; // es = ErrorS
-
-    if (pns.length !== args.length) {
-      es.push(badArity(pns.length, args.length));
-    }
-
-    let vfs = command.validation || []; // vfs = Validation FunctionS
-    let argsErrors = vfs
-      .map((vf, i) => args.length <= i || isValid(vf, args[i]) ? null : badValue(i))
-      .filter(e => e); // filter out 'null', where the validation was successful
-    es.push(...argsErrors);
-    return es;
-  }
-
-};
-
-//////////////////////////////////////////////////////////////////////////////
-
-module.exports = {CommandParser};
-
-},{"./base-commands":3,"./cancellable":4,"./command-peg-parser":6,"./validation":7}],6:[function(require,module,exports){
+},{"./peg-parser":10}],10:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -1520,12 +1774,12 @@ function peg$parse(input, options) {
       peg$c5 = function(first, rest) {
           return [first, ...(rest || [])];
         },
-      peg$c6 = function(name, params) {
-          return { type: 'command', name, params: params || [] };
+      peg$c6 = function(name, args) {
+          return { type: 'command', name, args: args || [], loc: loc() };
         },
       peg$c7 = function(head, tail) { return [head, ...(tail || [])]; },
-      peg$c8 = function(name) { return { type: 'variable', name }; },
-      peg$c9 = function(value) { return { type: 'value', value }; },
+      peg$c8 = function(name) { return { type: 'variable', name, loc: loc() }; },
+      peg$c9 = function(value) { return { type: 'value', value, loc: loc() }; },
       peg$c10 = function(command) { return command; },
       peg$c11 = ":",
       peg$c12 = peg$literalExpectation(":", false),
@@ -1534,24 +1788,25 @@ function peg$parse(input, options) {
       peg$c15 = peg$classExpectation([["a", "z"], "_"], false, true),
       peg$c16 = /^[a-z_0-9\-]/i,
       peg$c17 = peg$classExpectation([["a", "z"], "_", ["0", "9"], "-"], false, true),
-      peg$c18 = function(head, tail) { return head + (tail || []).join(''); },
+      peg$c18 = function(head, tail) { return head + tail.join(''); },
       peg$c19 = /^[0-9]/,
       peg$c20 = peg$classExpectation([["0", "9"]], false, false),
       peg$c21 = function(digits) { return parseInt(digits.join(''), 10); },
       peg$c22 = "\"",
       peg$c23 = peg$literalExpectation("\"", false),
-      peg$c24 = /^[^"]/,
-      peg$c25 = peg$classExpectation(["\""], true, false),
-      peg$c26 = function(contents) { return (contents || []).join(''); },
-      peg$c27 = /^[ \t\r\n]/,
-      peg$c28 = peg$classExpectation([" ", "\t", "\r", "\n"], false, false),
-      peg$c29 = ";",
-      peg$c30 = peg$literalExpectation(";", false),
-      peg$c31 = /^[^\r\n]/,
-      peg$c32 = peg$classExpectation(["\r", "\n"], true, false),
-      peg$c33 = /^[\r\n]/,
-      peg$c34 = peg$classExpectation(["\r", "\n"], false, false),
-      peg$c35 = peg$anyExpectation(),
+      peg$c24 = function(contents) { return contents.join(''); },
+      peg$c25 = "\\",
+      peg$c26 = peg$literalExpectation("\\", false),
+      peg$c27 = peg$anyExpectation(),
+      peg$c28 = function(char) { return char; },
+      peg$c29 = /^[ \t\r\n]/,
+      peg$c30 = peg$classExpectation([" ", "\t", "\r", "\n"], false, false),
+      peg$c31 = ";",
+      peg$c32 = peg$literalExpectation(";", false),
+      peg$c33 = /^[^\r\n]/,
+      peg$c34 = peg$classExpectation(["\r", "\n"], true, false),
+      peg$c35 = /^[\r\n]/,
+      peg$c36 = peg$classExpectation(["\r", "\n"], false, false),
 
       peg$currPos          = 0,
       peg$savedPos         = 0,
@@ -1801,7 +2056,7 @@ function peg$parse(input, options) {
     s0 = peg$currPos;
     s1 = peg$parseIdentifier();
     if (s1 !== peg$FAILED) {
-      s2 = peg$parseParameters();
+      s2 = peg$parseArguments();
       if (s2 === peg$FAILED) {
         s2 = null;
       }
@@ -1821,15 +2076,15 @@ function peg$parse(input, options) {
     return s0;
   }
 
-  function peg$parseParameters() {
+  function peg$parseArguments() {
     var s0, s1, s2, s3;
 
     s0 = peg$currPos;
     s1 = peg$parse_();
     if (s1 !== peg$FAILED) {
-      s2 = peg$parseParameter();
+      s2 = peg$parseArgument();
       if (s2 !== peg$FAILED) {
-        s3 = peg$parseParameters();
+        s3 = peg$parseArguments();
         if (s3 === peg$FAILED) {
           s3 = null;
         }
@@ -1853,7 +2108,7 @@ function peg$parse(input, options) {
     return s0;
   }
 
-  function peg$parseParameter() {
+  function peg$parseArgument() {
     var s0, s1, s2, s3, s4, s5;
 
     s0 = peg$currPos;
@@ -2065,22 +2320,10 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       s2 = [];
-      if (peg$c24.test(input.charAt(peg$currPos))) {
-        s3 = input.charAt(peg$currPos);
-        peg$currPos++;
-      } else {
-        s3 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c25); }
-      }
+      s3 = peg$parseStringContents();
       while (s3 !== peg$FAILED) {
         s2.push(s3);
-        if (peg$c24.test(input.charAt(peg$currPos))) {
-          s3 = input.charAt(peg$currPos);
-          peg$currPos++;
-        } else {
-          s3 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c25); }
-        }
+        s3 = peg$parseStringContents();
       }
       if (s2 !== peg$FAILED) {
         if (input.charCodeAt(peg$currPos) === 34) {
@@ -2092,7 +2335,7 @@ function peg$parse(input, options) {
         }
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s1 = peg$c26(s2);
+          s1 = peg$c24(s2);
           s0 = s1;
         } else {
           peg$currPos = s0;
@@ -2105,6 +2348,106 @@ function peg$parse(input, options) {
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseStringContents() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    s1 = peg$currPos;
+    peg$silentFails++;
+    if (input.charCodeAt(peg$currPos) === 34) {
+      s2 = peg$c22;
+      peg$currPos++;
+    } else {
+      s2 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c23); }
+    }
+    if (s2 === peg$FAILED) {
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s2 = peg$c25;
+        peg$currPos++;
+      } else {
+        s2 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c26); }
+      }
+    }
+    peg$silentFails--;
+    if (s2 === peg$FAILED) {
+      s1 = void 0;
+    } else {
+      peg$currPos = s1;
+      s1 = peg$FAILED;
+    }
+    if (s1 !== peg$FAILED) {
+      if (input.length > peg$currPos) {
+        s2 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s2 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c27); }
+      }
+      if (s2 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c28(s2);
+        s0 = s1;
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+    if (s0 === peg$FAILED) {
+      s0 = peg$currPos;
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s1 = peg$c25;
+        peg$currPos++;
+      } else {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c26); }
+      }
+      if (s1 !== peg$FAILED) {
+        s2 = peg$parseEscapeChar();
+        if (s2 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c28(s2);
+          s0 = s1;
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    }
+
+    return s0;
+  }
+
+  function peg$parseEscapeChar() {
+    var s0;
+
+    if (input.charCodeAt(peg$currPos) === 34) {
+      s0 = peg$c22;
+      peg$currPos++;
+    } else {
+      s0 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c23); }
+    }
+    if (s0 === peg$FAILED) {
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s0 = peg$c25;
+        peg$currPos++;
+      } else {
+        s0 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c26); }
+      }
     }
 
     return s0;
@@ -2126,48 +2469,48 @@ function peg$parse(input, options) {
   function peg$parseFiller() {
     var s0, s1, s2, s3;
 
-    if (peg$c27.test(input.charAt(peg$currPos))) {
+    if (peg$c29.test(input.charAt(peg$currPos))) {
       s0 = input.charAt(peg$currPos);
       peg$currPos++;
     } else {
       s0 = peg$FAILED;
-      if (peg$silentFails === 0) { peg$fail(peg$c28); }
+      if (peg$silentFails === 0) { peg$fail(peg$c30); }
     }
     if (s0 === peg$FAILED) {
       s0 = peg$currPos;
       if (input.charCodeAt(peg$currPos) === 59) {
-        s1 = peg$c29;
+        s1 = peg$c31;
         peg$currPos++;
       } else {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c30); }
+        if (peg$silentFails === 0) { peg$fail(peg$c32); }
       }
       if (s1 !== peg$FAILED) {
         s2 = [];
-        if (peg$c31.test(input.charAt(peg$currPos))) {
+        if (peg$c33.test(input.charAt(peg$currPos))) {
           s3 = input.charAt(peg$currPos);
           peg$currPos++;
         } else {
           s3 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c32); }
+          if (peg$silentFails === 0) { peg$fail(peg$c34); }
         }
         while (s3 !== peg$FAILED) {
           s2.push(s3);
-          if (peg$c31.test(input.charAt(peg$currPos))) {
-            s3 = input.charAt(peg$currPos);
-            peg$currPos++;
-          } else {
-            s3 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c32); }
-          }
-        }
-        if (s2 !== peg$FAILED) {
           if (peg$c33.test(input.charAt(peg$currPos))) {
             s3 = input.charAt(peg$currPos);
             peg$currPos++;
           } else {
             s3 = peg$FAILED;
             if (peg$silentFails === 0) { peg$fail(peg$c34); }
+          }
+        }
+        if (s2 !== peg$FAILED) {
+          if (peg$c35.test(input.charAt(peg$currPos))) {
+            s3 = input.charAt(peg$currPos);
+            peg$currPos++;
+          } else {
+            s3 = peg$FAILED;
+            if (peg$silentFails === 0) { peg$fail(peg$c36); }
           }
           if (s3 !== peg$FAILED) {
             s1 = [s1, s2, s3];
@@ -2187,29 +2530,29 @@ function peg$parse(input, options) {
       if (s0 === peg$FAILED) {
         s0 = peg$currPos;
         if (input.charCodeAt(peg$currPos) === 59) {
-          s1 = peg$c29;
+          s1 = peg$c31;
           peg$currPos++;
         } else {
           s1 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c30); }
+          if (peg$silentFails === 0) { peg$fail(peg$c32); }
         }
         if (s1 !== peg$FAILED) {
           s2 = [];
-          if (peg$c31.test(input.charAt(peg$currPos))) {
+          if (peg$c33.test(input.charAt(peg$currPos))) {
             s3 = input.charAt(peg$currPos);
             peg$currPos++;
           } else {
             s3 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c32); }
+            if (peg$silentFails === 0) { peg$fail(peg$c34); }
           }
           while (s3 !== peg$FAILED) {
             s2.push(s3);
-            if (peg$c31.test(input.charAt(peg$currPos))) {
+            if (peg$c33.test(input.charAt(peg$currPos))) {
               s3 = input.charAt(peg$currPos);
               peg$currPos++;
             } else {
               s3 = peg$FAILED;
-              if (peg$silentFails === 0) { peg$fail(peg$c32); }
+              if (peg$silentFails === 0) { peg$fail(peg$c34); }
             }
           }
           if (s2 !== peg$FAILED) {
@@ -2245,7 +2588,7 @@ function peg$parse(input, options) {
       peg$currPos++;
     } else {
       s1 = peg$FAILED;
-      if (peg$silentFails === 0) { peg$fail(peg$c35); }
+      if (peg$silentFails === 0) { peg$fail(peg$c27); }
     }
     peg$silentFails--;
     if (s1 === peg$FAILED) {
@@ -2257,6 +2600,15 @@ function peg$parse(input, options) {
 
     return s0;
   }
+
+
+    function loc() {
+      let l = location();
+      let start = l.start;
+      let end = l.end;
+      return `${start.line}:${start.column}-${end.line}:${end.column - 1}`;
+    }
+
 
   peg$result = peg$startRuleFunction();
 
@@ -2282,7 +2634,338 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],7:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Validation functions
+//////////////////////////////////////////////////////////////////////////////
+
+const isIdentifier = s =>
+  // A negative look behind to check for a string that does NOT end with a dash
+  // is only supported on node 8.9.4 with the --harmony flag
+  // https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
+  // /^[a-z_][a-z_0-9-]*(?<!-)$/i
+  /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
+isIdentifier.exp = 'a valid identifier';
+
+const isNumber = n => typeof n === 'number';
+isNumber.exp = 'a number';
+
+const isString = s => typeof s === 'string';
+isString.exp = 'a string';
+
+const isCommand = f => typeof f === 'function';
+isCommand.exp = 'a command';
+
+const and = (...vfs) => {
+  vfs = [...new Set(vfs)]; // remove duplicates
+  if (vfs.length === 1) return vfs[0];
+  let v = e => vfs.every(vf => vf(e));
+  v.exp = vfs.map(vf => vf.exp).join(' and ');
+  return v;
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  isIdentifier,
+  isString,
+  isNumber,
+  isCommand,
+  and
+};
+
+},{}],12:[function(require,module,exports){
+//////////////////////////////////////////////////////////////////////////////
+// Defines base commands to control a Device.
+// The commands are cancellable by a Cancellation Token.
+// Cancellation Tokens are instances of Cancellable.
+//////////////////////////////////////////////////////////////////////////////
+
+const {
+  isIdentifier,
+  isNumber,
+  isGreaterThanZero,
+  isPeriod,
+  isCommand,
+  each
+} = require('./validation');
+
+//////////////////////////////////////////////////////////////////////////////
+// Base commands
+//////////////////////////////////////////////////////////////////////////////
+
+let {Cancellable} = require('./cancellable');
+
+// Default Cancellation Token used for all commands
+let cancellable = new Cancellable;
+
+// Cancels all commands that are being executed in the context of a
+// Cancellation Token.
+function cancel({ct = cancellable} = {}) {
+  if (ct.isCancelled) return;
+  ct.cancel();
+  if (ct === cancellable) {
+    cancellable = new Cancellable;
+  }
+}
+cancel.paramNames = []; // no parameters
+cancel.validation = []; // validates number of parameters (zero)
+cancel.doc = {
+  name: 'cancel',
+  desc: 'Cancels all executing commands.'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+// Pauses execution for the given duration.
+// Returns a Promise that resolves when the pause duration is complete,
+// or if it's cancelled. Even if the pause is cancelled, the Promise
+// is resolved, never rejected.
+function pause(ctx, params) {
+  // allow the first parameter to be omitted
+  // => pause({ct}, [500]) OR pause([500])
+  let ct = ctx.ct || cancellable;
+  if (ct.isCancelled) return;
+  let [ms] = params || ctx;
+  return new Promise(resolve => {
+    let timeoutID = setTimeout(() => {
+      ct.del(timeoutID);
+      resolve();
+    }, ms);
+    ct.add(timeoutID, resolve);
+  });
+}
+pause.paramNames = ['ms'];
+pause.validation = [isPeriod];
+pause.doc = {
+  name: 'pause',
+  desc: 'Pauses execution for the given duration in milliseconds:\n' +
+        '(pause 500)'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+// Executes a command with a timeout
+async function timeout(ctx, [ms, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  let timeoutC = new Cancellable;
+  let timeoutP = pause({ct}, [ms]);
+  // race the cancellable-command against the timeout
+  let res = await Promise.race([command({...ctx, ct: timeoutC, scope}), timeoutP]);
+  // check if the timeout was reached
+  let racer = {}; // arbitrary object to race against the timeout
+  let value = await Promise.race([timeoutP, racer]);
+  if (value !== racer || ct.isCancelled) {
+    // the timeout was reached (value !== racer) OR the timeout was cancelled
+    timeoutC.cancel();
+  }
+  return res;
+}
+timeout.paramNames = ['ms', 'command'];
+timeout.validation = [isPeriod, isCommand];
+timeout.doc = {
+  name: 'timeout',
+  desc: 'Executes a command with a timeout:\n' +
+        '(timeout 5000 (twinkle red 400))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function run(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  for (let i = 0; i < commands.length; ++i) {
+    if (ct.isCancelled) return;
+    let command = commands[i];
+    await command({...ctx, ct, scope});
+  }
+}
+run.transformation = args => [args];
+run.paramNames = ['commands'];
+run.validation = [each(isCommand)];
+run.doc = {
+  name: 'do',
+  desc: 'Executes the given commands in sequence:\n' +
+        '(do\n  (toggle red)\n  (pause 1000)\n  (toggle red))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function loop(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  if (!commands || commands.length === 0) return;
+  while (true) {
+    if (ct.isCancelled) return;
+    await run({...ctx, ct, scope}, [commands]);
+  }
+}
+loop.transformation = args => [args];
+loop.paramNames = ['commands'];
+loop.validation = [each(isCommand)];
+loop.doc = {
+  name: 'loop',
+  desc: 'Executes the given commands in sequence, starting over forever:\n' +
+        '(loop\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function repeat(ctx, [times, commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  while (times-- > 0) {
+    if (ct.isCancelled) return;
+    await run({...ctx, ct, scope}, [commands]);
+  }
+}
+repeat.transformation = args => [args[0], args.slice(1)];
+repeat.paramNames = ['times', 'commands'];
+repeat.validation = [isGreaterThanZero, each(isCommand)];
+repeat.doc = {
+  name: 'repeat',
+  desc: 'Executes the commands in sequence, repeating the given number of times:\n' +
+        '(repeat 5\n  (toggle green)\n  (pause 400)\n  (toggle red)\n  (pause 400))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function all(ctx, [commands]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  if (ct.isCancelled) return;
+  await Promise.all(commands.map(command => {
+    // since the commands run in parallel, they must
+    // have separate scopes so as not to step in each other's toes
+    return command({...ctx, ct, scope: {...scope}});
+  }));
+}
+all.transformation = args => [args];
+all.paramNames = ['commands'];
+all.validation = [each(isCommand)];
+all.doc = {
+  name: 'all',
+  desc: 'Executes the given commands in parallel, all at the same time:\n' +
+        '(all\n  (twinkle green 700)\n  (twinkle yellow 300))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+// Ease validation
+//////////////////////////////////////////////////////////////////////////////
+
+let Easing = {
+  linear: t => t,
+  easeIn: t => t*t,
+  easeOut: t => t*(2-t),
+  easeInOut: t => t<0.5 ? 2*t*t : -1+(4-2*t)*t
+};
+
+let isEasing = e => !!Easing[e];
+isEasing.exp = `an easing function in ${Object.keys(Easing).join(', ')}`;
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function ease(ctx, [easing, ms, what, from, to, command]) {
+  let {ct = cancellable, scope = {}} = ctx;
+  let start = Date.now();
+  let end = start + ms;
+  let next = () => {
+    let now = Date.now();
+    let c = Easing[easing]((now - start) / ms);
+    let curr = c * (to - from) + from;
+    return curr | 0; // double -> int
+  };
+  // `[what]` is a "live" variable, so it's defined as a property
+  Object.defineProperty(scope, what, {
+    configurable: true, // allow the property to be deleted or redefined
+    get: next,
+    set: () => {} // no-op
+  });
+  while (true) {
+    if (ct.isCancelled) break;
+    let now = Date.now();
+    let max = end - now;
+    if (max <= 0) break;
+    await timeout({...ctx, ct, scope}, [max, command]);
+  }
+}
+ease.paramNames = ['easing', 'ms', 'what', 'from', 'to', 'command'];
+ease.validation = [isEasing, isPeriod, isIdentifier, isNumber, isNumber, isCommand];
+ease.doc = {
+  name: 'ease',
+  desc: "Ease the 'what' variable to 'command'.\n" +
+        "In the duration 'ms', go from 'from' to 'to' using the 'easing' function:\n" +
+        '(ease linear 10000 ms 50 200\n  (flash yellow :ms))'
+};
+
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  cancel,
+  pause, timeout,
+  'do': run,
+  loop, repeat, all, ease
+};
+
+},{"./cancellable":13,"./validation":14}],13:[function(require,module,exports){
+/**
+ * A Cancellation Token (ct) that commands can check for cancellation.
+ * Commands should regularly check for the {@link Cancellable#isCancelled}
+ * attribute and exit eagerly if true.
+ * Keeps a list of timeout IDs issued by {@link setTimeout} calls and cancels
+ * them all when {@link Cancellable#cancel} is called, setting the
+ * {@link Cancellable#isCancelled} attribute to true.
+ * @memberof parsing
+ */
+class Cancellable {
+
+  /** Cancellable constructor. */
+  constructor() {
+    /** If the Cancellation Token is cancelled. Starts of as false. */
+    this.isCancelled = false;
+    // Object storing timeout IDs and related Promise resolve functions.
+    this._timeoutIDs = {};
+  }
+
+  /**
+   * Registers the given timeout ID and {@link Promise} resolve function.
+   * @package
+   * @param timeoutID - Timeout ID, the result of calling
+   *   {@link setTimeout}, platform dependent.
+   * @param {function} resolve - Resolve function for a {@link Promise} to be
+   *   called if the timeout is cancelled.
+   */
+  add(timeoutID, resolve) {
+    this._timeoutIDs[timeoutID.id||timeoutID] = [timeoutID, resolve];
+  }
+
+  /**
+   * Unregisters the given timeout ID, when the timeout is reached and
+   * does not need to be cancelled anymore, or if it was cancelled.
+   * @package
+   * @param timeoutID - Timeout ID to unregister.
+   */
+  del(timeoutID) {
+    delete this._timeoutIDs[timeoutID.id||timeoutID];
+  }
+
+  /**
+   * Cancels all registered timeouts. Sets {@link Cancellable#isCancelled} to true.
+   * Cancellation means calling {@link clearTimeout} with the stored timeout IDs and
+   * calling the related resolve functions.
+   */
+  cancel() {
+    this.isCancelled = true;
+    for (let [, [timeoutID, resolve]] of Object.entries(this._timeoutIDs)) {
+      this.del(timeoutID);
+      clearTimeout(timeoutID);
+      resolve();
+    }
+  }
+
+}
+
+module.exports = {Cancellable};
+
+},{}],14:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -2350,7 +3033,7 @@ module.exports = {
   and
 };
 
-},{}],8:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /* eslint no-multi-spaces: 0 */
 
 const {isLight} = require('./validation');
@@ -2510,7 +3193,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../parsing/base-commands":3,"../parsing/validation":7,"./utils":14,"./validation":15}],9:[function(require,module,exports){
+},{"../parsing/base-commands":12,"../parsing/validation":14,"./utils":21,"./validation":22}],16:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -2676,7 +3359,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../parsing/validation":7}],10:[function(require,module,exports){
+},{"../parsing/validation":14}],17:[function(require,module,exports){
 const {Light, TrafficLight} = require('./traffic-light');
 
 ///////////////
@@ -3007,7 +3690,7 @@ module.exports = {
   MultiLight, MultiTrafficLight, FlexMultiTrafficLight
 };
 
-},{"./traffic-light":13}],11:[function(require,module,exports){
+},{"./traffic-light":20}],18:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -3017,6 +3700,7 @@ module.exports = {
 
 (define lights
   "Set the lights to the given values (on or off):
+  @example
   (lights off off on)"
   (do
     (turn red    :red)
@@ -3028,6 +3712,7 @@ module.exports = {
 (define flash
   "Flashes a light for the given duration.
   Toggle, wait, toggle back, wait again:
+  @example
   (flash red 500)"
   (do
     (toggle :light) (pause :ms)
@@ -3037,6 +3722,7 @@ module.exports = {
 
 (define blink
   "Flashes a light for the given number of times and duration for each time:
+  @example
   (blink 10 yellow 500)"
   (repeat :times
     (flash :light :ms)))
@@ -3045,6 +3731,7 @@ module.exports = {
 
 (define twinkle
   "Flashes a light for the given duration forever:
+  @example
   (twinkle green 500)"
   (loop
     (flash :light :ms)))
@@ -3054,6 +3741,7 @@ module.exports = {
 (define cycle
   "Blinks each light in turn for the given duration and number of times,
   repeating forever; starts with red:
+  @example
   (cycle 2 500)"
   (loop
     (blink :times red    :ms)
@@ -3064,6 +3752,7 @@ module.exports = {
 
 (define jointly
   "Flashes all lights together forever:
+  @example
   (jointly 500)"
   (loop
     (lights on  on  on)  (pause :ms)
@@ -3072,7 +3761,9 @@ module.exports = {
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define heartbeat
-  "Heartbeat pattern: (heartbeat red)"
+  "Heartbeat pattern:
+  @example
+  (heartbeat red)"
   (loop
     (blink 2 :light 250)
     (pause 350)))
@@ -3080,7 +3771,9 @@ module.exports = {
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define pulse
-  "Single pulse pattern: (pulse red)"
+  "Single pulse pattern:
+  @example
+  (pulse red)"
   (loop
     (toggle :light)
     (pause 300)
@@ -3090,7 +3783,9 @@ module.exports = {
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define count
-  "Count a number of times repeatedly: (count 7 red)"
+  "Count a number of times repeatedly:
+  @example
+  (count 7 red)"
   (loop
     (blink :times :light 200)
     (pause 800)))
@@ -3099,6 +3794,7 @@ module.exports = {
 
 (define sos
   "SOS distress signal morse code pattern:
+  @example
   (sos red)"
   (loop
     (morse :light "SOS")))
@@ -3113,6 +3809,7 @@ module.exports = {
 
 (define up
   "Go up with the given duration:
+  @example
   (up 200)"
   (do
     (toggle green)  (pause :ms) (toggle green)
@@ -3123,6 +3820,7 @@ module.exports = {
 
 (define down
   "Go down with the given duration:
+  @example
   (down 200)"
   (do
     (toggle red)    (pause :ms) (toggle red)
@@ -3133,25 +3831,13 @@ module.exports = {
 
 (define bounce
   "Bounce with the given duration:
+  @example
   (bounce 500)"
   (loop
     (toggle green)  (pause :ms) (toggle green)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)))
-
-;`);cp.execute(`;-----------------------------------------------------------
-
-(define soundbar
-  "Like a sound bar with the given duration:
-  (soundbar 500)"
-  (loop
-    (toggle green)  (pause :ms)
-    (toggle yellow) (pause :ms)
-    (toggle red)    (pause :ms)
-    (toggle red)    (pause :ms)
-    (toggle yellow) (pause :ms)
-    (toggle green)  (pause :ms)))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
@@ -3162,6 +3848,7 @@ module.exports = {
   for 'attention-ms' duration before turning on red (stop).
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
+  @example
   (activity 40000 10000 10000)"
   (do
     (blink 4 green 500)
@@ -3175,7 +3862,7 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],12:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
@@ -3270,7 +3957,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./morse":8,"./traffic-light-commands.cljs":11,"./utils":14,"./validation":15}],13:[function(require,module,exports){
+},{"./morse":15,"./traffic-light-commands.cljs":18,"./utils":21,"./validation":22}],20:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -3401,7 +4088,7 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],14:[function(require,module,exports){
+},{"events":1}],21:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////////
@@ -3438,7 +4125,7 @@ module.exports = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],15:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -3455,7 +4142,7 @@ module.exports = {isLight, isState};
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],16:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 ////////////////////////////////////////////////////////
 
 class WebCommandFormatter {
@@ -3465,12 +4152,12 @@ class WebCommandFormatter {
   }
 
   formatParams() {
-    return this.command.paramNames
-      .map(param => ':' + param).join(' ');
+    return this.command.meta.params
+      .map(param => ':' + param.name).join(' ');
   }
 
   formatSignature() {
-    return `<h3><code>${this.command.doc.name} ${this.formatParams()}</code></h3>`;
+    return `<h3><code>${this.command.meta.name} ${this.formatParams()}</code></h3>`;
   }
 
   formatVariable(variable) {
@@ -3478,14 +4165,19 @@ class WebCommandFormatter {
   }
 
   formatSample(sample) {
-    sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
-    return `:<br /><br /><div class="sample">${sample}</div>`;
+    sample = sample.replace(/^\s*?\n/s, ''); // remove first empty lines
+    let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
+    sample = sample.
+      replace(new RegExp(`^[ \\t]{${indentSize}}`, "gm"), ''). // unindent
+      replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
+    return `<br /><div class="sample">${sample}</div>`;
   }
 
   formatDesc() {
-    return this.command.doc.desc
+    return this.command.meta.desc
+      .replace(/^\s*?\n/s, '') // remove first empty lines
       .replace(/'([^']+)'/g, (_, variable) => this.formatVariable(variable))
-      .replace(/:(\s*\(.+\)\s*)$/s, (_, sample) => this.formatSample(sample))
+      .replace(/@example(.+)$/s, (_, sample) => this.formatSample(sample))
       .replace(/\n/g, '<br />\n');
   }
 
@@ -3530,7 +4222,7 @@ module.exports = {
   setUpHelp
 };
 
-},{}],17:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 const {Commander} = require('../src/commander');
 const {setUpHelp} = require('./help');
 const {MultiTrafficLightSelector} = require('./web-traffic-light');
@@ -3631,7 +4323,7 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/commander":2,"./help":16,"./web-traffic-light":18}],18:[function(require,module,exports){
+},{"../src/commander":2,"./help":23,"./web-traffic-light":25}],25:[function(require,module,exports){
 const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
 const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
 
@@ -3733,7 +4425,7 @@ class MultiTrafficLightSelector extends EventEmitter {
   setUpMultiCommands(commander) {
     if (this.n > 1) {
       const {defineCommands} = require('../src/traffic-light/multi-traffic-light-commands');
-      defineCommands(commander.parser);
+      defineCommands(commander.interpreter);
     }
   }
 }
@@ -3744,4 +4436,4 @@ module.exports = {
   MultiTrafficLightSelector
 };
 
-},{"../src/traffic-light/multi-traffic-light":10,"../src/traffic-light/multi-traffic-light-commands":9,"../src/traffic-light/traffic-light":13,"events":1}]},{},[17]);
+},{"../src/traffic-light/multi-traffic-light":17,"../src/traffic-light/multi-traffic-light-commands":16,"../src/traffic-light/traffic-light":20,"events":1}]},{},[24]);

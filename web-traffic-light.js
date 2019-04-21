@@ -99,7 +99,7 @@ class MultiTrafficLightSelector extends EventEmitter {
   setUpMultiCommands(commander) {
     if (this.n > 1) {
       const {defineCommands} = require('../src/traffic-light/multi-traffic-light-commands');
-      defineCommands(commander.parser);
+      defineCommands(commander.interpreter);
     }
   }
 }
