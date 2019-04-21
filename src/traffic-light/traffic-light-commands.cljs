@@ -156,7 +156,10 @@
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
   @example
-  (activity 40000 10000 10000)"
+  (activity
+    (seconds 40)
+    (seconds 10)
+    (seconds 10))"
   (do
     (blink 4 green 500)
     (turn green on)

@@ -92,6 +92,28 @@ timeout.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
+function seconds(ctx, [sec]) {
+  return sec * 1000;
+}
+seconds.meta = {
+  name: 'seconds',
+  params: [{ name: 'sec', validate: isNumber }],
+  returns: isNumber,
+  desc: `Converts the given number of seconds to milliseconds.`
+};
+
+function minutes(ctx, [min]) {
+  return min * 60 * 1000;
+}
+minutes.meta = {
+  name: 'minutes',
+  params: [{ name: 'min', validate: isNumber }],
+  returns: isNumber,
+  desc: `Converts the given number of minutes to milliseconds.`
+};
+
+//////////////////////////////////////////////////////////////////////////////
+
 async function $do(ctx, [...commands]) {
   let {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
@@ -189,6 +211,7 @@ const commands = {
   cancel,
   pause,
   timeout,
+  seconds, minutes,
   'do': $do,
   loop,
   repeat,

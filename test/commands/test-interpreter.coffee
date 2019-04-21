@@ -34,28 +34,21 @@ describe 'Command Interpreter', () ->
     @ct = isCancelled: no
 
   it 'list all commands names', () ->
+    # overwrite interpreter commands to get rid of default ones
+    @interpreter.commands = @commands
     names = @interpreter.commandNames
-    names.should.deep.equal [
-      # base commands
-      'def', 'define', 'cancel', 'pause', 'timeout', 'do',
-      'loop', # loop was overwritten
-      'repeat', 'all',
-      # specific commands
-      'turn'
-    ]
+    names.should.deep.equal [ 'turn', 'loop' ]
 
   it 'add a new command', () ->
+    # overwrite interpreter commands to get rid of default ones
+    @interpreter.commands = @commands
     newCommand = sinon.stub()
     newCommand.meta =
       name: 'new-command'
       params: []
     @interpreter.add 'new-command', newCommand
     names = @interpreter.commandNames
-    names.should.deep.equal [
-      'def', 'define', 'cancel', 'pause', 'timeout', 'do',
-      'loop', 'repeat', 'all',
-      'turn', 'new-command'
-    ]
+    names.should.deep.equal [ 'turn', 'loop', 'new-command' ]
 
   it 'call a command', () ->
     res = await @interpreter.execute 'turn north', {}, @ct
