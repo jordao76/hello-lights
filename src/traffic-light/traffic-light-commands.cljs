@@ -7,6 +7,7 @@
 
 (define lights
   "Set the lights to the given values (on or off):
+  @example
   (lights off off on)"
   (do
     (turn red    :red)
@@ -18,6 +19,7 @@
 (define flash
   "Flashes a light for the given duration.
   Toggle, wait, toggle back, wait again:
+  @example
   (flash red 500)"
   (do
     (toggle :light) (pause :ms)
@@ -27,6 +29,7 @@
 
 (define blink
   "Flashes a light for the given number of times and duration for each time:
+  @example
   (blink 10 yellow 500)"
   (repeat :times
     (flash :light :ms)))
@@ -35,6 +38,7 @@
 
 (define twinkle
   "Flashes a light for the given duration forever:
+  @example
   (twinkle green 500)"
   (loop
     (flash :light :ms)))
@@ -44,6 +48,7 @@
 (define cycle
   "Blinks each light in turn for the given duration and number of times,
   repeating forever; starts with red:
+  @example
   (cycle 2 500)"
   (loop
     (blink :times red    :ms)
@@ -54,6 +59,7 @@
 
 (define jointly
   "Flashes all lights together forever:
+  @example
   (jointly 500)"
   (loop
     (lights on  on  on)  (pause :ms)
@@ -62,7 +68,9 @@
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define heartbeat
-  "Heartbeat pattern: (heartbeat red)"
+  "Heartbeat pattern:
+  @example
+  (heartbeat red)"
   (loop
     (blink 2 :light 250)
     (pause 350)))
@@ -70,7 +78,9 @@
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define pulse
-  "Single pulse pattern: (pulse red)"
+  "Single pulse pattern:
+  @example
+  (pulse red)"
   (loop
     (toggle :light)
     (pause 300)
@@ -80,7 +90,9 @@
 ;`);cp.execute(`;-----------------------------------------------------------
 
 (define count
-  "Count a number of times repeatedly: (count 7 red)"
+  "Count a number of times repeatedly:
+  @example
+  (count 7 red)"
   (loop
     (blink :times :light 200)
     (pause 800)))
@@ -89,6 +101,7 @@
 
 (define sos
   "SOS distress signal morse code pattern:
+  @example
   (sos red)"
   (loop
     (morse :light "SOS")))
@@ -103,6 +116,7 @@
 
 (define up
   "Go up with the given duration:
+  @example
   (up 200)"
   (do
     (toggle green)  (pause :ms) (toggle green)
@@ -113,6 +127,7 @@
 
 (define down
   "Go down with the given duration:
+  @example
   (down 200)"
   (do
     (toggle red)    (pause :ms) (toggle red)
@@ -123,25 +138,13 @@
 
 (define bounce
   "Bounce with the given duration:
+  @example
   (bounce 500)"
   (loop
     (toggle green)  (pause :ms) (toggle green)
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)))
-
-;`);cp.execute(`;-----------------------------------------------------------
-
-(define soundbar
-  "Like a sound bar with the given duration:
-  (soundbar 500)"
-  (loop
-    (toggle green)  (pause :ms)
-    (toggle yellow) (pause :ms)
-    (toggle red)    (pause :ms)
-    (toggle red)    (pause :ms)
-    (toggle yellow) (pause :ms)
-    (toggle green)  (pause :ms)))
 
 ;`);cp.execute(`;-----------------------------------------------------------
 
@@ -152,6 +155,7 @@
   for 'attention-ms' duration before turning on red (stop).
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
+  @example
   (activity 40000 10000 10000)"
   (do
     (blink 4 green 500)

@@ -88,6 +88,12 @@ class ChromiumDeviceManager extends DeviceManager {
     // The Manager could have its own CommandParser and separate commands from
     // the traffic lights.
     let newDevice = ctx => this.newDevice();
+    newDevice.meta = {
+      name: 'new-device',
+      params: [],
+      desc: 'Opens a new chromium device.'
+    };
+    /** @deprecated */
     newDevice.doc = {
       name: 'new-device',
       desc: 'Opens a new chromium device.'

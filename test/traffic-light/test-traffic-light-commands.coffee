@@ -149,13 +149,6 @@ describe 'Traffic light commands', () =>
       @commands.bounce.doc.desc.should.contain 'Bounce with the given duration'
       @commands.bounce.paramNames.should.deep.equal ['ms']
 
-  describe 'soundbar', () =>
-
-    it 'check the metadata', () =>
-      @commands.soundbar.doc.name.should.equal 'soundbar'
-      @commands.soundbar.doc.desc.should.contain 'Like a sound bar with the given duration'
-      @commands.soundbar.paramNames.should.deep.equal ['ms']
-
   describe 'CommandParser', () =>
 
     # parse throws when it fails

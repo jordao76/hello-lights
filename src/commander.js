@@ -20,11 +20,11 @@ const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector')
 
 ////////////////////////////////////////////////
 
-const {CommandParser} = require('./parsing/command-parser');
+const {Interpreter} = require('./commands/interpreter');
 const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
-// the default command parser
-const Parser = new CommandParser();
-defineCommands(Parser);
+// the default command interpreter
+const DefaultInterpreter = new Interpreter();
+defineCommands(DefaultInterpreter);
 
 ////////////////////////////////////////////////
 
@@ -38,7 +38,7 @@ class Commander {
    * @param {object} [options] - Commander options.
    * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+   * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
    *   Takes precedence over `options.selectorCtor`.
    * @param {function} [options.selectorCtor] - The constructor of a traffic
@@ -54,14 +54,14 @@ class Commander {
   constructor(options = {}) {
     let {
       logger = console,
-      parser = Parser,
+      interpreter = DefaultInterpreter,
       selector = null,
       selectorCtor = SelectorCtor
     } = options;
     this.logger = logger;
-    this.parser = parser;
+    this.interpreter = interpreter;
 
-    this.selector = selector || new selectorCtor({...options, logger, parser}); // eslint-disable-line new-cap
+    this.selector = selector || new selectorCtor({...options, logger, interpreter}); // eslint-disable-line new-cap
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
     this.selector.on('interrupted', () => this._interrupt());
@@ -79,13 +79,13 @@ class Commander {
    * Cancels any currently executing command.
    */
   cancel() {
-    this.parser.cancel();
+    this.interpreter.cancel();
   }
 
   _interrupt() {
     if (!this.running) return;
     this.isInterrupted = true;
-    this.parser.cancel();
+    this.interpreter.cancel();
   }
 
   /**
@@ -120,7 +120,7 @@ class Commander {
   async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
     this.logger.log(`${tl}: cancel '${this.running}'`);
-    this.parser.cancel();
+    this.interpreter.cancel();
     await tl.reset();
   }
 
@@ -134,7 +134,7 @@ class Commander {
     if (reset) await tl.reset();
     this.logger.log(`${tl}: running '${command}'`);
     this.running = command;
-    let res = await this.parser.execute(command, {tl});
+    let res = await this.interpreter.execute(command, {tl});
     if (command === this.running) this.running = null;
     this._finishedExecution(command, tl);
     return res;
@@ -171,7 +171,7 @@ class Commander {
    * @type {string[]}
    */
   get commandNames() {
-    return this.parser.commandNames;
+    return this.interpreter.commandNames;
   }
 
   /**
@@ -179,7 +179,7 @@ class Commander {
    * @type {object.<string, parsing.CommandFunction>}
    */
   get commands() {
-    return this.parser.commands;
+    return this.interpreter.commands;
   }
 
   /**
@@ -187,21 +187,16 @@ class Commander {
    * @param {string} commandName - Name of the command to log help info.
    */
   help(commandName) {
-    let command = this.parser.commands[commandName];
+    let command = this.interpreter.commands[commandName];
     if (!command) {
       this.logger.error(`Command not found: "${commandName}"`);
       return;
     }
-    let paramNames = command.paramNames, params = '';
-    const validationText = i => {
-      if (!command.validation) return '';
-      return ` (${command.validation[i].exp})`;
-    };
-    if (paramNames && paramNames.length > 0) {
-      params = ' ' + paramNames.map((n, i) => ':' + n + validationText(i)).join(' ');
-    }
-    this.logger.log(`${command.doc.name}${params}`);
-    this.logger.log(command.doc.desc);
+    const validationText = p => p.validate ? ` (${p.validate.exp})` : '';
+    let params = command.meta.params.map(p => ':' + p.name + validationText(p)).join(' ');
+    if (params.length > 0) params = ' ' + params;
+    this.logger.log(`${command.meta.name}${params}`);
+    this.logger.log(command.meta.desc);
   }
 
   /**
@@ -222,7 +217,7 @@ class Commander {
  * @param {object} [options] - Commander options.
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
- * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+ * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
  * @returns {Commander} A multi-traffic-light commander.
  */
 Commander.multi = (options = {}) => {

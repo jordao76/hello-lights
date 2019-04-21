@@ -12,7 +12,7 @@ DEBUG_STUB = (stub) ->
 describe 'Commander', () =>
 
   beforeEach () =>
-    @parser =
+    @interpreter =
       execute: sinon.stub().returns new Promise (resolve, reject) =>
         @resolve = resolve
         @reject = reject
@@ -22,7 +22,7 @@ describe 'Commander', () =>
     @logger =
       log: sinon.stub()
       error: sinon.stub()
-    @cm = new Commander {@parser, @manager, @logger}
+    @cm = new Commander {@interpreter, @manager, @logger}
 
   describe 'connected device', () =>
 
@@ -49,7 +49,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', {tl:@device.trafficLight}).should.be.true
+          @interpreter.execute.calledOnceWith('fast command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledWith("device 999999: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999999: finished 'fast command'").should.be.true
           done()
@@ -57,7 +57,7 @@ describe 'Commander', () =>
       it 'if no command is running, run it (infinite command)', (done) =>
         @cm.run('infinite command') # never resolved
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+          @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'infinite command'").should.be.true
           done()
 
@@ -66,7 +66,7 @@ describe 'Commander', () =>
         error = new Error('bad command!')
         @reject error
         yieldThen () =>
-          @parser.execute.calledOnceWith('error command', {tl:@device.trafficLight}).should.be.true
+          @interpreter.execute.calledOnceWith('error command', {tl:@device.trafficLight}).should.be.true
           @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
           @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
           @logger.error.calledWith(error.message).should.be.true
@@ -77,7 +77,7 @@ describe 'Commander', () =>
         yieldThen () =>
           @cm.run('infinite command') # same command
           yieldThen () =>
-            @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+            @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
             @logger.log.calledWith("device 999999: skip 'infinite command'").should.be.true
             done()
 
@@ -88,18 +88,18 @@ describe 'Commander', () =>
           @cm.run('fast command') # same command
           @resolve()
           yieldThen () =>
-            @parser.execute.calledTwice.should.be.true
+            @interpreter.execute.calledTwice.should.be.true
             @logger.log.callCount.should.equal 4
             done()
 
       it 'if another command is running, cancels and runs the new command', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
-          sinon.assert.calledOnce(@parser.execute)
-          sinon.assert.calledWith(@parser.execute, 'infinite command', {tl:@device.trafficLight})
+          sinon.assert.calledOnce(@interpreter.execute)
+          sinon.assert.calledWith(@interpreter.execute, 'infinite command', {tl:@device.trafficLight})
           @cm.run('fast command') # different command
           yieldThen () =>
-            sinon.assert.calledWith(@parser.cancel)
+            sinon.assert.calledWith(@interpreter.cancel)
             sinon.assert.calledWith(@logger.log, "device 999999: cancel 'infinite command'")
             @resolve() # resolve the commands (infinite command was cancelled and fast command ends fast)
             yieldThen () =>
@@ -122,11 +122,11 @@ describe 'Commander', () =>
       it 'cancels and suspends the command when disconnected', (done) =>
         @cm.run('infinite command')
         yieldThen () =>
-          @parser.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+          @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
           sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
           @device.disconnect()
           yieldThen () =>
-            sinon.assert.calledWith(@parser.cancel)
+            sinon.assert.calledWith(@interpreter.cancel)
             @resolve() # cancel resolves the command
             yieldThen () =>
               sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
@@ -142,7 +142,7 @@ describe 'Commander', () =>
               @device.connect() # reconnect
               @manager.emit('added')
               yieldThen () =>
-                @parser.execute.callCount.should.equal 2
+                @interpreter.execute.callCount.should.equal 2
                 sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
                 done()
 
@@ -178,13 +178,13 @@ describe 'Commander', () =>
               @device.connect()
               @manager.emit('add')
               yieldThen () =>
-                @parser.execute.callCount.should.equal 1
+                @interpreter.execute.callCount.should.equal 1
                 done()
 
     describe 'multiple Commanders competing for a device', () =>
 
       beforeEach () =>
-        @parser2 =
+        @interpreter2 =
           execute: sinon.stub().returns new Promise (resolve, reject) =>
             @resolve2 = resolve
             @reject2 = reject
@@ -192,14 +192,14 @@ describe 'Commander', () =>
         @logger2 =
           log: sinon.stub()
           error: sinon.stub()
-        @cm2 = new Commander {parser: @parser2, @manager, logger: @logger2}
+        @cm2 = new Commander {parser: @interpreter2, @manager, logger: @logger2}
 
       it 'second commander should NOT run', (done) =>
         @cm.run('infinite command')
         @cm2.run('infinite command')
         yieldThen () =>
-          @parser.execute.callCount.should.equal 1
-          @parser2.execute.callCount.should.equal 0 # commander 2 not executed
+          @interpreter.execute.callCount.should.equal 1
+          @interpreter2.execute.callCount.should.equal 0 # commander 2 not executed
           done()
 
       it 'only one Commander executes when the device is reconnected', (done) =>
@@ -215,11 +215,11 @@ describe 'Commander', () =>
               yieldThen () =>
                 # one of the Commanders should take control of the device
                 if @cm.selector._device
-                  @parser.execute.callCount.should.equal 2
-                  @parser2.execute.callCount.should.equal 0
+                  @interpreter.execute.callCount.should.equal 2
+                  @interpreter2.execute.callCount.should.equal 0
                 else
-                  @parser.execute.callCount.should.equal 1
-                  @parser2.execute.callCount.should.equal 1
+                  @interpreter.execute.callCount.should.equal 1
+                  @interpreter2.execute.callCount.should.equal 1
                 done()
 
     describe 'disconnect and connect another device', () =>
@@ -241,19 +241,19 @@ describe 'Commander', () =>
               @device2.connect() # connect device 2
               @manager.emit('added')
               yieldThen () =>
-                @parser.execute.callCount.should.equal 2
+                @interpreter.execute.callCount.should.equal 2
                 sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
                 done()
 
     describe 'device specific Commander', () =>
 
       beforeEach () =>
-        @cm = new Commander {@parser, @manager, @logger, serialNum: '999998'}
+        @cm = new Commander {@interpreter, @manager, @logger, serialNum: '999998'}
 
       it 'wrong device connected, should not run a command', (done) =>
         @cm.run('fast command')
         yieldThen () =>
-          @parser.execute.callCount.should.equal 0
+          @interpreter.execute.callCount.should.equal 0
           sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
           done()
 
@@ -264,7 +264,7 @@ describe 'Commander', () =>
         @cm.run('fast command')
         @resolve()
         yieldThen () =>
-          @parser.execute.calledOnceWith('fast command', {tl:@device2.trafficLight}).should.be.true
+          @interpreter.execute.calledOnceWith('fast command', {tl:@device2.trafficLight}).should.be.true
           @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
           @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
           done()
@@ -274,7 +274,7 @@ describe 'Commander', () =>
     it 'should not run a command', (done) =>
       @cm.run('fast command')
       yieldThen () =>
-        @parser.execute.callCount.should.equal 0
+        @interpreter.execute.callCount.should.equal 0
         sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
         done()
 
@@ -286,19 +286,21 @@ describe 'Commander', () =>
         @manager.allDevices.returns [@device]
         @manager.emit('added') # new device added (detected)
         yieldThen () =>
-          @parser.execute.calledOnce.should.be.true
-          sinon.assert.calledWith(@parser.execute, 'fast command', {tl:@device.trafficLight})
+          @interpreter.execute.calledOnce.should.be.true
+          sinon.assert.calledWith(@interpreter.execute, 'fast command', {tl:@device.trafficLight})
           done()
 
   describe 'command help', () =>
 
     beforeEach () =>
       @commandNames = ['move','turn','stop']
-      @parser.commandNames = @commandNames
+      @interpreter.commandNames = @commandNames
       moveCommand = sinon.stub()
-      moveCommand.paramNames = ['where']
-      moveCommand.doc = name: 'move', desc: 'Moves the widget'
-      @parser.commands = move: moveCommand
+      moveCommand.meta =
+        name: 'move'
+        desc: 'Moves the widget'
+        params: [ name: 'where' ]
+      @interpreter.commands = move: moveCommand
 
     it 'commandNames: lists all available commands', () =>
       @cm.commandNames.should.deep.equal @commandNames

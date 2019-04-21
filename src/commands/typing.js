@@ -31,7 +31,6 @@
  * @memberof commands
  * @property {string} name - Parameter name.
  * @property {commands.Validate} validate - Parameter validation function.
- * @property {commands.Param[]} params - Parameter descriptions for the command.
  * @property {boolean} [isRest] - If the parameter is a rest parameter, i.e,
  *   it accepts a variable number of arguments (1 or more). A rest parameter
  *   <b>must</b> be the last parameter of a command.

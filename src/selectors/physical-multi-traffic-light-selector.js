@@ -21,13 +21,13 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
    * Checks-out and uses all available traffic lights to issue commands.
    * @param {object} [options] - Options.
    * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
-   * @param {parsing.CommandParser} [options.parser] - The Command Parser to use.
+   * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    *   Used to define multi-traffic-light commands.
    */
-  constructor({manager = Manager, parser = null} = {}) {
+  constructor({manager = Manager, interpreter = null} = {}) {
     super();
     this.manager = manager;
-    this._setupCommands(parser);
+    this._setupCommands(interpreter);
     this._setupTrafficLight();
   }
 
@@ -58,10 +58,10 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
     });
   }
 
-  _setupCommands(parser) {
-    if (!parser) return;
+  _setupCommands(interpreter) {
+    if (!interpreter) return;
     const {defineCommands} = require('../traffic-light/multi-traffic-light-commands');
-    defineCommands(parser);
+    defineCommands(interpreter);
   }
 
   _retrieveTrafficLights() {

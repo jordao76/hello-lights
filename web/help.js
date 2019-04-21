@@ -7,12 +7,12 @@ class WebCommandFormatter {
   }
 
   formatParams() {
-    return this.command.paramNames
-      .map(param => ':' + param).join(' ');
+    return this.command.meta.params
+      .map(param => ':' + param.name).join(' ');
   }
 
   formatSignature() {
-    return `<h3><code>${this.command.doc.name} ${this.formatParams()}</code></h3>`;
+    return `<h3><code>${this.command.meta.name} ${this.formatParams()}</code></h3>`;
   }
 
   formatVariable(variable) {
@@ -20,14 +20,19 @@ class WebCommandFormatter {
   }
 
   formatSample(sample) {
-    sample = sample.trim().replace(/\n {2}/g, '\n&nbsp;&nbsp;'); // indentation
-    return `:<br /><br /><div class="sample">${sample}</div>`;
+    sample = sample.replace(/^\s*?\n/s, ''); // remove first empty lines
+    let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
+    sample = sample.
+      replace(new RegExp(`^[ \\t]{${indentSize}}`, "gm"), ''). // unindent
+      replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
+    return `<br /><div class="sample">${sample}</div>`;
   }
 
   formatDesc() {
-    return this.command.doc.desc
+    return this.command.meta.desc
+      .replace(/^\s*?\n/s, '') // remove first empty lines
       .replace(/'([^']+)'/g, (_, variable) => this.formatVariable(variable))
-      .replace(/:(\s*\(.+\)\s*)$/s, (_, sample) => this.formatSample(sample))
+      .replace(/@example(.+)$/s, (_, sample) => this.formatSample(sample))
       .replace(/\n/g, '<br />\n');
   }
 
