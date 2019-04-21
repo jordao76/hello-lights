@@ -6,7 +6,7 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"No tests...\"",
-    "link": "npm link ../.. && npm link ../chromium-device"
+    "link": "npm link ../.."
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
