@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>🚦</title>
+  <link rel="stylesheet" href="direct/style.css">
+</head>
+
+<body>
+  <div class="traffic-light">
+    <div id="red" class="light"></div>
+    <div id="yellow" class="light"></div>
+    <div id="green" class="light"></div>
+  </div>
+</body>
+
+<script>
+  let state = {
+    red: false,
+    yellow: false,
+    green: false
+  }
+  document.getElementById('red').addEventListener('click', toggle);
+  document.getElementById('yellow').addEventListener('click', toggle);
+  document.getElementById('green').addEventListener('click', toggle);
+  function toggle({target}) {
+    state[target.id] = !state[target.id];
+    let change = state[target.id] ? 'add' : 'remove';
+    target.classList[change]('on');
+    run();
+  }
+  function run() {
+    const conv = l => l ? 'on' : 'off';
+    var req = new XMLHttpRequest();
+    req.open('POST', '/run', true);
+    req.send(`lights ${conv(state.red)} ${conv(state.yellow)} ${conv(state.green)}`);
+  }
+</script>
+
+</html>

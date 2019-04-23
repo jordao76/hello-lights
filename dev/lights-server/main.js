@@ -41,6 +41,9 @@ http.createServer((req, res) => {
     if (req.url === '/style.css') return serveFile('style.css', 'text/css', res);
     if (req.url === '/main.js') return serveFile('main.js', 'text/javascript', res);
 
+    if (req.url === '/direct' || req.url === '/direct/index.html') return serveFile('direct/index.html', 'text/html', res);
+    if (req.url === '/direct/style.css') return serveFile('direct/style.css', 'text/css', res);
+
   } else if (req.method === 'POST') {
 
     if (req.url === '/run') return runCommand(req, res);
