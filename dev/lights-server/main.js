@@ -32,17 +32,34 @@ function serveFile(filepath, contentType, res) {
 
 /////////////////////////////////////////////////////////////////
 
+const urls = {
+
+  '/': { file: 'index.html', type: 'text/html' },
+  '/index.html': { file: 'index.html', type: 'text/html' },
+  '/style.css': { file: 'style.css', type: 'text/css' },
+  '/main.js': { file: 'main.js', type: 'text/javascript' },
+
+  '/direct': { file: 'direct/index.html', type: 'text/html' },
+  '/direct/index.html': { file: 'direct/index.html', type: 'text/html' },
+  '/direct/style.css': { file: 'direct/style.css', type: 'text/css' },
+  // iOS icons
+  '/direct/traffic-light-appstore.png': { file: 'direct/traffic-light-appstore.png', type: 'image/png' },
+  '/direct/traffic-light-ipad-ipadmini.png': { file: 'direct/traffic-light-ipad-ipadmini.png', type: 'image/png' },
+  '/direct/traffic-light-ipadpro.png': { file: 'direct/traffic-light-ipadpro.png', type: 'image/png' },
+  '/direct/traffic-light-iphone-retina.png': { file: 'direct/traffic-light-iphone-retina.png', type: 'image/png' },
+  '/direct/traffic-light-iphone.png': { file: 'direct/traffic-light-iphone.png', type: 'image/png' }
+
+};
+
+/////////////////////////////////////////////////////////////////
+
 http.createServer((req, res) => {
 
   // whitelist based server
   if (req.method === 'GET') {
 
-    if (req.url === '/' || req.url === '/index.html') return serveFile('index.html', 'text/html', res);
-    if (req.url === '/style.css') return serveFile('style.css', 'text/css', res);
-    if (req.url === '/main.js') return serveFile('main.js', 'text/javascript', res);
-
-    if (req.url === '/direct' || req.url === '/direct/index.html') return serveFile('direct/index.html', 'text/html', res);
-    if (req.url === '/direct/style.css') return serveFile('direct/style.css', 'text/css', res);
+    let info = urls[req.url];
+    if (info) return serveFile(info.file, info.type, res);
 
   } else if (req.method === 'POST') {
 

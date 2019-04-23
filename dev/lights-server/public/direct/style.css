@@ -1,22 +1,41 @@
 body {
-  margin: 0;
+  background-color: #444;
+}
+
+.container {
+  display: table;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.middle {
+  display: table-cell;
+  vertical-align: middle;
 }
 
 .traffic-light {
+  margin-left: auto;
+  margin-right: auto;
+
   background-color: #222;
   border: 5px solid black;
-  width: 190px;
-  height: 520px;
+  width: 285px;
+  height: 780px;
 }
+
 .light {
   border-radius: 50%;
-  width: 130px;
-  height: 130px;
-  margin: 25px;
+  width: 195px;
+  height: 195px;
+  margin: 37px;
   border: 5px solid black;
   opacity: .2;
   cursor: pointer;
 }
+
 .on { opacity: 1; }
 #red { background-color: red; }
 #yellow { background-color: gold; }
