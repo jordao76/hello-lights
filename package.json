@@ -26,7 +26,7 @@
     "web": "opn web/index.html",
     "predeploy": "npm run peg && npm run browserify && npm run predoc",
     "deploy": "gh-pages -d web",
-    "prepublishOnly": "npm run peg && cpy **/*.* !*.pegjs ../lib/ --cwd=src --parents",
+    "prepublishOnly": "npm run peg && cpy \"**/*.*\" \"!*.pegjs\" ../lib/ --cwd=src --parents",
     "dev:install": "cd dev && npm install",
     "predev:repl": "npm run peg",
     "dev:repl": "node dev/lights-repl",
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "node-hid": "^0.7.3",
-    "usb-detection": "^4.0.0"
+    "usb-detection": "^4.1.0"
   },
   "nyc": {
     "exclude": [
