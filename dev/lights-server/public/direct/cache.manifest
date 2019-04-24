@@ -1,0 +1,16 @@
+CACHE MANIFEST
+# cache manifest version 0.0.1
+# https://developer.apple.com/library/archive/documentation/iPhone/Conceptual/SafariJSDatabaseGuide/OfflineApplicationCache/OfflineApplicationCache.html
+
+CACHE:
+
+style.css
+traffic-light-appstore.png
+traffic-light-ipad-ipadmini.png
+traffic-light-ipadpro.png
+traffic-light-iphone-retina.png
+traffic-light-iphone.png
+
+NETWORK:
+
+/run
