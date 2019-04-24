@@ -10,5 +10,7 @@
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "express": "^4.16.4"
+  }
 }
