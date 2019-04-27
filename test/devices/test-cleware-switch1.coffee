@@ -107,7 +107,7 @@ describe 'Cleware Switch1 device', ->
       @tl.red.on.should.be.false
       # reset turns off all lights even if they are off,
       # since in the physical device they might actually be on,
-      # and thus out of synch with the internal representation
+      # and thus out of sync with the internal representation
       sinon.assert.calledWith(@HID_HID_write, [0, 0, 0x10 + RED, OFF])
       sinon.assert.calledWith(@HID_HID_write, [0, 0, 0x10 + YELLOW, OFF])
       sinon.assert.calledWith(@HID_HID_write, [0, 0, 0x10 + GREEN, OFF])
