@@ -88,15 +88,23 @@ button:focus {
   box-shadow: 0 0 0 2px #988;
 }
 
-.error {
-  display: none;
+.log {
   grid-area: messages;
+  overflow-y: scroll;
+  max-height: 100px;
   margin-top: 5px;
   padding: 10px;
   border-radius: 7px;
-  color: #d8000c;
-  background-color: #ffbaba;
+  color: #9f9f9f;
+  background-color: #2f2f2f;
   box-shadow: 5px 5px 10px 0px rgba(0, 0, 0, 0.4);
+}
+.error {
+  color: #ff660c;
+}
+.date {
+  color: #6f6f6f;
+  font-size: 12px;
 }
 
 .footer {

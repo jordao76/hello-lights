@@ -28,8 +28,30 @@ function setUpActions() {
 
 ////////////////////////////////////////////////////////////////////////////
 
+function addLog(...args) {
+  let log = document.querySelector('.log');
+  let entry = document.createElement('span');
+  entry.innerHTML = `<span class='date'>${new Date().toISOString()}:</span> ${args.join(' ')}<br />`;
+  log.insertAdjacentElement('afterbegin', entry);
+  return entry;
+}
+
+function addErrorLog(...args) {
+  addLog(...args)
+    .classList.add('error');
+}
+
+function setUpLogSocket() {
+  const socket = io(); // eslint-disable-line no-undef
+  socket.on('log', addLog);
+  socket.on('log_error', addErrorLog);
+}
+
+////////////////////////////////////////////////////////////////////////////
+
 function main() {
   setUpActions();
+  setUpLogSocket();
 }
 
 ////////////////////////////////////////////////////////////////////////////
