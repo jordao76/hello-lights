@@ -60,6 +60,7 @@ class Commander {
     } = options;
     this.logger = logger;
     this.interpreter = interpreter;
+    this.manager = options.manager;
 
     this.selector = selector || new selectorCtor({...options, logger, interpreter}); // eslint-disable-line new-cap
     this.selector.on('enabled', () => this._resumeIfNeeded());

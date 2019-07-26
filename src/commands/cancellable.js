@@ -13,7 +13,7 @@ class Cancellable {
 
   /** Cancellable constructor. */
   constructor() {
-    /** If the Cancellation Token is cancelled. Starts of as false. */
+    /** If the Cancellation Token is cancelled. Starts off as false. */
     this.isCancelled = false;
     // Object storing timeout IDs and related Promise resolve functions.
     this._timeoutIDs = {};

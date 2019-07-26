@@ -42,7 +42,7 @@
     "cpy-cli": "^2.0.0",
     "eslint": "^5.16.0",
     "gh-pages": "^2.0.0",
-    "jsdoc": "^3.5.5",
+    "jsdoc": "^3.6.3",
     "mocha": "^5.2.0",
     "nyc": "^14.0.0",
     "opn-cli": "^3.1.0",
@@ -50,8 +50,10 @@
     "sinon": "^7.0.0"
   },
   "dependencies": {
-    "node-hid": "^0.7.3",
-    "usb-detection": "^4.1.0"
+    "node-hid": "^0.7.9"
+  },
+  "optionalDependencies": {
+    "usb-detection": "^4.3.0"
   },
   "nyc": {
     "exclude": [

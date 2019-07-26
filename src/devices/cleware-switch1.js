@@ -1,5 +1,5 @@
-let {Device, DeviceManager} = require('../physical/device');
-let HID = require('node-hid');
+const {Device, DeviceManager} = require('../physical/device');
+const HID = require('node-hid');
 
 //////////////////////////////////////////////
 // Some info taken from:
@@ -36,7 +36,20 @@ class ClewareSwitch1Device extends Device {
 
 //////////////////////////////////////////////
 
-let usbDetect = require('usb-detection');
+const noop = () => {};
+const requireUsbDetection = () => {
+  try {
+    return require('usb-detection');
+  } catch (e) {
+    // return a dummy
+    return {
+      startMonitoring: noop,
+      stopMonitoring: noop,
+      on: noop
+    };
+  }
+};
+const usbDetect = requireUsbDetection();
 
 //////////////////////////////////////////////
 
@@ -108,7 +121,7 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
 
 ////////////////
 
-let Manager = new ClewareSwitch1DeviceManager();
+const Manager = new ClewareSwitch1DeviceManager();
 
 ////////////////
 
