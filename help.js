@@ -1,3 +1,5 @@
+const {DocParser} = require('../src/commands/doc-parser');
+
 ////////////////////////////////////////////////////////
 
 class WebCommandFormatter {
@@ -15,25 +17,42 @@ class WebCommandFormatter {
     return `<h3><code>${this.command.meta.name} ${this.formatParams()}</code></h3>`;
   }
 
-  formatVariable(variable) {
-    return `<code class="variable">${variable}</code>`;
+  recur(nodes) {
+    return nodes.map(node => this[node.type](node)).join('');
+  }
+
+  untagged(node) {
+    return this.recur(node.parts);
   }
 
   formatSample(sample) {
-    sample = sample.replace(/^\s*?\n/s, ''); // remove first empty lines
+    sample = sample.replace(/^\s*?\n/, ''); // remove first empty lines
     let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
     sample = sample
       .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
-      .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')); // indentation
-    return `<br /><div class="sample">${sample}</div>`;
+      .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')) // indentation
+      .replace(/\n/g, '<br/>\n');
+    return `<br/><br/><div class="sample">${sample}</div>`;
+  }
+
+  block(node) {
+    let res = this.recur(node.parts);
+    if (node.tag === 'example') return this.formatSample(res);
+    return res;
+  }
+
+  inline(node) {
+    if (node.tag === 'code') return `<code class="variable">${node.value}</code>`;
+    return node.value;
+  }
+
+  text(node) {
+    return node.value;
   }
 
   formatDesc() {
-    return this.command.meta.desc
-      .replace(/^\s*?\n/s, '') // remove first empty lines
-      .replace(/'([^']+)'/g, (_, variable) => this.formatVariable(variable))
-      .replace(/@example(.+)$/s, (_, sample) => this.formatSample(sample))
-      .replace(/\n/g, '<br />\n');
+    let nodes = new DocParser().parse(this.command.meta.desc);
+    return this.recur(nodes);
   }
 
   format() {
