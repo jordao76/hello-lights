@@ -33,7 +33,7 @@ The `Commander` class documentation can be found [here](https://jordao76.github.
 
 ## Commands
 
-Check out the available commands [here](https://jordao76.github.io/hello-lights). You can even create your own with the `define` command.
+Check out the available commands [here](https://jordao76.github.io/hello-lights). For multiple traffic lights (`Commander.multi`) look [here](https://jordao76.github.io/hello-lights/multi.html). You can even create your own with the `define` command.
 
 ## Documentation
 

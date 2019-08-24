@@ -150,9 +150,9 @@
 
 (define activity
   "Time an activity from green (go) to yellow (attention) to red (stop).
-  Blinks green before starting for 5 seconds, keeps green on for the 'green-ms'
-  duration, turns yellow on for the 'yellow-ms' duration, then blinks yellow
-  for 'attention-ms' duration before turning on red (stop).
+  Blinks green before starting for 5 seconds, keeps green on for the {@code green-ms}
+  duration, turns yellow on for the {@code yellow-ms} duration, then blinks yellow
+  for {@code attention-ms} duration before turning on red (stop).
   E.g. for an activity that takes one minute with green for 40s, yellow for 10s,
   then yellow blinking for 10s:
   @example
