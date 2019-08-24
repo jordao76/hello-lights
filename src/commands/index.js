@@ -4,6 +4,7 @@
  */
 
 module.exports = {
+  ...require('./doc-parser'),
   ...require('./parser'),
   ...require('./analyzer'),
   ...require('./generator'),
