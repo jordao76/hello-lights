@@ -2,7 +2,7 @@ const {SimpleFormatter} = require('../src/commands/simple-formatter');
 
 ////////////////////////////////////////////////////////
 
-class WebCommandFormatter extends SimpleFormatter {
+class WebFormatter extends SimpleFormatter {
 
   formatSignature(meta) {
     return `<h3><code>${super.formatSignature(meta)}</code></h3>`;
@@ -19,23 +19,19 @@ class WebCommandFormatter extends SimpleFormatter {
     return `<code class="variable">${text}</code>`;
   }
 
-  format(command) {
-    return super.format(command.meta);
-  }
-
 }
 
 ////////////////////////////////////////////////////////
 
 function setUpHelp(commander, runCommand) {
-  let formatter = new WebCommandFormatter();
+  let formatter = new WebFormatter();
   let divHelp = document.querySelector('#help');
   divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
   let commandNames = commander.commandNames;
   for (let i = 0; i < commandNames.length; ++i) {
     let commandName = commandNames[i];
     let command = commander.commands[commandName];
-    divHelp.innerHTML += formatter.format(command);
+    divHelp.innerHTML += formatter.format(command.meta);
   }
   setUpSamples(runCommand);
 }
