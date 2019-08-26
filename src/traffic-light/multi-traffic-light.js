@@ -101,7 +101,7 @@ class FlexMultiTrafficLight extends TrafficLight {
   /**
    * Creates a new instance of this class.
    * Starts off using the first traffic light in the provided `trafficLights`.
-   * Tries to checks out the provided traffic lights.
+   * Tries to check out the provided traffic lights.
    * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
    */
   constructor(trafficLights) {

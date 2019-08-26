@@ -4,11 +4,12 @@
  */
 
 module.exports = {
-  ...require('./doc-parser'),
   ...require('./parser'),
   ...require('./analyzer'),
   ...require('./generator'),
   ...require('./interpreter'),
   ...require('./cancellable'),
+  ...require('./doc-parser'),
+  ...require('./simple-formatter'),
   validation: require('./validation')
 };
