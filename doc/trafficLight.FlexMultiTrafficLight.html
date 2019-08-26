@@ -31,8 +31,7 @@
         <h2><span class="attribs"><span class="type-signature"></span></span>
             <span class="ancestors"><a href="trafficLight.html">trafficLight</a>~</span>FlexMultiTrafficLight<span class="signature">(trafficLights)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description">A composite traffic light with a flexible way to select which composed
-traffic lights are active or in use.</div>
+            <div class="class-description">A composite traffic light with a flexible way to select which composedtraffic lights are active or in use.</div>
         
     
 </header>
@@ -55,9 +54,7 @@ traffic lights are active or in use.</div>
 
 
 <div class="description">
-    Creates a new instance of this class.
-Starts off using the first traffic light in the provided `trafficLights`.
-Tries to checks out the provided traffic lights.
+    Creates a new instance of this class.Starts off using the first traffic light in the provided `trafficLights`.Tries to check out the provided traffic lights.
 </div>
 
 
@@ -691,9 +688,7 @@ Tries to checks out the provided traffic lights.
 
 
 <div class="description">
-    Adds a traffic light to the composite.
-Tries to exclusively check it out first and because of that won't add
-any duplicates.
+    Adds a traffic light to the composite.Tries to exclusively check it out first and because of that won't addany duplicates.
 </div>
 
 
@@ -745,8 +740,7 @@ any duplicates.
 
             
 
-            <td class="description last">Traffic light to add.
-  Must not be null.</td>
+            <td class="description last">Traffic light to add.  Must not be null.</td>
         </tr>
 
     
@@ -1129,11 +1123,7 @@ unavailable for other users.
 
 
 <div class="description">
-    Selects the nearest traffic light to use, remembering the direction
-of movement (forwards or backwards).
-Also works with multiple selected traffic lights, moving all to the nearest,
-following a single direction (so it's possible to wrap around at the last
-if both the first and last indexes are in use).
+    Selects the nearest traffic light to use, remembering the directionof movement (forwards or backwards).Also works with multiple selected traffic lights, moving all to the nearest,following a single direction (so it's possible to wrap around at the lastif both the first and last indexes are in use).
 </div>
 
 
@@ -1221,9 +1211,7 @@ if both the first and last indexes are in use).
 
 
 <div class="description">
-    Selects the next traffic light to use, going back to the first one if
-the currently selected one is the last.
-Also works with multiple selected traffic lights, moving all to the next.
+    Selects the next traffic light to use, going back to the first one ifthe currently selected one is the last.Also works with multiple selected traffic lights, moving all to the next.
 </div>
 
 
@@ -1311,9 +1299,7 @@ Also works with multiple selected traffic lights, moving all to the next.
 
 
 <div class="description">
-    Selects the previous traffic light to use, going to the last one if
-the currently selected one is the first.
-Also works with multiple selected traffic lights, moving all to the previous.
+    Selects the previous traffic light to use, going to the last one ifthe currently selected one is the first.Also works with multiple selected traffic lights, moving all to the previous.
 </div>
 
 
@@ -1494,9 +1480,7 @@ Also works with multiple selected traffic lights, moving all to the previous.
 
 
 <div class="description">
-    Selects which traffic lights to use given their indexes (0-based),
-only considering enabled traffic lights.
-Indexes wrap around from the last to the first.
+    Selects which traffic lights to use given their indexes (0-based),only considering enabled traffic lights.Indexes wrap around from the last to the first.
 </div>
 
 
@@ -1548,8 +1532,7 @@ Indexes wrap around from the last to the first.
 
             
 
-            <td class="description last">Traffic light indexes to use.
-  Must not be empty.</td>
+            <td class="description last">Traffic light indexes to use.  Must not be empty.</td>
         </tr>
 
     
@@ -1722,9 +1705,7 @@ Indexes wrap around from the last to the first.
 
 
 <div class="description">
-    Gets the traffic light indexes that are in use.
-If there are no traffic lights in use, or no traffic lights are useable,
-returns an empty array.
+    Gets the traffic light indexes that are in use.If there are no traffic lights in use, or no traffic lights are useable,returns an empty array.
 </div>
 
 
@@ -2028,10 +2009,7 @@ returns an empty array.
 
 
 <div class="description">
-    Interrupted event. In a `FlexMultiTrafficLight`, if an active traffic
-light gets disabled, and there are still enabled traffic lights left,
-this event is raised. If no more traffic lights are enabled,
-then the `disabled` event is raised.
+    Interrupted event. In a `FlexMultiTrafficLight`, if an active trafficlight gets disabled, and there are still enabled traffic lights left,this event is raised. If no more traffic lights are enabled,then the `disabled` event is raised.
 </div>
 
 
@@ -2123,7 +2101,7 @@ then the `disabled` event is raised.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sat Aug 24 2019 09:17:37 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sun Aug 25 2019 22:40:53 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>

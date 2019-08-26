@@ -757,7 +757,7 @@ Commander.multi = (options = {}) => {
 
 module.exports = {Commander};
 
-},{"./commands/interpreter":10,"./traffic-light/traffic-light-commands":18}],3:[function(require,module,exports){
+},{"./commands/interpreter":10,"./traffic-light/traffic-light-commands":19}],3:[function(require,module,exports){
 const {and} = require('./validation');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -948,7 +948,7 @@ const badValue = (node, paramIdx, arg) => {
 
 module.exports = {Analyzer};
 
-},{"./validation":13}],4:[function(require,module,exports){
+},{"./validation":14}],4:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -1175,7 +1175,7 @@ module.exports = {...commands, commands};
 
 /////////////////////////////////////////////////////////////////////////////
 
-},{"./cancellable":5,"./validation":13}],5:[function(require,module,exports){
+},{"./cancellable":5,"./validation":14}],5:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
  * Commands should regularly check for the
@@ -1392,7 +1392,7 @@ module.exports = {...commands, commands};
 
 /////////////////////////////////////////////////////////////////////////////
 
-},{"./generator":9,"./validation":13}],7:[function(require,module,exports){
+},{"./generator":9,"./validation":14}],7:[function(require,module,exports){
 const parser = require('./doc-peg-parser');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2301,7 +2301,7 @@ const badParameter = (name, locs) =>
 
 module.exports = {Generator};
 
-},{"./validation":13}],10:[function(require,module,exports){
+},{"./validation":14}],10:[function(require,module,exports){
 /////////////////////////////////////////////////////////////////////////////
 
 const {Parser} = require('./parser');
@@ -3479,6 +3479,99 @@ module.exports = {
 };
 
 },{}],13:[function(require,module,exports){
+const {DocParser} = require('./doc-parser');
+
+/////////////////////////////////////////////////////////////////////////////
+
+class SimpleFormatter {
+
+  constructor() {
+    this._parser = new DocParser();
+  }
+
+  format(meta) {
+    return `${this.formatSignature(meta)}\n${this.formatDesc(meta.desc)}`;
+  }
+
+  formatDesc(desc) {
+    let nodes = this._parser.parse(desc);
+    return this._recur(nodes);
+  }
+
+  _recur(nodes) {
+    return nodes.map(node => this[`_${node.type}`](node)).join('');
+  }
+
+  _text(node) {
+    return node.value;
+  }
+
+  _untagged(node) {
+    return this._recur(node.parts);
+  }
+
+  _block(node) {
+    let res = this._recur(node.parts);
+    return this.formatBlockTag(res, node.tag);
+  }
+
+  _inline(node) {
+    return this.formatInlineTag(node.value, node.tag);
+  }
+
+  formatBlockTag(text, tag) {
+    if (tag === 'example') return this.formatCode(text);
+    return text;
+  }
+
+  formatInlineTag(text, tag) {
+    if (tag === 'code') return this.formatInlineCode(text);
+    return text.trim();
+  }
+
+  formatCode(code) {
+    code = code.replace(/^\s*$[\n\r]*/m, ''); // remove first empty lines
+    let indentSize = code.search(/[^ \t]|$/); // get indent size of first line
+    return code
+      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
+      .replace(/\s*$/, ''); // trim end
+  }
+
+  formatInlineCode(text) {
+    return `\`${text.trim()}\``;
+  }
+
+  formatSignature(meta) {
+    return `${this.formatName(meta.name)}${this.formatParams(meta.params)}${this.formatReturn(meta.returns)}`;
+  }
+
+  formatName(name) {
+    return name;
+  }
+
+  formatParams(params) {
+    if (params.length === 0) return '';
+    return ' ' + params.map(param => this.formatParam(param)).join(' ');
+  }
+
+  formatParam(param) {
+    let res = `:${param.name}`;
+    if (param.isRest) res += ' ...';
+    return res;
+  }
+
+  formatReturn($return) {
+    if (!$return) return '';
+    return ` -> ${$return.exp}`;
+  }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = { SimpleFormatter };
+
+},{"./doc-parser":7}],14:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -3518,7 +3611,7 @@ module.exports = {
   and
 };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /* eslint no-multi-spaces: 0 */
 
 const {isLight} = require('./validation');
@@ -3670,7 +3763,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../commands/base-commands":4,"../commands/validation":13,"./utils":20,"./validation":21}],15:[function(require,module,exports){
+},{"../commands/base-commands":4,"../commands/validation":14,"./utils":21,"./validation":22}],16:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3791,7 +3884,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../commands/validation":13}],16:[function(require,module,exports){
+},{"../commands/validation":14}],17:[function(require,module,exports){
 const {Light, TrafficLight} = require('./traffic-light');
 
 ///////////////
@@ -3895,7 +3988,7 @@ class FlexMultiTrafficLight extends TrafficLight {
   /**
    * Creates a new instance of this class.
    * Starts off using the first traffic light in the provided `trafficLights`.
-   * Tries to checks out the provided traffic lights.
+   * Tries to check out the provided traffic lights.
    * @param {trafficLight.TrafficLight[]} trafficLights - Traffic lights composed.
    */
   constructor(trafficLights) {
@@ -4122,7 +4215,7 @@ module.exports = {
   MultiLight, MultiTrafficLight, FlexMultiTrafficLight
 };
 
-},{"./traffic-light":19}],17:[function(require,module,exports){
+},{"./traffic-light":20}],18:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -4297,7 +4390,7 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
@@ -4370,7 +4463,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./morse":14,"./traffic-light-commands.cljs":17,"./utils":20,"./validation":21}],19:[function(require,module,exports){
+},{"./morse":15,"./traffic-light-commands.cljs":18,"./utils":21,"./validation":22}],20:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -4501,7 +4594,7 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],20:[function(require,module,exports){
+},{"events":1}],21:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4538,7 +4631,7 @@ module.exports = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4555,66 +4648,30 @@ module.exports = {isLight, isState};
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],22:[function(require,module,exports){
-const {DocParser} = require('../src/commands/doc-parser');
+},{}],23:[function(require,module,exports){
+const {SimpleFormatter} = require('../src/commands/simple-formatter');
 
 ////////////////////////////////////////////////////////
 
-class WebCommandFormatter {
+class WebCommandFormatter extends SimpleFormatter {
 
-  constructor(command) {
-    this.command = command;
+  formatSignature(meta) {
+    return `<h3><code>${super.formatSignature(meta)}</code></h3>`;
   }
 
-  formatParams() {
-    return this.command.meta.params
-      .map(param => ':' + param.name).join(' ');
-  }
-
-  formatSignature() {
-    return `<h3><code>${this.command.meta.name} ${this.formatParams()}</code></h3>`;
-  }
-
-  recur(nodes) {
-    return nodes.map(node => this[node.type](node)).join('');
-  }
-
-  untagged(node) {
-    return this.recur(node.parts);
-  }
-
-  formatSample(sample) {
-    sample = sample.replace(/^\s*?\n/, ''); // remove first empty lines
-    let indentSize = sample.search(/[^ \t]|$/); // get indend size of first line
-    sample = sample
-      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
+  formatCode(code) {
+    code = super.formatCode(code)
       .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')) // indentation
       .replace(/\n/g, '<br/>\n');
-    return `<br/><br/><div class="sample">${sample}</div>`;
+    return `<br/><br/><div class="sample">${code}</div>`;
   }
 
-  block(node) {
-    let res = this.recur(node.parts);
-    if (node.tag === 'example') return this.formatSample(res);
-    return res;
+  formatInlineCode(text) {
+    return `<code class="variable">${text}</code>`;
   }
 
-  inline(node) {
-    if (node.tag === 'code') return `<code class="variable">${node.value}</code>`;
-    return node.value;
-  }
-
-  text(node) {
-    return node.value;
-  }
-
-  formatDesc() {
-    let nodes = new DocParser().parse(this.command.meta.desc);
-    return this.recur(nodes);
-  }
-
-  format() {
-    return `${this.formatSignature()}${this.formatDesc()}`;
+  format(command) {
+    return super.format(command.meta);
   }
 
 }
@@ -4622,13 +4679,14 @@ class WebCommandFormatter {
 ////////////////////////////////////////////////////////
 
 function setUpHelp(commander, runCommand) {
+  let formatter = new WebCommandFormatter();
   let divHelp = document.querySelector('#help');
   divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
   let commandNames = commander.commandNames;
   for (let i = 0; i < commandNames.length; ++i) {
     let commandName = commandNames[i];
     let command = commander.commands[commandName];
-    divHelp.innerHTML += new WebCommandFormatter(command).format();
+    divHelp.innerHTML += formatter.format(command);
   }
   setUpSamples(runCommand);
 }
@@ -4654,7 +4712,7 @@ module.exports = {
   setUpHelp
 };
 
-},{"../src/commands/doc-parser":7}],23:[function(require,module,exports){
+},{"../src/commands/simple-formatter":13}],24:[function(require,module,exports){
 const {Commander} = require('../src/commander');
 const {setUpHelp} = require('./help');
 const {MultiTrafficLightSelector} = require('./web-traffic-light');
@@ -4755,7 +4813,7 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/commander":2,"./help":22,"./web-traffic-light":24}],24:[function(require,module,exports){
+},{"../src/commander":2,"./help":23,"./web-traffic-light":25}],25:[function(require,module,exports){
 const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
 const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
 
@@ -4868,4 +4926,4 @@ module.exports = {
   MultiTrafficLightSelector
 };
 
-},{"../src/traffic-light/multi-traffic-light":16,"../src/traffic-light/multi-traffic-light-commands":15,"../src/traffic-light/traffic-light":19,"events":1}]},{},[23]);
+},{"../src/traffic-light/multi-traffic-light":17,"../src/traffic-light/multi-traffic-light-commands":16,"../src/traffic-light/traffic-light":20,"events":1}]},{},[24]);
