@@ -34,20 +34,20 @@
     "dev:server": "node dev/lights-server"
   },
   "devDependencies": {
-    "browserify": "^16.2.3",
-    "chai": "^4.1.2",
+    "browserify": "^16.5.0",
+    "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffeelint": "^2.1.0",
-    "coffeescript": "^2.3.1",
+    "coffeescript": "^2.4.1",
     "cpy-cli": "^2.0.0",
     "eslint": "^5.16.0",
-    "gh-pages": "^2.0.0",
+    "gh-pages": "^2.1.1",
     "jsdoc": "^3.6.3",
     "mocha": "^5.2.0",
-    "nyc": "^14.0.0",
+    "nyc": "^14.1.1",
     "opn-cli": "^3.1.0",
     "pegjs": "^0.10.0",
-    "sinon": "^7.0.0"
+    "sinon": "^7.4.1"
   },
   "dependencies": {
     "node-hid": "^0.7.9"
