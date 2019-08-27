@@ -28,9 +28,9 @@
     "deploy": "gh-pages -d web",
     "prepublishOnly": "npm run peg && cpy \"**/*.*\" \"!*.pegjs\" ../lib/ --cwd=src --parents",
     "dev:install": "cd dev && npm install",
-    "predev:repl": "npm run peg",
+    "predev:repl": "npm run prepublishOnly",
     "dev:repl": "node dev/lights-repl",
-    "predev:server": "npm run peg",
+    "predev:server": "npm run prepublishOnly",
     "dev:server": "node dev/lights-server"
   },
   "devDependencies": {

@@ -307,5 +307,4 @@ describe 'Commander', () =>
 
     it 'help: log help for a command', () =>
       @cm.help('move')
-      sinon.assert.calledWith(@logger.log, 'move :where')
-      sinon.assert.calledWith(@logger.log, 'Moves the widget')
+      sinon.assert.calledWith(@logger.log, 'move :where\nMoves the widget\n')

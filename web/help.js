@@ -1,8 +1,8 @@
-const {SimpleFormatter} = require('../src/commands/simple-formatter');
+const {Formatter} = require('../src/commands/formatter');
 
 ////////////////////////////////////////////////////////
 
-class WebFormatter extends SimpleFormatter {
+class WebFormatter extends Formatter {
 
   formatSignature(meta) {
     return `<h3><code>${super.formatSignature(meta)}</code></h3>`;

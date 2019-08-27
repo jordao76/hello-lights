@@ -1,8 +1,8 @@
 require '../setup-unhandled-rejection'
-{SimpleFormatter} = require '../../src/commands'
+{Formatter} = require '../../src/commands'
 should = require('chai').should()
 
-describe 'Simple Formatter', () ->
+describe 'Formatter', () ->
 
   aLight = exp: 'a light'
   aString = exp: 'a string'
@@ -10,7 +10,7 @@ describe 'Simple Formatter', () ->
   aCommand = exp: 'a command'
 
   beforeEach () ->
-    @formatter = new SimpleFormatter()
+    @formatter = new Formatter()
 
   describe 'code formatting', () ->
 
@@ -76,7 +76,7 @@ describe 'Simple Formatter', () ->
 
   describe 'description formatting', () ->
 
-    it 'should format the description with inline code and an example', () ->
+    it 'should format a description with inline code and an example', () ->
       morse = '''
         Morse code pattern with the given {@code :light} and {@code :text}.
         @example
@@ -84,7 +84,35 @@ describe 'Simple Formatter', () ->
       act = @formatter.formatDesc(morse)
       act.should.equal(
         'Morse code pattern with the given `:light` and `:text`.\n' +
-        '(morse green "hello-lights")')
+        '(morse green "hello-lights")\n')
+
+    it 'should format a description in multiple lines', () ->
+      morse =
+        '  Morse code pattern with the given  \n  {@code :light} and {@code :text}.  '
+      act = @formatter.formatDesc(morse)
+      act.should.equal(
+        # lines are trimmed
+        'Morse code pattern with the given\n`:light` and `:text`.\n')
+
+    it 'should format a description in multiple paragraphs', () ->
+      morse =
+        '  Morse code pattern with the given  \n\n  {@code :light} and {@code :text}.  '
+      act = @formatter.formatDesc(morse)
+      act.should.equal(
+        'Morse code pattern with the given\n\n`:light` and `:text`.\n')
+
+    it 'should format a description with multiple code samples', () ->
+      morse = '''
+        Morse code pattern with the given {@code :light} and {@code :text}.
+        @example
+        (morse green "hello-lights")
+        @example
+        (morse red "SOS")'''
+      act = @formatter.formatDesc(morse)
+      act.should.equal(
+        'Morse code pattern with the given `:light` and `:text`.\n' +
+        '(morse green "hello-lights")\n' +
+        '(morse red "SOS")\n')
 
   describe 'command formatting', () ->
 
@@ -105,7 +133,7 @@ describe 'Simple Formatter', () ->
       doc.should.equal(
         'morse :light :text\n' +
         'Morse code pattern with the given `:light` and `:text`.\n' +
-        '(morse green "hello-lights")')
+        '(morse green "hello-lights")\n')
 
     it 'should format a command with unknown tags', () ->
 
@@ -123,5 +151,5 @@ describe 'Simple Formatter', () ->
       doc = @formatter.format(morse)
       doc.should.equal(
         'morse :light :text\n' +
-        'Morse code pattern with the given :light and :text.\n\n' + # note line feed from '@sample' line
-        '(morse green "hello-lights")')
+        'Morse code pattern with the given :light and :text.\n' +
+        '(morse green "hello-lights")\n')

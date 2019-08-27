@@ -28,6 +28,11 @@ defineCommands(DefaultInterpreter);
 
 ////////////////////////////////////////////////
 
+const {Formatter} = require('./commands/formatter');
+const DefaultFormatter = new Formatter();
+
+////////////////////////////////////////////////
+
 /**
  * Issues commands to control a traffic light.
  */
@@ -38,6 +43,8 @@ class Commander {
    * @param {object} [options] - Commander options.
    * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
+   * @param {commands.Formatter} [options.formatter] - A formatter for the help text of
+   *   a command.
    * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
    *   Takes precedence over `options.selectorCtor`.
@@ -54,11 +61,13 @@ class Commander {
   constructor(options = {}) {
     let {
       logger = console,
+      formatter = DefaultFormatter,
       interpreter = DefaultInterpreter,
       selector = null,
       selectorCtor = SelectorCtor
     } = options;
     this.logger = logger;
+    this.formatter = formatter;
     this.interpreter = interpreter;
     this.manager = options.manager;
 
@@ -193,11 +202,7 @@ class Commander {
       this.logger.error(`Command not found: "${commandName}"`);
       return;
     }
-    const validationText = p => p.validate ? ` (${p.validate.exp})` : '';
-    let params = command.meta.params.map(p => ':' + p.name + validationText(p)).join(' ');
-    if (params.length > 0) params = ' ' + params;
-    this.logger.log(`${command.meta.name}${params}`);
-    this.logger.log(command.meta.desc);
+    this.logger.log(this.formatter.format(command.meta));
   }
 
   /**

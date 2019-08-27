@@ -10,6 +10,6 @@ module.exports = {
   ...require('./interpreter'),
   ...require('./cancellable'),
   ...require('./doc-parser'),
-  ...require('./simple-formatter'),
+  ...require('./formatter'),
   validation: require('./validation')
 };
