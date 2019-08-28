@@ -1,4 +1,5 @@
 const {DocParser} = require('./doc-parser');
+const {CodeFormatter} = require('./code-formatter');
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -7,10 +8,15 @@ const {DocParser} = require('./doc-parser');
  * Inherit from this class and override the desired methods to adjust the formatting.
  * @memberof commands
  */
-class Formatter {
+class MetaFormatter {
 
-  constructor() {
+  /**
+   * Creates a new instance of this class.
+   * @param {commands.CodeFormatter} [codeFormatter] - Code formatter to use when formatting code samples.
+   */
+  constructor(codeFormatter = new CodeFormatter()) {
     this._parser = new DocParser();
+    this._codeFormatter = codeFormatter;
   }
 
   /**
@@ -96,9 +102,10 @@ class Formatter {
   formatCode(code) {
     code = code.replace(/^\s*$[\n\r]*/m, ''); // remove first empty lines
     let indentSize = code.search(/[^ \t]|$/); // get indent size of first line
-    return code
+    code = code
       .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
       .replace(/\s*$/, ''); // trim end
+    return this._codeFormatter.format(code);
   }
 
   /**
@@ -140,7 +147,7 @@ class Formatter {
 
   /**
    * Formats a parameter of a command.
-   * @param {commands.Param} params - A command's parameter.
+   * @param {commands.Param} param - A command's parameter.
    * @returns {string} The formatted command's parameter.
    */
   formatParam(param) {
@@ -163,4 +170,7 @@ class Formatter {
 
 /////////////////////////////////////////////////////////////////////////////
 
-module.exports = { Formatter };
+module.exports = {
+  Formatter: MetaFormatter, // alias
+  MetaFormatter
+};

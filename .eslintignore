@@ -1,5 +1,6 @@
 src/commands/peg-parser.js
 src/commands/doc-peg-parser.js
+src/commands/formatter-peg-parser.js
 web/bundle.js
 web/doc
 node_modules

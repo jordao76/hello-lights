@@ -1,8 +1,8 @@
 require '../setup-unhandled-rejection'
-{Formatter} = require '../../src/commands'
+{MetaFormatter} = require '../../src/commands'
 should = require('chai').should()
 
-describe 'Formatter', () ->
+describe 'MetaFormatter', () ->
 
   aLight = exp: 'a light'
   aString = exp: 'a string'
@@ -10,7 +10,7 @@ describe 'Formatter', () ->
   aCommand = exp: 'a command'
 
   beforeEach () ->
-    @formatter = new Formatter()
+    @formatter = new MetaFormatter()
 
   describe 'code formatting', () ->
 

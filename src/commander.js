@@ -28,8 +28,8 @@ defineCommands(DefaultInterpreter);
 
 ////////////////////////////////////////////////
 
-const {Formatter} = require('./commands/formatter');
-const DefaultFormatter = new Formatter();
+const {MetaFormatter} = require('./commands/meta-formatter');
+const DefaultFormatter = new MetaFormatter();
 
 ////////////////////////////////////////////////
 
@@ -43,7 +43,7 @@ class Commander {
    * @param {object} [options] - Commander options.
    * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {commands.Formatter} [options.formatter] - A formatter for the help text of
+   * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
    *   a command.
    * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
