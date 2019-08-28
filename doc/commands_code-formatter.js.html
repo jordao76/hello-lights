@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: commands/typing.js</title>
+    <title>JSDoc: Source: commands/code-formatter.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: commands/typing.js</h1>
+    <h1 class="page-title">Source: commands/code-formatter.js</h1>
 
     
 
@@ -26,54 +26,97 @@
     
     <section>
         <article>
-            <pre class="prettyprint source linenums"><code>/**
- * A function that implements a command.
- * @typedef {function} Command
- * @memberof commands
- * @param {object} ctx - Context to execute the command.
- * @param {commands.Cancellable} ctx.ct - A cancellation token.
- * @param {...object} [ctx....] - Extra context objects needed for the command,
- *   like the objects that the command manipulates.
- * @param {object[]} [args] - The command arguments all packed in an array.
- * @returns {object} Optionally the command can return any value. If meta.returns
- *   is set, the command &lt;b>must&lt;/b> return a value that adheres to the meta.returns
- *   validation function.
- * @property {commands.Meta} meta - Metadata about the command.
- */
+            <pre class="prettyprint source linenums"><code>const parser = require('./formatter-peg-parser');
+
+/////////////////////////////////////////////////////////////////////////////
 
 /**
- * Metadata about a command.
- * @typedef {object} Meta
+ * A formatter for command code.
+ * Inherit from this class and override the desired methods to adjust the formatting.
  * @memberof commands
- * @property {string} name - Command name.
- * @property {string} desc - Command description.
- * @property {commands.Param[]} params - Parameter specification for the command.
- * @property {commands.Validate} [returns] - Return "specification" of the command.
- *   This validation function is never actually called, but it's used to check if
- *   the "return" of a command adheres to the parameter validation function of another.
  */
+class CodeFormatter {
 
-/**
- * Command parameter specification.
- * @typedef {object} Param
- * @memberof commands
- * @property {string} name - Parameter name.
- * @property {commands.Validate} validate - Parameter validation function.
- * @property {boolean} [isRest] - If the parameter is a rest parameter, i.e,
- *   it accepts a variable number of arguments (1 or more). A rest parameter
- *   &lt;b>must&lt;/b> be the last parameter of a command.
- */
+  /**
+   * Formats command code.
+   * @param {string} code - Command code to format.
+   * @returns {string} The formatted command code.
+   */
+  format(code) {
+    try {
+      let nodes = parser.parse(code);
+      return this._process(nodes).join('');
+    } catch (e) {
+      return code;
+    }
+  }
 
-/**
- * A validation function for a command parameter.
- * Can also be used to indicate the return "specification" of a command.
- * @typedef {function} Validate
- * @memberof commands
- * @param {object} arg - Argument to validate.
- * @returns {boolean} If the validation succeeds or not.
- * @property {string} exp - The expected value for this validation function to
- *   succeed. Used in error messages.
- */
+  _process(nodes) {
+    const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+    return nodes.map(node => this[`format${capitalize(node.type)}`](node.text));
+  }
+
+  /**
+   * Formats parenthesis.
+   * @param {string} text - Opening or closing parenthesis.
+   * @returns {string} Formatted parenthesis.
+   */
+  formatParens(text) { return text; }
+
+  /**
+   * Formats a command name.
+   * @param {string} text - Command name.
+   * @returns {string} Formatted command name.
+   */
+  formatCommand(text) { return text; }
+
+  /**
+   * Formats a variable.
+   * @param {string} text - Variable.
+   * @returns {string} Formatted variable.
+   */
+  formatVariable(text) { return text; }
+
+  /**
+   * Formats an identifier.
+   * @param {string} text - Identifier.
+   * @returns {string} Formatted identifier.
+   */
+  formatIdentifier(text) { return text; }
+
+  /**
+   * Formats a number.
+   * @param {number} num - Number.
+   * @returns {string} Formatted number.
+   */
+  formatNumber(num) { return num.toString(); }
+
+  /**
+   * Formats a string.
+   * @param {string} text - String.
+   * @returns {string} Formatted string.
+   */
+  formatString(text) { return text; }
+
+  /**
+   * Formats a space (blanks or newlines).
+   * @param {string} text - Space.
+   * @returns {string} Formatted space.
+   */
+  formatSpace(text) { return text; }
+
+  /**
+  * Formats a comment.
+  * @param {string} text - Comment text.
+  * @returns {string} Formatted comment.
+  */
+  formatComment(text) { return text; }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = { CodeFormatter };
 </code></pre>
         </article>
     </section>

@@ -156,6 +156,16 @@ button:focus {
   cursor: pointer;
 }
 
+.code-command { color: darkblue; }
+.code-variable { color: darkolivegreen; }
+.code-identifier { color: darkcyan; }
+.code-identifier-red { color: red; }
+.code-identifier-yellow { color: yellow; }
+.code-identifier-green { color: green; }
+.code-number { color: lightcoral; }
+.code-string { color: darkgoldenrod; }
+.code-comment { color: gray; font-style: italic; }
+
 .sample:hover {
   background: #bababa;
 }

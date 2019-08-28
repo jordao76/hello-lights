@@ -554,8 +554,8 @@ defineCommands(DefaultInterpreter);
 
 ////////////////////////////////////////////////
 
-const {Formatter} = require('./commands/formatter');
-const DefaultFormatter = new Formatter();
+const {MetaFormatter} = require('./commands/meta-formatter');
+const DefaultFormatter = new MetaFormatter();
 
 ////////////////////////////////////////////////
 
@@ -569,7 +569,7 @@ class Commander {
    * @param {object} [options] - Commander options.
    * @param {object} [options.logger=console] - A Console-like object for logging,
    *   with a log and an error function.
-   * @param {commands.Formatter} [options.formatter] - A formatter for the help text of
+   * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
    *   a command.
    * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
@@ -762,7 +762,7 @@ Commander.multi = (options = {}) => {
 
 module.exports = {Commander};
 
-},{"./commands/formatter":9,"./commands/interpreter":11,"./traffic-light/traffic-light-commands":19}],3:[function(require,module,exports){
+},{"./commands/interpreter":12,"./commands/meta-formatter":13,"./traffic-light/traffic-light-commands":21}],3:[function(require,module,exports){
 const {and} = require('./validation');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -953,7 +953,7 @@ const badValue = (node, paramIdx, arg) => {
 
 module.exports = {Analyzer};
 
-},{"./validation":14}],4:[function(require,module,exports){
+},{"./validation":16}],4:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Device.
 // The commands are cancellable by a Cancellation Token.
@@ -1180,7 +1180,7 @@ module.exports = {...commands, commands};
 
 /////////////////////////////////////////////////////////////////////////////
 
-},{"./cancellable":5,"./validation":14}],5:[function(require,module,exports){
+},{"./cancellable":5,"./validation":16}],5:[function(require,module,exports){
 /**
  * A Cancellation Token (ct) that commands can check for cancellation.
  * Commands should regularly check for the
@@ -1246,6 +1246,99 @@ class Cancellable {
 module.exports = {Cancellable};
 
 },{}],6:[function(require,module,exports){
+const parser = require('./formatter-peg-parser');
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A formatter for command code.
+ * Inherit from this class and override the desired methods to adjust the formatting.
+ * @memberof commands
+ */
+class CodeFormatter {
+
+  /**
+   * Formats command code.
+   * @param {string} code - Command code to format.
+   * @returns {string} The formatted command code.
+   */
+  format(code) {
+    try {
+      let nodes = parser.parse(code);
+      return this._process(nodes).join('');
+    } catch (e) {
+      return code;
+    }
+  }
+
+  _process(nodes) {
+    const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+    return nodes.map(node => this[`format${capitalize(node.type)}`](node.text));
+  }
+
+  /**
+   * Formats parenthesis.
+   * @param {string} text - Opening or closing parenthesis.
+   * @returns {string} Formatted parenthesis.
+   */
+  formatParens(text) { return text; }
+
+  /**
+   * Formats a command name.
+   * @param {string} text - Command name.
+   * @returns {string} Formatted command name.
+   */
+  formatCommand(text) { return text; }
+
+  /**
+   * Formats a variable.
+   * @param {string} text - Variable.
+   * @returns {string} Formatted variable.
+   */
+  formatVariable(text) { return text; }
+
+  /**
+   * Formats an identifier.
+   * @param {string} text - Identifier.
+   * @returns {string} Formatted identifier.
+   */
+  formatIdentifier(text) { return text; }
+
+  /**
+   * Formats a number.
+   * @param {number} num - Number.
+   * @returns {string} Formatted number.
+   */
+  formatNumber(num) { return num.toString(); }
+
+  /**
+   * Formats a string.
+   * @param {string} text - String.
+   * @returns {string} Formatted string.
+   */
+  formatString(text) { return text; }
+
+  /**
+   * Formats a space (blanks or newlines).
+   * @param {string} text - Space.
+   * @returns {string} Formatted space.
+   */
+  formatSpace(text) { return text; }
+
+  /**
+  * Formats a comment.
+  * @param {string} text - Comment text.
+  * @returns {string} Formatted comment.
+  */
+  formatComment(text) { return text; }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = { CodeFormatter };
+
+},{"./formatter-peg-parser":10}],7:[function(require,module,exports){
 /////////////////////////////////////////////////////////////////////////////
 
 const {isIdentifier, isString, isCommand} = require('./validation');
@@ -1397,7 +1490,7 @@ module.exports = {...commands, commands};
 
 /////////////////////////////////////////////////////////////////////////////
 
-},{"./generator":10,"./validation":14}],7:[function(require,module,exports){
+},{"./generator":11,"./validation":16}],8:[function(require,module,exports){
 const parser = require('./doc-peg-parser');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1414,7 +1507,7 @@ class DocParser {
 
 module.exports = { DocParser };
 
-},{"./doc-peg-parser":8}],8:[function(require,module,exports){
+},{"./doc-peg-parser":9}],9:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -2217,175 +2310,1074 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],9:[function(require,module,exports){
-const {DocParser} = require('./doc-parser');
-
-/////////////////////////////////////////////////////////////////////////////
-
-/**
- * A formatter for a command metadata: its signature and description.
- * Inherit from this class and override the desired methods to adjust the formatting.
- * @memberof commands
+},{}],10:[function(require,module,exports){
+/*
+ * Generated by PEG.js 0.10.0.
+ *
+ * http://pegjs.org/
  */
-class Formatter {
 
-  constructor() {
-    this._parser = new DocParser();
-  }
+"use strict";
 
-  /**
-   * Formats a command's metadata.
-   * @param {commands.Meta} meta - A command's metadata to format.
-   * @returns {string} The formatted command's metadata: its signature and description.
-   */
-  format(meta) {
-    return `${this.formatSignature(meta)}\n${this.formatDesc(meta.desc)}`;
-  }
-
-  /**
-   * Formats a command's description.
-   * @param {string} desc - A command's raw description.
-   * @returns {string} The formatted command's description.
-   */
-  formatDesc(desc) {
-    let nodes = this._parser.parse(desc);
-    return this._recur(nodes);
-  }
-
-  _recur(nodes) {
-    return nodes.map(node => this[`_${node.type}`](node)).join('');
-  }
-
-  _text(node) {
-    return node.value;
-  }
-
-  _untagged(node) {
-    let res = this._recur(node.parts);
-    return this.formatTextBlock(res) + '\n';
-  }
-
-  _block(node) {
-    let res = this._recur(node.parts);
-    return this.formatBlockTag(res, node.tag) + '\n';
-  }
-
-  _inline(node) {
-    return this.formatInlineTag(node.value, node.tag);
-  }
-
-  /**
-   * Formats a block tag found in a command's description.
-   * @param {string} text - The text of the tag.
-   * @param {string} tag - The tag name.
-   * @returns {string} The formatted block tag.
-   */
-  formatBlockTag(text, tag) {
-    if (tag === 'example') return this.formatCode(text);
-    return this.formatTextBlock(text);
-  }
-
-  /**
-   * Formats an inline tag found in a command's description.
-   * @param {string} text - The text of the tag.
-   * @param {string} tag - The tag name.
-   * @returns {string} The formatted inline tag.
-   */
-  formatInlineTag(text, tag) {
-    if (tag === 'code') return this.formatInlineCode(text);
-    return text.trim();
-  }
-
-  /**
-   * Formats a description text block. Either untagged or in a block tag.
-   * @param {string} text - The text block to format.
-   * @returns {string} The formatted text block.
-   */
-  formatTextBlock(text) {
-    return text
-      .trim() // trim the whole text block
-      .replace(/^[ \t]+/gm, '') // trim the start or each line
-      .replace(/[ \t]*([\n\r]?)$/gm, '$1'); // trim the end of each line, but keep the line break
-  }
-
-  /**
-   * Formats code typically found in an example tag in a command's description.
-   * @param {string} code - The raw code string to format.
-   * @returns {string} The formatted code.
-   */
-  formatCode(code) {
-    code = code.replace(/^\s*$[\n\r]*/m, ''); // remove first empty lines
-    let indentSize = code.search(/[^ \t]|$/); // get indent size of first line
-    return code
-      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
-      .replace(/\s*$/, ''); // trim end
-  }
-
-  /**
-   * Formats inline code in a command's description.
-   * @param {string} code - The raw inline code string to format.
-   * @returns {string} The formatted code.
-   */
-  formatInlineCode(code) {
-    return `\`${code.trim()}\``;
-  }
-
-  /**
-   * Formats the signature of a command.
-   * @param {commands.Meta} meta - A command's metadata.
-   * @returns {string} The formatted command's signature.
-   */
-  formatSignature(meta) {
-    return `${this.formatName(meta.name)}${this.formatParams(meta.params)}${this.formatReturn(meta.returns)}`;
-  }
-
-  /**
-   * Formats the name of a command.
-   * @param {string} name - A command's name.
-   * @returns {string} The formatted command's name.
-   */
-  formatName(name) {
-    return name;
-  }
-
-  /**
-   * Formats the parameters of a command.
-   * @param {commands.Param[]} params - A command's parameters.
-   * @returns {string} The formatted command's parameters.
-   */
-  formatParams(params) {
-    if (params.length === 0) return '';
-    return ' ' + params.map(param => this.formatParam(param)).join(' ');
-  }
-
-  /**
-   * Formats a parameter of a command.
-   * @param {commands.Param} params - A command's parameter.
-   * @returns {string} The formatted command's parameter.
-   */
-  formatParam(param) {
-    let res = `:${param.name}`;
-    if (param.isRest) res += ' ...';
-    return res;
-  }
-
-  /**
-   * Formats the return of a command.
-   * @param {commands.Validate} $return - A command's return specification.
-   * @returns {string} The formatted command's return.
-   */
-  formatReturn($return) {
-    if (!$return) return '';
-    return ` -> ${$return.exp}`;
-  }
-
+function peg$subclass(child, parent) {
+  function ctor() { this.constructor = child; }
+  ctor.prototype = parent.prototype;
+  child.prototype = new ctor();
 }
 
-/////////////////////////////////////////////////////////////////////////////
+function peg$SyntaxError(message, expected, found, location) {
+  this.message  = message;
+  this.expected = expected;
+  this.found    = found;
+  this.location = location;
+  this.name     = "SyntaxError";
 
-module.exports = { Formatter };
+  if (typeof Error.captureStackTrace === "function") {
+    Error.captureStackTrace(this, peg$SyntaxError);
+  }
+}
 
-},{"./doc-parser":7}],10:[function(require,module,exports){
+peg$subclass(peg$SyntaxError, Error);
+
+peg$SyntaxError.buildMessage = function(expected, found) {
+  var DESCRIBE_EXPECTATION_FNS = {
+        literal: function(expectation) {
+          return "\"" + literalEscape(expectation.text) + "\"";
+        },
+
+        "class": function(expectation) {
+          var escapedParts = "",
+              i;
+
+          for (i = 0; i < expectation.parts.length; i++) {
+            escapedParts += expectation.parts[i] instanceof Array
+              ? classEscape(expectation.parts[i][0]) + "-" + classEscape(expectation.parts[i][1])
+              : classEscape(expectation.parts[i]);
+          }
+
+          return "[" + (expectation.inverted ? "^" : "") + escapedParts + "]";
+        },
+
+        any: function(expectation) {
+          return "any character";
+        },
+
+        end: function(expectation) {
+          return "end of input";
+        },
+
+        other: function(expectation) {
+          return expectation.description;
+        }
+      };
+
+  function hex(ch) {
+    return ch.charCodeAt(0).toString(16).toUpperCase();
+  }
+
+  function literalEscape(s) {
+    return s
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g,  '\\"')
+      .replace(/\0/g, '\\0')
+      .replace(/\t/g, '\\t')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/[\x00-\x0F]/g,          function(ch) { return '\\x0' + hex(ch); })
+      .replace(/[\x10-\x1F\x7F-\x9F]/g, function(ch) { return '\\x'  + hex(ch); });
+  }
+
+  function classEscape(s) {
+    return s
+      .replace(/\\/g, '\\\\')
+      .replace(/\]/g, '\\]')
+      .replace(/\^/g, '\\^')
+      .replace(/-/g,  '\\-')
+      .replace(/\0/g, '\\0')
+      .replace(/\t/g, '\\t')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/[\x00-\x0F]/g,          function(ch) { return '\\x0' + hex(ch); })
+      .replace(/[\x10-\x1F\x7F-\x9F]/g, function(ch) { return '\\x'  + hex(ch); });
+  }
+
+  function describeExpectation(expectation) {
+    return DESCRIBE_EXPECTATION_FNS[expectation.type](expectation);
+  }
+
+  function describeExpected(expected) {
+    var descriptions = new Array(expected.length),
+        i, j;
+
+    for (i = 0; i < expected.length; i++) {
+      descriptions[i] = describeExpectation(expected[i]);
+    }
+
+    descriptions.sort();
+
+    if (descriptions.length > 0) {
+      for (i = 1, j = 1; i < descriptions.length; i++) {
+        if (descriptions[i - 1] !== descriptions[i]) {
+          descriptions[j] = descriptions[i];
+          j++;
+        }
+      }
+      descriptions.length = j;
+    }
+
+    switch (descriptions.length) {
+      case 1:
+        return descriptions[0];
+
+      case 2:
+        return descriptions[0] + " or " + descriptions[1];
+
+      default:
+        return descriptions.slice(0, -1).join(", ")
+          + ", or "
+          + descriptions[descriptions.length - 1];
+    }
+  }
+
+  function describeFound(found) {
+    return found ? "\"" + literalEscape(found) + "\"" : "end of input";
+  }
+
+  return "Expected " + describeExpected(expected) + " but " + describeFound(found) + " found.";
+};
+
+function peg$parse(input, options) {
+  options = options !== void 0 ? options : {};
+
+  var peg$FAILED = {},
+
+      peg$startRuleFunctions = { Start: peg$parseStart },
+      peg$startRuleFunction  = peg$parseStart,
+
+      peg$c0 = function(filler1, command, filler2) {
+          return [
+            ...filler1,
+            ...command,
+            ...filler2
+          ];
+        },
+      peg$c1 = "(",
+      peg$c2 = peg$literalExpectation("(", false),
+      peg$c3 = ")",
+      peg$c4 = peg$literalExpectation(")", false),
+      peg$c5 = function(filler1, filler2, first, filler3, filler4, rest) {
+          return [
+            ...filler1,
+            { type: 'parens', text: '(' },
+            ...filler2,
+            ...first,
+            ...filler3,
+            { type: 'parens', text: ')' },
+            ...filler4,
+            ...flatten(rest || [])
+          ];
+        },
+      peg$c6 = function(name, args) {
+          return [
+            { type: 'command', text: name },
+            ...flatten(args || [])
+          ];
+        },
+      peg$c7 = function(filler, head, tail) {
+          return [
+            ...filler,
+            ...head,
+            ...flatten(tail || [])
+          ];
+        },
+      peg$c8 = function(text) { return [{ type: 'variable', text }]; },
+      peg$c9 = function(text) { return [{ type: 'identifier', text }]; },
+      peg$c10 = function(text) { return [{ type: 'number', text }]; },
+      peg$c11 = function(text) { return [{ type: 'string', text }]; },
+      peg$c12 = function(filler1, command, filler2) {
+          return [
+            { type: 'parens', text: '(' },
+            ...filler1,
+            ...command,
+            ...filler2,
+            { type: 'parens', text: ')' }
+          ]
+        },
+      peg$c13 = ":",
+      peg$c14 = peg$literalExpectation(":", false),
+      peg$c15 = function(name) { return ":" + name; },
+      peg$c16 = /^[a-z_]/i,
+      peg$c17 = peg$classExpectation([["a", "z"], "_"], false, true),
+      peg$c18 = /^[a-z_0-9\-]/i,
+      peg$c19 = peg$classExpectation([["a", "z"], "_", ["0", "9"], "-"], false, true),
+      peg$c20 = function(head, tail) { return head + tail.join(''); },
+      peg$c21 = /^[0-9]/,
+      peg$c22 = peg$classExpectation([["0", "9"]], false, false),
+      peg$c23 = function(digits) { return parseInt(digits.join(''), 10); },
+      peg$c24 = "\"",
+      peg$c25 = peg$literalExpectation("\"", false),
+      peg$c26 = function(contents) { return '"' + contents.join('') + '"'; },
+      peg$c27 = "\\",
+      peg$c28 = peg$literalExpectation("\\", false),
+      peg$c29 = peg$anyExpectation(),
+      peg$c30 = function(char) { return char; },
+      peg$c31 = /^[ \t\r\n]/,
+      peg$c32 = peg$classExpectation([" ", "\t", "\r", "\n"], false, false),
+      peg$c33 = function(space) { return { type: 'space',   text: space.join('') }; },
+      peg$c34 = ";",
+      peg$c35 = peg$literalExpectation(";", false),
+      peg$c36 = /^[^\r\n]/,
+      peg$c37 = peg$classExpectation(["\r", "\n"], true, false),
+      peg$c38 = /^[\r\n]/,
+      peg$c39 = peg$classExpectation(["\r", "\n"], false, false),
+      peg$c40 = function(comment, newline) { return { type: 'comment', text: ';' + comment.join('') + newline }; },
+      peg$c41 = function(comment) { return { type: 'comment', text: ';' + comment.join('') }; },
+
+      peg$currPos          = 0,
+      peg$savedPos         = 0,
+      peg$posDetailsCache  = [{ line: 1, column: 1 }],
+      peg$maxFailPos       = 0,
+      peg$maxFailExpected  = [],
+      peg$silentFails      = 0,
+
+      peg$result;
+
+  if ("startRule" in options) {
+    if (!(options.startRule in peg$startRuleFunctions)) {
+      throw new Error("Can't start parsing from rule \"" + options.startRule + "\".");
+    }
+
+    peg$startRuleFunction = peg$startRuleFunctions[options.startRule];
+  }
+
+  function text() {
+    return input.substring(peg$savedPos, peg$currPos);
+  }
+
+  function location() {
+    return peg$computeLocation(peg$savedPos, peg$currPos);
+  }
+
+  function expected(description, location) {
+    location = location !== void 0 ? location : peg$computeLocation(peg$savedPos, peg$currPos)
+
+    throw peg$buildStructuredError(
+      [peg$otherExpectation(description)],
+      input.substring(peg$savedPos, peg$currPos),
+      location
+    );
+  }
+
+  function error(message, location) {
+    location = location !== void 0 ? location : peg$computeLocation(peg$savedPos, peg$currPos)
+
+    throw peg$buildSimpleError(message, location);
+  }
+
+  function peg$literalExpectation(text, ignoreCase) {
+    return { type: "literal", text: text, ignoreCase: ignoreCase };
+  }
+
+  function peg$classExpectation(parts, inverted, ignoreCase) {
+    return { type: "class", parts: parts, inverted: inverted, ignoreCase: ignoreCase };
+  }
+
+  function peg$anyExpectation() {
+    return { type: "any" };
+  }
+
+  function peg$endExpectation() {
+    return { type: "end" };
+  }
+
+  function peg$otherExpectation(description) {
+    return { type: "other", description: description };
+  }
+
+  function peg$computePosDetails(pos) {
+    var details = peg$posDetailsCache[pos], p;
+
+    if (details) {
+      return details;
+    } else {
+      p = pos - 1;
+      while (!peg$posDetailsCache[p]) {
+        p--;
+      }
+
+      details = peg$posDetailsCache[p];
+      details = {
+        line:   details.line,
+        column: details.column
+      };
+
+      while (p < pos) {
+        if (input.charCodeAt(p) === 10) {
+          details.line++;
+          details.column = 1;
+        } else {
+          details.column++;
+        }
+
+        p++;
+      }
+
+      peg$posDetailsCache[pos] = details;
+      return details;
+    }
+  }
+
+  function peg$computeLocation(startPos, endPos) {
+    var startPosDetails = peg$computePosDetails(startPos),
+        endPosDetails   = peg$computePosDetails(endPos);
+
+    return {
+      start: {
+        offset: startPos,
+        line:   startPosDetails.line,
+        column: startPosDetails.column
+      },
+      end: {
+        offset: endPos,
+        line:   endPosDetails.line,
+        column: endPosDetails.column
+      }
+    };
+  }
+
+  function peg$fail(expected) {
+    if (peg$currPos < peg$maxFailPos) { return; }
+
+    if (peg$currPos > peg$maxFailPos) {
+      peg$maxFailPos = peg$currPos;
+      peg$maxFailExpected = [];
+    }
+
+    peg$maxFailExpected.push(expected);
+  }
+
+  function peg$buildSimpleError(message, location) {
+    return new peg$SyntaxError(message, null, null, location);
+  }
+
+  function peg$buildStructuredError(expected, found, location) {
+    return new peg$SyntaxError(
+      peg$SyntaxError.buildMessage(expected, found),
+      expected,
+      found,
+      location
+    );
+  }
+
+  function peg$parseStart() {
+    var s0, s1, s2, s3;
+
+    s0 = peg$currPos;
+    s1 = peg$parse_();
+    if (s1 !== peg$FAILED) {
+      s2 = peg$parseCommand();
+      if (s2 !== peg$FAILED) {
+        s3 = peg$parse_();
+        if (s3 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c0(s1, s2, s3);
+          s0 = s1;
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+    if (s0 === peg$FAILED) {
+      s0 = peg$parseCommands();
+    }
+
+    return s0;
+  }
+
+  function peg$parseCommands() {
+    var s0, s1, s2, s3, s4, s5, s6, s7, s8;
+
+    s0 = peg$currPos;
+    s1 = peg$parse_();
+    if (s1 !== peg$FAILED) {
+      if (input.charCodeAt(peg$currPos) === 40) {
+        s2 = peg$c1;
+        peg$currPos++;
+      } else {
+        s2 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c2); }
+      }
+      if (s2 !== peg$FAILED) {
+        s3 = peg$parse_();
+        if (s3 !== peg$FAILED) {
+          s4 = peg$parseCommand();
+          if (s4 !== peg$FAILED) {
+            s5 = peg$parse_();
+            if (s5 !== peg$FAILED) {
+              if (input.charCodeAt(peg$currPos) === 41) {
+                s6 = peg$c3;
+                peg$currPos++;
+              } else {
+                s6 = peg$FAILED;
+                if (peg$silentFails === 0) { peg$fail(peg$c4); }
+              }
+              if (s6 !== peg$FAILED) {
+                s7 = peg$parse_();
+                if (s7 !== peg$FAILED) {
+                  s8 = peg$parseCommands();
+                  if (s8 === peg$FAILED) {
+                    s8 = null;
+                  }
+                  if (s8 !== peg$FAILED) {
+                    peg$savedPos = s0;
+                    s1 = peg$c5(s1, s3, s4, s5, s7, s8);
+                    s0 = s1;
+                  } else {
+                    peg$currPos = s0;
+                    s0 = peg$FAILED;
+                  }
+                } else {
+                  peg$currPos = s0;
+                  s0 = peg$FAILED;
+                }
+              } else {
+                peg$currPos = s0;
+                s0 = peg$FAILED;
+              }
+            } else {
+              peg$currPos = s0;
+              s0 = peg$FAILED;
+            }
+          } else {
+            peg$currPos = s0;
+            s0 = peg$FAILED;
+          }
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseCommand() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    s1 = peg$parseIdentifier();
+    if (s1 !== peg$FAILED) {
+      s2 = peg$parseArguments();
+      if (s2 === peg$FAILED) {
+        s2 = null;
+      }
+      if (s2 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c6(s1, s2);
+        s0 = s1;
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseArguments() {
+    var s0, s1, s2, s3;
+
+    s0 = peg$currPos;
+    s1 = peg$parse_();
+    if (s1 !== peg$FAILED) {
+      s2 = peg$parseArgument();
+      if (s2 !== peg$FAILED) {
+        s3 = peg$parseArguments();
+        if (s3 === peg$FAILED) {
+          s3 = null;
+        }
+        if (s3 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c7(s1, s2, s3);
+          s0 = s1;
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseArgument() {
+    var s0, s1, s2, s3, s4, s5;
+
+    s0 = peg$currPos;
+    s1 = peg$parseVariable();
+    if (s1 !== peg$FAILED) {
+      peg$savedPos = s0;
+      s1 = peg$c8(s1);
+    }
+    s0 = s1;
+    if (s0 === peg$FAILED) {
+      s0 = peg$currPos;
+      s1 = peg$parseIdentifier();
+      if (s1 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c9(s1);
+      }
+      s0 = s1;
+      if (s0 === peg$FAILED) {
+        s0 = peg$currPos;
+        s1 = peg$parseNumber();
+        if (s1 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c10(s1);
+        }
+        s0 = s1;
+        if (s0 === peg$FAILED) {
+          s0 = peg$currPos;
+          s1 = peg$parseString();
+          if (s1 !== peg$FAILED) {
+            peg$savedPos = s0;
+            s1 = peg$c11(s1);
+          }
+          s0 = s1;
+          if (s0 === peg$FAILED) {
+            s0 = peg$currPos;
+            if (input.charCodeAt(peg$currPos) === 40) {
+              s1 = peg$c1;
+              peg$currPos++;
+            } else {
+              s1 = peg$FAILED;
+              if (peg$silentFails === 0) { peg$fail(peg$c2); }
+            }
+            if (s1 !== peg$FAILED) {
+              s2 = peg$parse_();
+              if (s2 !== peg$FAILED) {
+                s3 = peg$parseCommand();
+                if (s3 !== peg$FAILED) {
+                  s4 = peg$parse_();
+                  if (s4 !== peg$FAILED) {
+                    if (input.charCodeAt(peg$currPos) === 41) {
+                      s5 = peg$c3;
+                      peg$currPos++;
+                    } else {
+                      s5 = peg$FAILED;
+                      if (peg$silentFails === 0) { peg$fail(peg$c4); }
+                    }
+                    if (s5 !== peg$FAILED) {
+                      peg$savedPos = s0;
+                      s1 = peg$c12(s2, s3, s4);
+                      s0 = s1;
+                    } else {
+                      peg$currPos = s0;
+                      s0 = peg$FAILED;
+                    }
+                  } else {
+                    peg$currPos = s0;
+                    s0 = peg$FAILED;
+                  }
+                } else {
+                  peg$currPos = s0;
+                  s0 = peg$FAILED;
+                }
+              } else {
+                peg$currPos = s0;
+                s0 = peg$FAILED;
+              }
+            } else {
+              peg$currPos = s0;
+              s0 = peg$FAILED;
+            }
+          }
+        }
+      }
+    }
+
+    return s0;
+  }
+
+  function peg$parseVariable() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    if (input.charCodeAt(peg$currPos) === 58) {
+      s1 = peg$c13;
+      peg$currPos++;
+    } else {
+      s1 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c14); }
+    }
+    if (s1 !== peg$FAILED) {
+      s2 = peg$parseIdentifier();
+      if (s2 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c15(s2);
+        s0 = s1;
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseIdentifier() {
+    var s0, s1, s2, s3;
+
+    s0 = peg$currPos;
+    if (peg$c16.test(input.charAt(peg$currPos))) {
+      s1 = input.charAt(peg$currPos);
+      peg$currPos++;
+    } else {
+      s1 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c17); }
+    }
+    if (s1 !== peg$FAILED) {
+      s2 = [];
+      if (peg$c18.test(input.charAt(peg$currPos))) {
+        s3 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s3 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c19); }
+      }
+      while (s3 !== peg$FAILED) {
+        s2.push(s3);
+        if (peg$c18.test(input.charAt(peg$currPos))) {
+          s3 = input.charAt(peg$currPos);
+          peg$currPos++;
+        } else {
+          s3 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c19); }
+        }
+      }
+      if (s2 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c20(s1, s2);
+        s0 = s1;
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseNumber() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    s1 = [];
+    if (peg$c21.test(input.charAt(peg$currPos))) {
+      s2 = input.charAt(peg$currPos);
+      peg$currPos++;
+    } else {
+      s2 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c22); }
+    }
+    if (s2 !== peg$FAILED) {
+      while (s2 !== peg$FAILED) {
+        s1.push(s2);
+        if (peg$c21.test(input.charAt(peg$currPos))) {
+          s2 = input.charAt(peg$currPos);
+          peg$currPos++;
+        } else {
+          s2 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c22); }
+        }
+      }
+    } else {
+      s1 = peg$FAILED;
+    }
+    if (s1 !== peg$FAILED) {
+      peg$savedPos = s0;
+      s1 = peg$c23(s1);
+    }
+    s0 = s1;
+
+    return s0;
+  }
+
+  function peg$parseString() {
+    var s0, s1, s2, s3;
+
+    s0 = peg$currPos;
+    if (input.charCodeAt(peg$currPos) === 34) {
+      s1 = peg$c24;
+      peg$currPos++;
+    } else {
+      s1 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c25); }
+    }
+    if (s1 !== peg$FAILED) {
+      s2 = [];
+      s3 = peg$parseStringContents();
+      while (s3 !== peg$FAILED) {
+        s2.push(s3);
+        s3 = peg$parseStringContents();
+      }
+      if (s2 !== peg$FAILED) {
+        if (input.charCodeAt(peg$currPos) === 34) {
+          s3 = peg$c24;
+          peg$currPos++;
+        } else {
+          s3 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c25); }
+        }
+        if (s3 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c26(s2);
+          s0 = s1;
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+  function peg$parseStringContents() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    s1 = peg$currPos;
+    peg$silentFails++;
+    if (input.charCodeAt(peg$currPos) === 34) {
+      s2 = peg$c24;
+      peg$currPos++;
+    } else {
+      s2 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c25); }
+    }
+    if (s2 === peg$FAILED) {
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s2 = peg$c27;
+        peg$currPos++;
+      } else {
+        s2 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c28); }
+      }
+    }
+    peg$silentFails--;
+    if (s2 === peg$FAILED) {
+      s1 = void 0;
+    } else {
+      peg$currPos = s1;
+      s1 = peg$FAILED;
+    }
+    if (s1 !== peg$FAILED) {
+      if (input.length > peg$currPos) {
+        s2 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s2 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c29); }
+      }
+      if (s2 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$c30(s2);
+        s0 = s1;
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+    if (s0 === peg$FAILED) {
+      s0 = peg$currPos;
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s1 = peg$c27;
+        peg$currPos++;
+      } else {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c28); }
+      }
+      if (s1 !== peg$FAILED) {
+        s2 = peg$parseEscapeChar();
+        if (s2 !== peg$FAILED) {
+          peg$savedPos = s0;
+          s1 = peg$c30(s2);
+          s0 = s1;
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+    }
+
+    return s0;
+  }
+
+  function peg$parseEscapeChar() {
+    var s0;
+
+    if (input.charCodeAt(peg$currPos) === 34) {
+      s0 = peg$c24;
+      peg$currPos++;
+    } else {
+      s0 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c25); }
+    }
+    if (s0 === peg$FAILED) {
+      if (input.charCodeAt(peg$currPos) === 92) {
+        s0 = peg$c27;
+        peg$currPos++;
+      } else {
+        s0 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c28); }
+      }
+    }
+
+    return s0;
+  }
+
+  function peg$parse_() {
+    var s0, s1;
+
+    s0 = [];
+    s1 = peg$parseFiller();
+    while (s1 !== peg$FAILED) {
+      s0.push(s1);
+      s1 = peg$parseFiller();
+    }
+
+    return s0;
+  }
+
+  function peg$parseFiller() {
+    var s0, s1, s2, s3;
+
+    s0 = peg$currPos;
+    s1 = [];
+    if (peg$c31.test(input.charAt(peg$currPos))) {
+      s2 = input.charAt(peg$currPos);
+      peg$currPos++;
+    } else {
+      s2 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c32); }
+    }
+    if (s2 !== peg$FAILED) {
+      while (s2 !== peg$FAILED) {
+        s1.push(s2);
+        if (peg$c31.test(input.charAt(peg$currPos))) {
+          s2 = input.charAt(peg$currPos);
+          peg$currPos++;
+        } else {
+          s2 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c32); }
+        }
+      }
+    } else {
+      s1 = peg$FAILED;
+    }
+    if (s1 !== peg$FAILED) {
+      peg$savedPos = s0;
+      s1 = peg$c33(s1);
+    }
+    s0 = s1;
+    if (s0 === peg$FAILED) {
+      s0 = peg$currPos;
+      if (input.charCodeAt(peg$currPos) === 59) {
+        s1 = peg$c34;
+        peg$currPos++;
+      } else {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c35); }
+      }
+      if (s1 !== peg$FAILED) {
+        s2 = [];
+        if (peg$c36.test(input.charAt(peg$currPos))) {
+          s3 = input.charAt(peg$currPos);
+          peg$currPos++;
+        } else {
+          s3 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c37); }
+        }
+        while (s3 !== peg$FAILED) {
+          s2.push(s3);
+          if (peg$c36.test(input.charAt(peg$currPos))) {
+            s3 = input.charAt(peg$currPos);
+            peg$currPos++;
+          } else {
+            s3 = peg$FAILED;
+            if (peg$silentFails === 0) { peg$fail(peg$c37); }
+          }
+        }
+        if (s2 !== peg$FAILED) {
+          if (peg$c38.test(input.charAt(peg$currPos))) {
+            s3 = input.charAt(peg$currPos);
+            peg$currPos++;
+          } else {
+            s3 = peg$FAILED;
+            if (peg$silentFails === 0) { peg$fail(peg$c39); }
+          }
+          if (s3 !== peg$FAILED) {
+            peg$savedPos = s0;
+            s1 = peg$c40(s2, s3);
+            s0 = s1;
+          } else {
+            peg$currPos = s0;
+            s0 = peg$FAILED;
+          }
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
+      if (s0 === peg$FAILED) {
+        s0 = peg$currPos;
+        if (input.charCodeAt(peg$currPos) === 59) {
+          s1 = peg$c34;
+          peg$currPos++;
+        } else {
+          s1 = peg$FAILED;
+          if (peg$silentFails === 0) { peg$fail(peg$c35); }
+        }
+        if (s1 !== peg$FAILED) {
+          s2 = [];
+          if (peg$c36.test(input.charAt(peg$currPos))) {
+            s3 = input.charAt(peg$currPos);
+            peg$currPos++;
+          } else {
+            s3 = peg$FAILED;
+            if (peg$silentFails === 0) { peg$fail(peg$c37); }
+          }
+          while (s3 !== peg$FAILED) {
+            s2.push(s3);
+            if (peg$c36.test(input.charAt(peg$currPos))) {
+              s3 = input.charAt(peg$currPos);
+              peg$currPos++;
+            } else {
+              s3 = peg$FAILED;
+              if (peg$silentFails === 0) { peg$fail(peg$c37); }
+            }
+          }
+          if (s2 !== peg$FAILED) {
+            s3 = peg$parseEOF();
+            if (s3 !== peg$FAILED) {
+              peg$savedPos = s0;
+              s1 = peg$c41(s2);
+              s0 = s1;
+            } else {
+              peg$currPos = s0;
+              s0 = peg$FAILED;
+            }
+          } else {
+            peg$currPos = s0;
+            s0 = peg$FAILED;
+          }
+        } else {
+          peg$currPos = s0;
+          s0 = peg$FAILED;
+        }
+      }
+    }
+
+    return s0;
+  }
+
+  function peg$parseEOF() {
+    var s0, s1;
+
+    s0 = peg$currPos;
+    peg$silentFails++;
+    if (input.length > peg$currPos) {
+      s1 = input.charAt(peg$currPos);
+      peg$currPos++;
+    } else {
+      s1 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$c29); }
+    }
+    peg$silentFails--;
+    if (s1 === peg$FAILED) {
+      s0 = void 0;
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
+
+    return s0;
+  }
+
+
+    const flatten = arr => arr.reduce((acc, val) => acc.concat(val), []);
+
+
+  peg$result = peg$startRuleFunction();
+
+  if (peg$result !== peg$FAILED && peg$currPos === input.length) {
+    return peg$result;
+  } else {
+    if (peg$result !== peg$FAILED && peg$currPos < input.length) {
+      peg$fail(peg$endExpectation());
+    }
+
+    throw peg$buildStructuredError(
+      peg$maxFailExpected,
+      peg$maxFailPos < input.length ? input.charAt(peg$maxFailPos) : null,
+      peg$maxFailPos < input.length
+        ? peg$computeLocation(peg$maxFailPos, peg$maxFailPos + 1)
+        : peg$computeLocation(peg$maxFailPos, peg$maxFailPos)
+    );
+  }
+}
+
+module.exports = {
+  SyntaxError: peg$SyntaxError,
+  parse:       peg$parse
+};
+
+},{}],11:[function(require,module,exports){
 /////////////////////////////////////////////////////////////////////////////
 
 const {isCommand} = require('./validation');
@@ -2474,7 +3466,7 @@ const badParameter = (name, locs) =>
 
 module.exports = {Generator};
 
-},{"./validation":14}],11:[function(require,module,exports){
+},{"./validation":16}],12:[function(require,module,exports){
 /////////////////////////////////////////////////////////////////////////////
 
 const {Parser} = require('./parser');
@@ -2600,7 +3592,185 @@ class Interpreter {
 
 module.exports = {Interpreter};
 
-},{"./analyzer":3,"./base-commands":4,"./cancellable":5,"./define":6,"./generator":10,"./parser":12}],12:[function(require,module,exports){
+},{"./analyzer":3,"./base-commands":4,"./cancellable":5,"./define":7,"./generator":11,"./parser":14}],13:[function(require,module,exports){
+const {DocParser} = require('./doc-parser');
+const {CodeFormatter} = require('./code-formatter');
+
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A formatter for a command metadata: its signature and description.
+ * Inherit from this class and override the desired methods to adjust the formatting.
+ * @memberof commands
+ */
+class MetaFormatter {
+
+  /**
+   * Creates a new instance of this class.
+   * @param {commands.CodeFormatter} [codeFormatter] - Code formatter to use when formatting code samples.
+   */
+  constructor(codeFormatter = new CodeFormatter()) {
+    this._parser = new DocParser();
+    this._codeFormatter = codeFormatter;
+  }
+
+  /**
+   * Formats a command's metadata.
+   * @param {commands.Meta} meta - A command's metadata to format.
+   * @returns {string} The formatted command's metadata: its signature and description.
+   */
+  format(meta) {
+    return `${this.formatSignature(meta)}\n${this.formatDesc(meta.desc)}`;
+  }
+
+  /**
+   * Formats a command's description.
+   * @param {string} desc - A command's raw description.
+   * @returns {string} The formatted command's description.
+   */
+  formatDesc(desc) {
+    let nodes = this._parser.parse(desc);
+    return this._recur(nodes);
+  }
+
+  _recur(nodes) {
+    return nodes.map(node => this[`_${node.type}`](node)).join('');
+  }
+
+  _text(node) {
+    return node.value;
+  }
+
+  _untagged(node) {
+    let res = this._recur(node.parts);
+    return this.formatTextBlock(res) + '\n';
+  }
+
+  _block(node) {
+    let res = this._recur(node.parts);
+    return this.formatBlockTag(res, node.tag) + '\n';
+  }
+
+  _inline(node) {
+    return this.formatInlineTag(node.value, node.tag);
+  }
+
+  /**
+   * Formats a block tag found in a command's description.
+   * @param {string} text - The text of the tag.
+   * @param {string} tag - The tag name.
+   * @returns {string} The formatted block tag.
+   */
+  formatBlockTag(text, tag) {
+    if (tag === 'example') return this.formatCode(text);
+    return this.formatTextBlock(text);
+  }
+
+  /**
+   * Formats an inline tag found in a command's description.
+   * @param {string} text - The text of the tag.
+   * @param {string} tag - The tag name.
+   * @returns {string} The formatted inline tag.
+   */
+  formatInlineTag(text, tag) {
+    if (tag === 'code') return this.formatInlineCode(text);
+    return text.trim();
+  }
+
+  /**
+   * Formats a description text block. Either untagged or in a block tag.
+   * @param {string} text - The text block to format.
+   * @returns {string} The formatted text block.
+   */
+  formatTextBlock(text) {
+    return text
+      .trim() // trim the whole text block
+      .replace(/^[ \t]+/gm, '') // trim the start or each line
+      .replace(/[ \t]*([\n\r]?)$/gm, '$1'); // trim the end of each line, but keep the line break
+  }
+
+  /**
+   * Formats code typically found in an example tag in a command's description.
+   * @param {string} code - The raw code string to format.
+   * @returns {string} The formatted code.
+   */
+  formatCode(code) {
+    code = code.replace(/^\s*$[\n\r]*/m, ''); // remove first empty lines
+    let indentSize = code.search(/[^ \t]|$/); // get indent size of first line
+    code = code
+      .replace(new RegExp(`^[ \\t]{${indentSize}}`, 'gm'), '') // unindent
+      .replace(/\s*$/, ''); // trim end
+    return this._codeFormatter.format(code);
+  }
+
+  /**
+   * Formats inline code in a command's description.
+   * @param {string} code - The raw inline code string to format.
+   * @returns {string} The formatted code.
+   */
+  formatInlineCode(code) {
+    return `\`${code.trim()}\``;
+  }
+
+  /**
+   * Formats the signature of a command.
+   * @param {commands.Meta} meta - A command's metadata.
+   * @returns {string} The formatted command's signature.
+   */
+  formatSignature(meta) {
+    return `${this.formatName(meta.name)}${this.formatParams(meta.params)}${this.formatReturn(meta.returns)}`;
+  }
+
+  /**
+   * Formats the name of a command.
+   * @param {string} name - A command's name.
+   * @returns {string} The formatted command's name.
+   */
+  formatName(name) {
+    return name;
+  }
+
+  /**
+   * Formats the parameters of a command.
+   * @param {commands.Param[]} params - A command's parameters.
+   * @returns {string} The formatted command's parameters.
+   */
+  formatParams(params) {
+    if (params.length === 0) return '';
+    return ' ' + params.map(param => this.formatParam(param)).join(' ');
+  }
+
+  /**
+   * Formats a parameter of a command.
+   * @param {commands.Param} param - A command's parameter.
+   * @returns {string} The formatted command's parameter.
+   */
+  formatParam(param) {
+    let res = `:${param.name}`;
+    if (param.isRest) res += ' ...';
+    return res;
+  }
+
+  /**
+   * Formats the return of a command.
+   * @param {commands.Validate} $return - A command's return specification.
+   * @returns {string} The formatted command's return.
+   */
+  formatReturn($return) {
+    if (!$return) return '';
+    return ` -> ${$return.exp}`;
+  }
+
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+module.exports = {
+  Formatter: MetaFormatter, // alias
+  MetaFormatter
+};
+
+},{"./code-formatter":6,"./doc-parser":8}],14:[function(require,module,exports){
 const parser = require('./peg-parser');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2639,7 +3809,7 @@ function formatLocation(location) {
 
 module.exports = {Parser};
 
-},{"./peg-parser":13}],13:[function(require,module,exports){
+},{"./peg-parser":15}],15:[function(require,module,exports){
 /*
  * Generated by PEG.js 0.10.0.
  *
@@ -3651,7 +4821,7 @@ module.exports = {
   parse:       peg$parse
 };
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -3691,7 +4861,7 @@ module.exports = {
   and
 };
 
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 /* eslint no-multi-spaces: 0 */
 
 const {isLight} = require('./validation');
@@ -3843,7 +5013,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../commands/base-commands":4,"../commands/validation":14,"./utils":21,"./validation":22}],16:[function(require,module,exports){
+},{"../commands/base-commands":4,"../commands/validation":16,"./utils":23,"./validation":24}],18:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -3964,7 +5134,7 @@ module.exports = {
   defineCommands
 };
 
-},{"../commands/validation":14}],17:[function(require,module,exports){
+},{"../commands/validation":16}],19:[function(require,module,exports){
 const {Light, TrafficLight} = require('./traffic-light');
 
 ///////////////
@@ -4295,7 +5465,7 @@ module.exports = {
   MultiLight, MultiTrafficLight, FlexMultiTrafficLight
 };
 
-},{"./traffic-light":20}],18:[function(require,module,exports){
+},{"./traffic-light":22}],20:[function(require,module,exports){
 ; // This file is a JavaScript file. It has the cljs extension just to render
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
@@ -4470,7 +5640,7 @@ module.exports = {
 
 ;`); }//--------------------------------------------------------------------
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Defines base commands to control a Traffic Light.
 //////////////////////////////////////////////////////////////////////////////
@@ -4543,7 +5713,7 @@ module.exports = {
   defineCommands
 };
 
-},{"./morse":15,"./traffic-light-commands.cljs":18,"./utils":21,"./validation":22}],20:[function(require,module,exports){
+},{"./morse":17,"./traffic-light-commands.cljs":20,"./utils":23,"./validation":24}],22:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////
 
 /**
@@ -4674,7 +5844,7 @@ module.exports = {
   Light, TrafficLight
 };
 
-},{"events":1}],21:[function(require,module,exports){
+},{"events":1}],23:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Utility functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4711,7 +5881,7 @@ module.exports = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
@@ -4728,22 +5898,55 @@ module.exports = {isLight, isState};
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],23:[function(require,module,exports){
-const {Formatter} = require('../src/commands/formatter');
+},{}],25:[function(require,module,exports){
+const {MetaFormatter} = require('../src/commands/meta-formatter');
+const {CodeFormatter} = require('../src/commands/code-formatter');
 
 ////////////////////////////////////////////////////////
 
-class WebFormatter extends Formatter {
+class WebCodeFormatter extends CodeFormatter {
+
+  formatIdentifier(text) {
+    if (['red', 'yellow', 'green'].indexOf(text) >= 0) {
+      return `<span class='code-identifier-${text}'>${text}</span>`;
+    }
+    return `<span class='code-identifier'>${text}</span>`;
+  }
+
+}
+{
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  const def = type => WebCodeFormatter.prototype[`format${capitalize(type)}`] =
+    function(text) { return `<span class='code-${type}'>${text}</span>`; };
+  def('command'); // WebCodeFormatter.prototype.formatCommand(text) { return `<span class='code-command'>${text}</span>`; }
+  def('variable'); // ...
+  def('number');
+  def('string');
+  def('comment');
+}
+
+////////////////////////////////////////////////////////
+
+let defaultFormatter = new MetaFormatter();
+
+class WebMetaFormatter extends MetaFormatter {
+
+  constructor() {
+    super(new WebCodeFormatter());
+  }
 
   formatSignature(meta) {
     return `<h3><code>${super.formatSignature(meta)}</code></h3>`;
   }
 
   formatCode(code) {
-    code = super.formatCode(code)
+    let executable = defaultFormatter.formatCode(code)
+      .replace(/\\/g, '&#92;')
+      .replace(/"/g, '&quot;');
+    let formatted = super.formatCode(code)
       .replace(/^([ \t]+)/gm, (_, spaces) => spaces.replace(/\s/g, '&nbsp;')) // indentation
       .replace(/\n/g, '<br/>\n');
-    return `<br/><br/><div class="sample">${code}</div>`;
+    return `<br/><br/><div class="sample" data-sample="${executable}">${formatted}</div>`;
   }
 
   formatInlineCode(text) {
@@ -4755,7 +5958,7 @@ class WebFormatter extends Formatter {
 ////////////////////////////////////////////////////////
 
 function setUpHelp(commander, runCommand) {
-  let formatter = new WebFormatter();
+  let formatter = new WebMetaFormatter();
   let divHelp = document.querySelector('#help');
   divHelp.innerHTML = '<h2 id="help-title">Commands</h2>';
   let commandNames = commander.commandNames;
@@ -4774,10 +5977,7 @@ function setUpSamples(runCommand) {
   txtSamples.forEach(txtSample =>
     txtSample.addEventListener('click', () => {
       location.hash = '#top';
-      runCommand(txtSample.innerHTML
-        .replace(/<br\s*\/?>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .trim());
+      runCommand(txtSample.getAttribute('data-sample'));
       location.hash = '#_';
     }));
 }
@@ -4788,7 +5988,7 @@ module.exports = {
   setUpHelp
 };
 
-},{"../src/commands/formatter":9}],24:[function(require,module,exports){
+},{"../src/commands/code-formatter":6,"../src/commands/meta-formatter":13}],26:[function(require,module,exports){
 const {Commander} = require('../src/commander');
 const {setUpHelp} = require('./help');
 const {MultiTrafficLightSelector} = require('./web-traffic-light');
@@ -4889,7 +6089,7 @@ if (document.readyState !== 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 }
 
-},{"../src/commander":2,"./help":23,"./web-traffic-light":25}],25:[function(require,module,exports){
+},{"../src/commander":2,"./help":25,"./web-traffic-light":27}],27:[function(require,module,exports){
 const {Light, TrafficLight} = require('../src/traffic-light/traffic-light');
 const {FlexMultiTrafficLight} = require('../src/traffic-light/multi-traffic-light');
 
@@ -5002,4 +6202,4 @@ module.exports = {
   MultiTrafficLightSelector
 };
 
-},{"../src/traffic-light/multi-traffic-light":17,"../src/traffic-light/multi-traffic-light-commands":16,"../src/traffic-light/traffic-light":20,"events":1}]},{},[24]);
+},{"../src/traffic-light/multi-traffic-light":19,"../src/traffic-light/multi-traffic-light-commands":18,"../src/traffic-light/traffic-light":22,"events":1}]},{},[26]);
