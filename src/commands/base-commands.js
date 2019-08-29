@@ -92,6 +92,16 @@ timeout.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
+function ms(ctx, [ms]) {
+  return ms;
+}
+ms.meta = {
+  name: 'ms',
+  params: [{ name: 'ms', validate: isNumber }],
+  returns: isNumber,
+  desc: `Returns the given number of milliseconds (an identity function).`
+};
+
 function seconds(ctx, [sec]) {
   return sec * 1000;
 }
@@ -211,7 +221,7 @@ const commands = {
   cancel,
   pause,
   timeout,
-  seconds, minutes,
+  ms, seconds, minutes,
   'do': $do,
   loop,
   repeat,

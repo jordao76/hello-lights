@@ -231,3 +231,7 @@ describe 'Base Commands', () ->
       it 'should convert from minutes to milliseconds', () ->
         act = await c.minutes {}, [42]
         act.should.equal 42 * 60 * 1000
+
+      it 'should return the number of milliseconds (identity function)', () ->
+        act = await c.ms {}, [4200]
+        act.should.equal 4200
