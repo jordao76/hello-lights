@@ -189,6 +189,13 @@ describe 'Command Analyzer - define', () ->
         type: 'error', text: '"def" cannot be redefined', loc: '1:1-1:20'
       ]
 
+    it 'defined command in the define body must exist', () ->
+      act = @analyze 'def turn-north (do (turning north))' # turning doesn't exist
+      @analyzer.errors.should.deep.equal [
+        { type: 'error', text: 'Command not found: "turning"', loc: '1:21-1:33' }
+        { type: 'error', text: 'Bad call to "turning" for "do" parameter 1 ("commands"), must be a command', loc: '1:21-1:33' }
+      ]
+
     it 'defined command as a variable', () ->
       act = @analyze 'def generic :cmd'
       @analyzer.errors.should.deep.equal []

@@ -33,6 +33,7 @@ class Generator {
 
   command(node) {
     let command = node.value;
+    if (!command) return null;
     let params = command.meta.params;
     let args = node.args.map(arg => this.recur(arg));
     return ctx => command(ctx, resolve(ctx, params, args));
