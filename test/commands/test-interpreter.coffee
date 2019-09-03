@@ -1,5 +1,6 @@
 require '../setup-unhandled-rejection'
 {Interpreter} = require '../../src/commands'
+path = require 'path'
 chai = require 'chai'
 chai.use require 'chai-as-promised'
 should = chai.should()
@@ -54,6 +55,20 @@ describe 'Command Interpreter', () ->
     res = await @interpreter.execute 'turn north', {}, @ct
     res.should.deep.equal [42]
     @turn.calledOnceWith({@ct}, ['north']).should.be.true
+
+  it 'execute command in a file', () ->
+    res = await @interpreter.executeFile path.join(__dirname, '/test-interpreter-turn-north.cljs'), 'utf8', {}, @ct
+    res.should.deep.equal [42]
+    @turn.calledOnceWith({@ct}, ['north']).should.be.true
+
+  it 'execute command in a file with default parameter values', () ->
+    res = await @interpreter.executeFile path.join(__dirname, '/test-interpreter-turn-north.cljs')
+    res.should.deep.equal [42]
+    @turn.callCount.should.equal 1
+    ctx = @turn.getCall(0).args[0]
+    should.exist ctx.ct
+    ctx.ct.isCancelled.should.be.false
+    @turn.getCall(0).args[1].should.deep.equal ['north']
 
   it 'call with default cancellation token', () ->
     res = await @interpreter.execute 'turn north', {}

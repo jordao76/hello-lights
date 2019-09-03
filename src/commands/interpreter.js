@@ -1,5 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
+const fs = require('fs');
+
+/////////////////////////////////////////////////////////////////////////////
+
 const {Parser} = require('./parser');
 const {Analyzer} = require('./analyzer');
 const {Generator} = require('./generator');
@@ -62,6 +66,23 @@ class Interpreter {
     if (ct === this.ct) {
       this.ct = new Cancellable();
     }
+  }
+
+  /**
+   * Executes a command file asynchronously.
+   * @param {string} filePath - Path to the file to execute.
+   * @param {string} [encoding='utf8'] - Encoding of the file.
+   * @param {object} [ctx] - Context object to be passed as part of the executed
+   *   commands' context, together with the cancellation token.
+   *   This context cannot have key 'ct', since it would be overwritten anyway.
+   * @param {commands.Cancellable} [ct] - Cancellation token.
+   * @throws Throws an error for any issues accessing the file, or for any syntax
+   *   or semantic errors in its text.
+   * @returns {object[]} Array with the results of the executions of the commands
+   *   found in the file.
+   */
+  async executeFile(filePath, encoding = 'utf8', ctx = {}, ct = this.ct) {
+    return this.execute(fs.readFileSync(filePath, encoding), ctx, ct);
   }
 
   /**

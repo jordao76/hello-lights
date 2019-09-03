@@ -1,18 +1,12 @@
-/////////////////////////////////////////////////////////////////////////////
-
-const {isCommand} = require('./validation');
-
-/////////////////////////////////////////////////////////////////////////////
 
 class Generator {
 
   generate(nodes) {
     this.errors = [];
     if (!nodes) return null;
-    nodes = nodes.map(node => {
-      if (!this.validateTopLevel(node)) return null;
-      return this.recur(node);
-    });
+    nodes = nodes
+      .filter(node => this.validateTopLevel(node))
+      .map(node => this.recur(node));
     if (this.errors.length > 0) return null;
     return nodes;
   }
@@ -51,6 +45,7 @@ class Generator {
 
 /////////////////////////////////////////////////////////////////////////////
 
+const {isCommand} = require('./validation');
 const isVar = arg => arg.type === 'variable';
 
 const resolve = (ctx, params, args) =>
