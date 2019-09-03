@@ -155,7 +155,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line26">line 26</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line30">line 30</a>
     </li></ul></dd>
     
 
@@ -259,7 +259,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line42">line 42</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line46">line 46</a>
     </li></ul></dd>
     
 
@@ -411,7 +411,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line51">line 51</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line55">line 55</a>
     </li></ul></dd>
     
 
@@ -560,7 +560,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line59">line 59</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line63">line 63</a>
     </li></ul></dd>
     
 
@@ -773,7 +773,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line77">line 77</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -838,6 +838,306 @@
 
 
         
+            
+
+    
+
+    
+    <h4 class="name" id="executeFile"><span class="type-signature">(async) </span>executeFile<span class="signature">(filePath, encoding<span class="signature-attributes">opt</span>, ctx<span class="signature-attributes">opt</span>, ct<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Executes a command file asynchronously.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>filePath</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Path to the file to execute.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>encoding</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    'utf8'
+                
+                </td>
+            
+
+            <td class="description last">Encoding of the file.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ctx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Context object to be passed as part of the executed  commands' context, together with the cancellation token.  This context cannot have key 'ct', since it would be overwritten anyway.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ct</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="commands.Cancellable.html">commands.Cancellable</a></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Cancellation token.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line84">line 84</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+    <div class="param-desc">
+    
+        Throws an error for any issues accessing the file, or for any syntax  or semantic errors in its text.
+    
+    </div>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    Array with the results of the executions of the commands  found in the file.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
     
 
     
@@ -859,7 +1159,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Wed Aug 28 2019 19:25:23 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Sep 03 2019 17:34:59 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
