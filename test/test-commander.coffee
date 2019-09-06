@@ -38,6 +38,39 @@ describe 'Commander', () =>
         @cm.logInfo()
         @logger.log.calledWith('device 999999: connected').should.be.true
 
+    describe 'runDefinitionsFile', () =>
+
+      it 'run command definitions in a file', () =>
+        @cm.runDefinitionsFile path.join(__dirname, '/test-commander-fast-command.cljs') # doesn't have to contain only 'define' or 'def'
+        @resolve()
+        await spin 5
+        @interpreter.execute.callCount.should.equal 1
+
+      it 'error reading file', () =>
+        @cm.runDefinitionsFile 'dummy-file.txt' # file doesn't exist
+        await spin 5
+        @interpreter.execute.callCount.should.equal 0
+        @logger.error.calledWith("error accessing file 'dummy-file.txt'").should.be.true
+
+    describe 'runDefinitions', () =>
+
+      it 'runDefinitions success', () =>
+        @cm.runDefinitions('fast command') # doesn't have to contain only 'define' or 'def'
+        @resolve()
+        await spin()
+        @interpreter.execute.calledOnceWith('fast command').should.be.true # no context to the interpreter
+        @logger.log.calledWith('running definitions').should.be.true
+        @logger.log.calledWith('finished definitions').should.be.true
+
+      it 'runDefinitions error', () =>
+        @cm.runDefinitions('dummy')
+        @reject new Error 'dump'
+        await spin()
+        @interpreter.execute.calledOnceWith('dummy').should.be.true # no context to the interpreter
+        @logger.log.calledOnceWith('running definitions').should.be.true
+        @logger.error.calledWith('error in definitions').should.be.true
+        @logger.error.calledWith('dump').should.be.true
+
     describe 'runFile', () =>
 
       it 'run command in a file', () =>
@@ -45,6 +78,12 @@ describe 'Commander', () =>
         @resolve()
         await spin 5
         @interpreter.execute.callCount.should.equal 1
+
+      it 'error reading file', () =>
+        @cm.runFile 'dummy-file.txt' # file doesn't exist
+        await spin 5
+        @interpreter.execute.callCount.should.equal 0
+        @logger.error.calledWith("error accessing file 'dummy-file.txt'").should.be.true
 
     describe 'run', () =>
 

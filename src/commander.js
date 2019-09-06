@@ -105,6 +105,33 @@ class Commander {
   }
 
   /**
+   * Executes a file with command definitions asynchronously.
+   * @param {string} filePath - Path to the file to execute.
+   *   Should only contain command definitions (`define` or `def`).
+   * @param {string} [encoding='utf8'] - Encoding of the file.
+   */
+  async runDefinitionsFile(filePath, encoding = 'utf8') {
+    let command = await this._readFile(filePath, encoding);
+    if (command) return this.runDefinitions(command);
+  }
+
+  /**
+   * Executes a command with definitions asynchronously.
+   * @param {string} command - Command to execute. Should only contain command
+   *   definitions (`define` or `def`).
+   */
+  async runDefinitions(command) {
+    try {
+      this.logger.log('running definitions');
+      await this.interpreter.execute(command); // no context, only for definitions
+      this.logger.log('finished definitions');
+    } catch (e) {
+      this.logger.error('error in definitions');
+      this.logger.error(e.message);
+    }
+  }
+
+  /**
    * Executes a command file asynchronously.
    * If the same command is already running, does nothing.
    * If another command is running, cancels it, resets the traffic light,
@@ -127,7 +154,7 @@ class Commander {
     try {
       return await fs.readFileAsync(filePath, encoding);
     } catch (e) {
-      this.logger.error(`error in accessing file '${filePath}'`);
+      this.logger.error(`error accessing file '${filePath}'`);
       this.logger.error(e.message);
       return null;
     }
