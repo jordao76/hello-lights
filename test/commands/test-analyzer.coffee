@@ -1,6 +1,6 @@
 require '../setup-unhandled-rejection'
 {StripLocation} = require './strip-location'
-{Parser, Analyzer} = require '../../src/commands'
+{Parser, Analyzer, FlatScope} = require '../../src/commands'
 should = require('chai').should()
 sinon = require 'sinon'
 
@@ -50,7 +50,7 @@ describe 'Command Analyzer', () ->
     # analyzer
     stripLocation = new StripLocation
     parser = new Parser()
-    @analyzer = new Analyzer(@commands)
+    @analyzer = new Analyzer(new FlatScope @commands)
     @analyze = (text) => stripLocation.process @analyzer.analyze parser.parse text
 
   it 'call a command with an argument', () ->
@@ -413,13 +413,13 @@ describe 'Command Analyzer', () ->
         params: []
       @commands.macro = @macro
 
-    it 'should be passed the context of the parse tree: node, root node and commands', () ->
+    it 'should be passed the context of the parse tree: node, root node and scope', () ->
       @macro.returns null # removes itself from the tree
       act = @analyze 'macro'
       should.not.exist act # nothing left on the tree
       @macro.callCount.should.equal 1
       macroArg = @macro.getCall(0).args[0]
-      macroArg.commands.should.deep.equal @commands
+      macroArg.scope.commandNames.length.should.equal Object.keys(@commands).length
       macroArg.root.type.should.equal 'command'
       macroArg.root.name.should.equal 'macro'
       macroArg.node.type.should.equal 'command'

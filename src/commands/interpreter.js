@@ -6,6 +6,7 @@ if (util.promisify) fs.readFileAsync = util.promisify(fs.readFile);
 
 /////////////////////////////////////////////////////////////////////////////
 
+const {FlatScope} = require('./scope');
 const {Parser} = require('./parser');
 const {Analyzer} = require('./analyzer');
 const {Generator} = require('./generator');
@@ -31,16 +32,17 @@ class Interpreter {
    *   to the interpreter scope (like 'define' and 'pause').
    */
   constructor(commands = {}, intrinsics = true) {
-    this.commands = {};
+    let commandsInScope = {};
     if (intrinsics) {
-      Object.assign(this.commands, {
+      Object.assign(commandsInScope, {
         ...define.commands, // add the 'define' commands
         ...baseCommands.commands // add the base commands
       });
     }
-    Object.assign(this.commands, commands);
+    Object.assign(commandsInScope, commands);
+    this.scope = new FlatScope(commandsInScope);
     this.parser = new Parser();
-    this.analyzer = new Analyzer(this.commands);
+    this.analyzer = new Analyzer(this.scope);
     this.generator = new Generator();
     this.ct = new Cancellable();
   }
@@ -50,16 +52,16 @@ class Interpreter {
    * @type {string[]}
    */
   get commandNames() {
-    return Object.keys(this.commands);
+    return this.scope.commandNames;
   }
 
   /**
    * Adds a new command or redefines an existing one.
-   * @param {string} name - The command name. Should be the same as the command.meta.name property.
+   * @param {string} name - The command name.
    * @param {commands.Command} command - The command function.
    */
   add(name, command) {
-    this.commands[name] = command;
+    this.scope.add(name, command);
   }
 
   /**

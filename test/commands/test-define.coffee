@@ -1,7 +1,7 @@
 require '../setup-unhandled-rejection'
 {StripLocation} = require './strip-location'
 parser = require '../../src/commands/peg-parser'
-{Analyzer} = require '../../src/commands/analyzer'
+{Analyzer, FlatScope} = require '../../src/commands'
 should = require('chai').should()
 sinon = require 'sinon'
 {def, define} = require '../../src/commands/define'
@@ -41,7 +41,7 @@ describe 'Command Analyzer - define', () ->
 
     # analyzer
     stripLocation = new StripLocation
-    @analyzer = new Analyzer(@commands)
+    @analyzer = new Analyzer(new FlatScope @commands)
     @analyze = (text) => stripLocation.process @analyzer.analyze parser.parse text
     @ctx = {}
 

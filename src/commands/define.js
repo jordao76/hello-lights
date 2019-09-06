@@ -5,15 +5,15 @@ const {Generator} = require('./generator');
 
 /////////////////////////////////////////////////////////////////////////////
 
-function define({root, node, commands}) {
-  return exec({root, node, commands, descIdx: 1, commandIdx: 2});
+function define({root, node, scope}) {
+  return exec({root, node, scope, descIdx: 1, commandIdx: 2});
 }
 
-function def({root, node, commands}) {
-  return exec({root, node, commands, descIdx: 0, commandIdx: 1});
+function def({root, node, scope}) {
+  return exec({root, node, scope, descIdx: 0, commandIdx: 1});
 }
 
-function exec({root, node, commands, descIdx, commandIdx}) {
+function exec({root, node, scope, descIdx, commandIdx}) {
   let errors = validate(node, root, descIdx);
   if (errors.length > 0) return errors;
 
@@ -29,7 +29,7 @@ function exec({root, node, commands, descIdx, commandIdx}) {
     return command({...ctx, scope});
   };
 
-  commands[name] = res;
+  scope.add(name, res);
 
   res.meta = { name, desc, params };
   if (commandNode.type === 'command') {

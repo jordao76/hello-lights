@@ -1,6 +1,6 @@
 require '../setup-unhandled-rejection'
 {StripLocation} = require './strip-location'
-{Parser, Analyzer, Generator, Interpreter} = require '../../src/commands'
+{Parser, Analyzer, Generator, Interpreter, FlatScope} = require '../../src/commands'
 should = require('chai').should()
 sinon = require 'sinon'
 
@@ -43,7 +43,7 @@ describe 'Return values', () ->
     # analyzer
     stripLocation = new StripLocation
     parser = new Parser()
-    @analyzer = new Analyzer(@commands)
+    @analyzer = new Analyzer(new FlatScope @commands)
     @analyze = (text) => stripLocation.process @analyzer.analyze parser.parse text
 
   describe 'command interpreter', () ->

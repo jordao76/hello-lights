@@ -1,5 +1,5 @@
 require '../setup-unhandled-rejection'
-{Parser, Analyzer, Generator} = require '../../src/commands'
+{Parser, Analyzer, Generator, FlatScope} = require '../../src/commands'
 {isCommand} = require '../../src/commands/validation'
 should = require('chai').should()
 sinon = require('sinon')
@@ -30,7 +30,7 @@ describe 'Command Generator', () ->
 
     # generator
     parser = new Parser()
-    analyzer = new Analyzer(@commands)
+    analyzer = new Analyzer(new FlatScope @commands)
     @generator = new Generator()
     @generate = (text) => @generator.generate analyzer.analyze parser.parse text
     @ctx = {}

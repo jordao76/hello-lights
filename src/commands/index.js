@@ -8,6 +8,7 @@ module.exports = {
   ...require('./analyzer'),
   ...require('./generator'),
   ...require('./interpreter'),
+  ...require('./scope'),
   ...require('./cancellable'),
   ...require('./doc-parser'),
   ...require('./meta-formatter'),

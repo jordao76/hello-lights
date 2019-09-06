@@ -4,8 +4,8 @@ const {and} = require('./validation');
 
 class Analyzer {
 
-  constructor(commands) {
-    this.commands = commands;
+  constructor(scope) {
+    this.scope = scope;
   }
 
   analyze(nodes) {
@@ -33,7 +33,7 @@ class Analyzer {
       .filter(arg => !!arg); // macros can remove the node by returning null
 
     // validate the command node
-    let errors = new Validator(this.commands, this.params).validate(node);
+    let errors = new Validator(this.scope, this.params).validate(node);
     this.errors.push(...errors);
 
     if (node === this.root) {
@@ -52,7 +52,7 @@ class Analyzer {
     let res = macro({
       root: this.root,
       node: node,
-      commands: this.commands
+      scope: this.scope
     });
     if (res) {
       if (Array.isArray(res) && isError(res[0])) {
@@ -93,15 +93,15 @@ class Analyzer {
 
 class Validator {
 
-  constructor(commands, params) {
-    this.commands = commands;
+  constructor(scope, params) {
+    this.scope = scope;
     this.params = params;
   }
 
   validate(node) {
     let name = node.name;
 
-    let command = this.commands[name];
+    let command = this.scope.lookup(name);
     if (!command) return [badCommand(name, node.loc)];
     node.value = command;
 
