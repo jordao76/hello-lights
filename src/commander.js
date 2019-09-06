@@ -1,5 +1,11 @@
 ////////////////////////////////////////////////
 
+const fs = require('fs');
+const util = require('util');
+if (util.promisify) fs.readFileAsync = util.promisify(fs.readFile);
+
+////////////////////////////////////////////////
+
 const tryRequire = (path) => {
   try {
     return require(path);
@@ -96,6 +102,35 @@ class Commander {
     if (!this.running) return;
     this.isInterrupted = true;
     this.interpreter.cancel();
+  }
+
+  /**
+   * Executes a command file asynchronously.
+   * If the same command is already running, does nothing.
+   * If another command is running, cancels it, resets the traffic light,
+   * and runs the new command.
+   * If no command is running, executes the given command, optionally
+   * resetting the traffic light based on the `reset` parameter.
+   * If there's no traffic light to run the command, stores it for later when
+   * one becomes available. Logs messages appropriately.
+   * @param {string} filePath - Path to the file to execute.
+   * @param {boolean} [reset=false] - Whether to reset the traffic light
+   *   before executing the command.
+   * @param {string} [encoding='utf8'] - Encoding of the file.
+   */
+  async runFile(filePath, reset = false, encoding = 'utf8') {
+    let command = await this._readFile(filePath, encoding);
+    if (command) return this.run(command, reset);
+  }
+
+  async _readFile(filePath, encoding) {
+    try {
+      return await fs.readFileAsync(filePath, encoding);
+    } catch (e) {
+      this.logger.error(`error in accessing file '${filePath}'`);
+      this.logger.error(e.message);
+      return null;
+    }
   }
 
   /**

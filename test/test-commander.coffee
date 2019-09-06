@@ -1,9 +1,10 @@
 require './setup-unhandled-rejection'
 {Commander} = require '../src/commander'
 {Device, DeviceManager} = require '../src/physical/device'
+path = require 'path'
 require('chai').should()
 sinon = require('sinon')
-yieldThen = (fn) -> setTimeout(fn, 0)
+spin = (ms = 0) -> new Promise (resolve) -> setTimeout(resolve, ms)
 
 DEBUG_STUB = (stub) ->
   console.log 'STUB callCount', stub.callCount
@@ -37,149 +38,132 @@ describe 'Commander', () =>
         @cm.logInfo()
         @logger.log.calledWith('device 999999: connected').should.be.true
 
+    describe 'runFile', () =>
+
+      it 'run command in a file', () =>
+        @cm.runFile path.join(__dirname, '/test-commander-fast-command.cljs')
+        @resolve()
+        await spin 5
+        @interpreter.execute.callCount.should.equal 1
+
     describe 'run', () =>
 
       it 'checks out the traffic light', () =>
         @device.trafficLight.isCheckedOut.should.be.false
         @cm.run('infinite command')
-        yieldThen () =>
-          @device.trafficLight.isCheckedOut.should.be.true
+        await spin()
+        @device.trafficLight.isCheckedOut.should.be.true
 
-      it 'if no command is running, run it (fast command)', (done) =>
+      it 'if no command is running, run it (fast command)', () =>
         @cm.run('fast command')
         @resolve()
-        yieldThen () =>
-          @interpreter.execute.calledOnceWith('fast command', {tl:@device.trafficLight}).should.be.true
-          @logger.log.calledWith("device 999999: running 'fast command'").should.be.true
-          @logger.log.calledWith("device 999999: finished 'fast command'").should.be.true
-          done()
+        await spin()
+        @interpreter.execute.calledOnceWith('fast command', {tl:@device.trafficLight}).should.be.true
+        @logger.log.calledWith("device 999999: running 'fast command'").should.be.true
+        @logger.log.calledWith("device 999999: finished 'fast command'").should.be.true
 
-      it 'if no command is running, run it (infinite command)', (done) =>
+      it 'if no command is running, run it (infinite command)', () =>
         @cm.run('infinite command') # never resolved
-        yieldThen () =>
-          @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
-          @logger.log.calledOnceWith("device 999999: running 'infinite command'").should.be.true
-          done()
+        await spin()
+        @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+        @logger.log.calledOnceWith("device 999999: running 'infinite command'").should.be.true
 
-      it 'command with error', (done) =>
+      it 'command with error', () =>
         @cm.run('error command')
         error = new Error('bad command!')
         @reject error
-        yieldThen () =>
-          @interpreter.execute.calledOnceWith('error command', {tl:@device.trafficLight}).should.be.true
-          @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
-          @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
-          @logger.error.calledWith(error.message).should.be.true
-          done()
+        await spin()
+        @interpreter.execute.calledOnceWith('error command', {tl:@device.trafficLight}).should.be.true
+        @logger.log.calledOnceWith("device 999999: running 'error command'").should.be.true
+        @logger.error.calledWith("device 999999: error in 'error command'").should.be.true
+        @logger.error.calledWith(error.message).should.be.true
 
-      it 'if the same command is already running, does nothing', (done) =>
+      it 'if the same command is already running, does nothing', () =>
         @cm.run('infinite command') # never resolved
-        yieldThen () =>
-          @cm.run('infinite command') # same command
-          yieldThen () =>
-            @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
-            @logger.log.calledWith("device 999999: skip 'infinite command'").should.be.true
-            done()
+        await spin()
+        @cm.run('infinite command') # same command
+        await spin()
+        @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+        @logger.log.calledWith("device 999999: skip 'infinite command'").should.be.true
 
-      it 'if the same command has already finished, run it again (fast command)', (done) =>
+      it 'if the same command has already finished, run it again (fast command)', () =>
         @cm.run('fast command')
         @resolve()
-        yieldThen () =>
-          @cm.run('fast command') # same command
-          @resolve()
-          yieldThen () =>
-            @interpreter.execute.calledTwice.should.be.true
-            @logger.log.callCount.should.equal 4
-            done()
+        @cm.run('fast command') # same command
+        @resolve()
+        await spin()
+        @interpreter.execute.calledTwice.should.be.true
+        @logger.log.callCount.should.equal 4
 
-      it 'if another command is running, cancels and runs the new command', (done) =>
+      it 'if another command is running, cancels and runs the new command', () =>
         @cm.run('infinite command')
-        yieldThen () =>
-          sinon.assert.calledOnce(@interpreter.execute)
-          sinon.assert.calledWith(@interpreter.execute, 'infinite command', {tl:@device.trafficLight})
-          @cm.run('fast command') # different command
-          yieldThen () =>
-            sinon.assert.calledWith(@interpreter.cancel)
-            sinon.assert.calledWith(@logger.log, "device 999999: cancel 'infinite command'")
-            @resolve() # resolve the commands (infinite command was cancelled and fast command ends fast)
-            yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: finished 'infinite command'")
-              sinon.assert.calledWith(@logger.log, "device 999999: running 'fast command'")
-              sinon.assert.calledWith(@logger.log, "device 999999: finished 'fast command'")
-              done()
+        await spin()
+        sinon.assert.calledOnce(@interpreter.execute)
+        sinon.assert.calledWith(@interpreter.execute, 'infinite command', {tl:@device.trafficLight})
+        @cm.run('fast command') # different command
+        sinon.assert.calledWith(@interpreter.cancel)
+        sinon.assert.calledWith(@logger.log, "device 999999: cancel 'infinite command'")
+        @resolve() # resolve the commands (infinite command was cancelled and fast command ends fast)
+        await spin()
+        sinon.assert.calledWith(@logger.log, "device 999999: finished 'infinite command'")
+        sinon.assert.calledWith(@logger.log, "device 999999: running 'fast command'")
+        sinon.assert.calledWith(@logger.log, "device 999999: finished 'fast command'")
 
-      it 'checks in the traffic light when disconnected', (done) =>
+      it 'checks in the traffic light when disconnected', () =>
         @cm.run('infinite command')
-        yieldThen () =>
-          @device.trafficLight.isCheckedOut.should.be.true
-          @device.disconnect()
-          yieldThen () =>
-            @resolve()
-            yieldThen () =>
-              @device.trafficLight.isCheckedOut.should.be.false
-              done()
+        @device.trafficLight.isCheckedOut.should.be.true
+        @device.disconnect()
+        @resolve()
+        @device.trafficLight.isCheckedOut.should.be.false
 
-      it 'cancels and suspends the command when disconnected', (done) =>
+      it 'cancels and suspends the command when disconnected', () =>
         @cm.run('infinite command')
-        yieldThen () =>
-          @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
-          sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
-          @device.disconnect()
-          yieldThen () =>
-            sinon.assert.calledWith(@interpreter.cancel)
-            @resolve() # cancel resolves the command
-            yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
-              done()
+        await spin()
+        @interpreter.execute.calledOnceWith('infinite command', {tl:@device.trafficLight}).should.be.true
+        sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
+        @device.disconnect()
+        sinon.assert.calledWith(@interpreter.cancel)
+        @resolve() # cancel resolves the command
+        await spin()
+        sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
 
-      it 'resumes the running command when reconnected', (done) =>
+      it 'resumes the running command when reconnected', () =>
         @cm.run('infinite command')
-        yieldThen () =>
-          @device.disconnect()
-          yieldThen () =>
-            @resolve()
-            yieldThen () =>
-              @device.connect() # reconnect
-              @manager.emit('added')
-              yieldThen () =>
-                @interpreter.execute.callCount.should.equal 2
-                sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
-                done()
+        @device.disconnect()
+        @resolve()
+        await spin()
+        @device.connect() # reconnect
+        @manager.emit('added')
+        await spin()
+        @interpreter.execute.callCount.should.equal 2
+        sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
 
-      it 'reinstates the traffic light state when reconnected if not running a command', (done) =>
+      it 'reinstates the traffic light state when reconnected if not running a command', () =>
         @cm.run('fast command')
         @resolve()
         tl = @device.trafficLight # simulates a command that ended with the yellow light on
         tl.yellow.turnOn()
         @device.turn.callCount.should.equal 1
         sinon.assert.calledWith(@device.turn, 1, 1) # yellow on
-        yieldThen () =>
-          @device.disconnect()
-          yieldThen () =>
-            @device.connect() # reconnect
-            @manager.emit('add')
-            yieldThen () =>
-              @device.turn.callCount.should.equal 4 # called again for each light
-              sinon.assert.calledWith(@device.turn, 0, 0) # red off
-              sinon.assert.calledWith(@device.turn, 1, 1) # yellow on
-              sinon.assert.calledWith(@device.turn, 2, 0) # green off
-              tl.red.on.should.be.false
-              tl.yellow.on.should.be.true
-              tl.green.on.should.be.false
-              done()
+        @device.disconnect()
+        @device.connect() # reconnect
+        @manager.emit('add')
+        @device.turn.callCount.should.equal 4 # called again for each light
+        sinon.assert.calledWith(@device.turn, 0, 0) # red off
+        sinon.assert.calledWith(@device.turn, 1, 1) # yellow on
+        sinon.assert.calledWith(@device.turn, 2, 0) # green off
+        tl.red.on.should.be.false
+        tl.yellow.on.should.be.true
+        tl.green.on.should.be.false
 
-      it 'does not resume a command that already ended when reconnected', (done) =>
+      it 'does not resume a command that already ended when reconnected', () =>
         @cm.run('fast command')
-        yieldThen () =>
-          @resolve() # end the command
-          yieldThen () =>
-            @device.disconnect()
-            yieldThen () =>
-              @device.connect()
-              @manager.emit('add')
-              yieldThen () =>
-                @interpreter.execute.callCount.should.equal 1
-                done()
+        @resolve() # end the command
+        @device.disconnect()
+        @device.connect()
+        @manager.emit('add')
+        await spin()
+        @interpreter.execute.callCount.should.equal 1
 
     describe 'multiple Commanders competing for a device', () =>
 
@@ -194,33 +178,29 @@ describe 'Commander', () =>
           error: sinon.stub()
         @cm2 = new Commander {parser: @interpreter2, @manager, logger: @logger2}
 
-      it 'second commander should NOT run', (done) =>
+      it 'second commander should NOT run', () =>
         @cm.run('infinite command')
         @cm2.run('infinite command')
-        yieldThen () =>
-          @interpreter.execute.callCount.should.equal 1
-          @interpreter2.execute.callCount.should.equal 0 # commander 2 not executed
-          done()
+        await spin()
+        @interpreter.execute.callCount.should.equal 1
+        @interpreter2.execute.callCount.should.equal 0 # commander 2 not executed
 
-      it 'only one Commander executes when the device is reconnected', (done) =>
+      it 'only one Commander executes when the device is reconnected', () =>
         @cm.run('infinite command')
         @cm2.run('infinite command')
-        yieldThen () =>
-          @device.disconnect()
-          yieldThen () =>
-            @resolve()
-            yieldThen () =>
-              @device.connect() # reconnect
-              @manager.emit('added')
-              yieldThen () =>
-                # one of the Commanders should take control of the device
-                if @cm.selector._device
-                  @interpreter.execute.callCount.should.equal 2
-                  @interpreter2.execute.callCount.should.equal 0
-                else
-                  @interpreter.execute.callCount.should.equal 1
-                  @interpreter2.execute.callCount.should.equal 1
-                done()
+        @device.disconnect()
+        @resolve()
+        await spin()
+        @device.connect() # reconnect
+        @manager.emit('added')
+        await spin()
+        # one of the Commanders should take control of the device
+        if @cm.selector._device
+          @interpreter.execute.callCount.should.equal 2
+          @interpreter2.execute.callCount.should.equal 0
+        else
+          @interpreter.execute.callCount.should.equal 1
+          @interpreter2.execute.callCount.should.equal 1
 
     describe 'disconnect and connect another device', () =>
 
@@ -229,66 +209,60 @@ describe 'Commander', () =>
         @device2.turn = sinon.stub() # abstract in Device
         @manager.allDevices.returns [@device, @device2]
 
-      it 'resumes the running command after disconnection in another device', (done) =>
+      it 'resumes the running command after disconnection in another device', () =>
         @cm.run('infinite command')
-        yieldThen () =>
-          sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
-          @device.disconnect()
-          yieldThen () =>
-            @resolve()
-            yieldThen () =>
-              sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
-              @device2.connect() # connect device 2
-              @manager.emit('added')
-              yieldThen () =>
-                @interpreter.execute.callCount.should.equal 2
-                sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
-                done()
+        await spin()
+        sinon.assert.calledWith(@logger.log, "device 999999: running 'infinite command'")
+        @device.disconnect()
+        @resolve()
+        await spin()
+        sinon.assert.calledWith(@logger.log, "device 999999: disabled, suspending 'infinite command'")
+        @device2.connect() # connect device 2
+        @manager.emit('added')
+        await spin()
+        @interpreter.execute.callCount.should.equal 2
+        sinon.assert.calledWith(@logger.log, "device 888888: running 'infinite command'")
 
     describe 'device specific Commander', () =>
 
       beforeEach () =>
         @cm = new Commander {@interpreter, @manager, @logger, serialNum: '999998'}
 
-      it 'wrong device connected, should not run a command', (done) =>
+      it 'wrong device connected, should not run a command', () =>
         @cm.run('fast command')
-        yieldThen () =>
-          @interpreter.execute.callCount.should.equal 0
-          sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
-          done()
+        await spin()
+        @interpreter.execute.callCount.should.equal 0
+        sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
 
-      it 'right device connected, should run a command', (done) =>
+      it 'right device connected, should run a command', () =>
         @device2 = new Device('999998') # right device
         @device2.turn = sinon.stub() # abstract in Device
         @manager.allDevices.returns [@device, @device2]
         @cm.run('fast command')
         @resolve()
-        yieldThen () =>
-          @interpreter.execute.calledOnceWith('fast command', {tl:@device2.trafficLight}).should.be.true
-          @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
-          @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
-          done()
+        await spin()
+        @interpreter.execute.calledOnceWith('fast command', {tl:@device2.trafficLight}).should.be.true
+        @logger.log.calledWith("device 999998: running 'fast command'").should.be.true
+        @logger.log.calledWith("device 999998: finished 'fast command'").should.be.true
 
   describe 'no device', () =>
 
-    it 'should not run a command', (done) =>
+    it 'should not run a command', () =>
       @cm.run('fast command')
-      yieldThen () =>
-        @interpreter.execute.callCount.should.equal 0
-        sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
-        done()
+      await spin()
+      @interpreter.execute.callCount.should.equal 0
+      sinon.assert.calledWith(@logger.log, "no traffic light available to run 'fast command'")
 
-    it 'runs the command when a device is connected', (done) =>
+    it 'runs the command when a device is connected', () =>
       @cm.run('fast command')
-      yieldThen () =>
-        @device = new Device('888888', true)
-        @device.turn = sinon.stub()
-        @manager.allDevices.returns [@device]
-        @manager.emit('added') # new device added (detected)
-        yieldThen () =>
-          @interpreter.execute.calledOnce.should.be.true
-          sinon.assert.calledWith(@interpreter.execute, 'fast command', {tl:@device.trafficLight})
-          done()
+      await spin()
+      @device = new Device('888888', true)
+      @device.turn = sinon.stub()
+      @manager.allDevices.returns [@device]
+      @manager.emit('added') # new device added (detected)
+      await spin()
+      @interpreter.execute.calledOnce.should.be.true
+      sinon.assert.calledWith(@interpreter.execute, 'fast command', {tl:@device.trafficLight})
 
   describe 'command help', () =>
 

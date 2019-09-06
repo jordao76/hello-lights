@@ -8,3 +8,4 @@ lib
 web/doc
 .nyc_output
 coverage
+debug.log

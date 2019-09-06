@@ -1,6 +1,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 const fs = require('fs');
+const util = require('util');
+if (util.promisify) fs.readFileAsync = util.promisify(fs.readFile);
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -82,7 +84,7 @@ class Interpreter {
    *   found in the file.
    */
   async executeFile(filePath, encoding = 'utf8', ctx = {}, ct = this.ct) {
-    return this.execute(fs.readFileSync(filePath, encoding), ctx, ct);
+    return this.execute(await fs.readFileAsync(filePath, encoding), ctx, ct);
   }
 
   /**
