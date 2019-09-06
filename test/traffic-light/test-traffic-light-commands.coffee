@@ -16,7 +16,6 @@ describe 'Traffic light commands', () =>
     @ctx = {@tl, @ct, scope}
     @interpreter = new Interpreter()
     defineCommands(@interpreter)
-    @commands = @interpreter.commands
     @exec = (cmd, tl=@tl, ct=@ct) => @interpreter.execute(cmd, {tl}, ct, scope)
 
   describe 'lights', () =>

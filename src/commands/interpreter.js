@@ -25,16 +25,20 @@ const baseCommands = require('./base-commands');
 class Interpreter {
 
   /**
-   * @param {object.<string, commands.Command>} [commands] -
-   *   Commands this interpreter recognizes.
-   *   (Intrinsic commands are already available)
+   * @param {object.<string, commands.Command>} [commands] - Commands this
+   *   interpreter recognizes.
+   * @param {boolean} [intrinsics=true] - Whether to add intrinsic commands
+   *   to the interpreter scope (like 'define' and 'pause').
    */
-  constructor(commands) {
-    this.commands = {
-      ...define.commands, // add the 'define' commands
-      ...baseCommands.commands, // add the base commands
-      ...commands
-    };
+  constructor(commands = {}, intrinsics = true) {
+    this.commands = {};
+    if (intrinsics) {
+      Object.assign(this.commands, {
+        ...define.commands, // add the 'define' commands
+        ...baseCommands.commands // add the base commands
+      });
+    }
+    Object.assign(this.commands, commands);
     this.parser = new Parser();
     this.analyzer = new Analyzer(this.commands);
     this.generator = new Generator();
