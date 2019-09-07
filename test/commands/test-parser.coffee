@@ -89,6 +89,13 @@ describe 'Command parser', () ->
       @parser.parse(str).should.deep.equal exp
       @parser.errors.length.should.equal 0
 
+    it 'should parse with a file path', () ->
+      exp = [ type: 'command', args: [], name: 'turn', loc: 'somefile.cljs/1:1-1:4' ]
+      str = 'turn'
+      parser = new Parser filePath: 'somefile.cljs'
+      parser.parse(str).should.deep.equal exp
+      parser.errors.length.should.equal 0
+
     it 'should parse nested commands', () ->
       exp = [
         {

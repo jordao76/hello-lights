@@ -15,7 +15,9 @@ class Analyzer {
       this.root = node;
       this.params = [];
       return this.recur(node);
-    }).filter(node => !!node); // macros can remove the node by returning null
+    })
+      .reduce((acc, val) => acc.concat(val), []) // flatten: macros can return a list of nodes
+      .filter(node => !!node); // macros can remove the node by returning null
     delete this.params;
     delete this.root;
     if (nodes.length === 0) return null;

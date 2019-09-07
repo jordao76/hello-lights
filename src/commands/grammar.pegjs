@@ -1,10 +1,6 @@
 {
-  function loc() {
-    let l = location();
-    let start = l.start;
-    let end = l.end;
-    return `${start.line}:${start.column}-${end.line}:${end.column - 1}`;
-  }
+  const formatter = options.formatter;
+  const loc = () => formatter.formatLocation(location());
 }
 
 Start
