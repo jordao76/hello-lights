@@ -1,0 +1,3 @@
+; this is NOT a clojure file....
+; file to test the 'import' command
+(import "./test-import-turn-north.cljs") ; import file path relative to THIS file

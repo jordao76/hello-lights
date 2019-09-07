@@ -307,13 +307,14 @@ describe 'Commander', () =>
 
     beforeEach () =>
       @commandNames = ['move','turn','stop']
-      @interpreter.commandNames = @commandNames
       moveCommand = sinon.stub()
       moveCommand.meta =
         name: 'move'
         desc: 'Moves the widget'
         params: [ name: 'where' ]
+      @interpreter.commandNames = @commandNames
       @interpreter.commands = move: moveCommand
+      @interpreter.lookup = (name) -> @.commands[name]
 
     it 'commandNames: lists all available commands', () =>
       @cm.commandNames.should.deep.equal @commandNames

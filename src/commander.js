@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const util = require('util');
-if (util.promisify) fs.readFileAsync = util.promisify(fs.readFile);
 
 ////////////////////////////////////////////////
 
@@ -152,6 +151,7 @@ class Commander {
 
   async _readFile(filePath, encoding) {
     try {
+      if (!fs.readFileAsync) fs.readFileAsync = util.promisify(fs.readFile);
       return await fs.readFileAsync(filePath, encoding);
     } catch (e) {
       this.logger.error(`error accessing file '${filePath}'`);
@@ -259,7 +259,7 @@ class Commander {
    * @param {string} commandName - Name of the command to log help info.
    */
   help(commandName) {
-    let command = this.interpreter.commands[commandName];
+    let command = this.interpreter.lookup(commandName);
     if (!command) {
       this.logger.error(`Command not found: "${commandName}"`);
       return;

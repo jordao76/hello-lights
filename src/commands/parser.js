@@ -4,14 +4,14 @@ const parser = require('./peg-parser');
 
 class Parser {
 
-  constructor(options = { filePath: null }) {
+  constructor(options = {filePath: null}) {
     this.options = options;
   }
 
   parse(text) {
     this.errors = [];
     try {
-      return parser.parse(text, { formatter: this });
+      return parser.parse(text, {formatter: this});
     } catch (e) {
       this.errors.push(this.formatError(e));
       return null;

@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const util = require('util');
-if (util.promisify) fs.readFileAsync = util.promisify(fs.readFile);
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -15,6 +14,7 @@ const {Cancellable} = require('./cancellable');
 /////////////////////////////////////////////////////////////////////////////
 
 const define = require('./define');
+const $import = require('./import');
 const baseCommands = require('./base-commands');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -36,6 +36,7 @@ class Interpreter {
     if (intrinsics) {
       Object.assign(commandsInScope, {
         ...define.commands, // add the 'define' commands
+        ...$import.commands, // add the 'imports' command
         ...baseCommands.commands // add the base commands
       });
     }
@@ -45,6 +46,14 @@ class Interpreter {
     this.analyzer = new Analyzer(this.scope);
     this.generator = new Generator();
     this.ct = new Cancellable();
+  }
+
+  /**
+   * All commands indexed by their names.
+   * @type {object.<string, commands.Command>}
+   */
+  get commands() {
+    return this.scope.commands;
   }
 
   /**
@@ -62,6 +71,15 @@ class Interpreter {
    */
   add(name, command) {
     this.scope.add(name, command);
+  }
+
+  /**
+   * Looks up a command this interpreter recognizes.
+   * @param {string} name - The command name.
+   * @param {commands.Command} command - The command function or `null` if the command is not found.
+   */
+  lookup(name) {
+    return this.scope.lookup(name);
   }
 
   /**
@@ -90,6 +108,7 @@ class Interpreter {
    *   found in the file.
    */
   async executeFile(filePath, encoding = 'utf8', ctx = {}, ct = this.ct) {
+    if (!fs.readFileAsync) fs.readFileAsync = util.promisify(fs.readFile);
     return this.execute(await fs.readFileAsync(filePath, encoding), ctx, ct);
   }
 
