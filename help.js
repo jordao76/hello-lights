@@ -1,6 +1,9 @@
 const {MetaFormatter} = require('../src/commands/meta-formatter');
 const {CodeFormatter} = require('../src/commands/code-formatter');
 
+const fs = require('fs');
+fs.readFileSync = () => { throw new Error('Reading files only works in "node"'); };
+
 ////////////////////////////////////////////////////////
 
 class WebCodeFormatter extends CodeFormatter {

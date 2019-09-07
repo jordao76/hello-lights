@@ -29,7 +29,7 @@
 <header>
     
         <h2><span class="attribs"><span class="type-signature"></span></span>
-            <span class="ancestors"><a href="commands.html">commands</a>~</span>Interpreter<span class="signature">(commands<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+            <span class="ancestors"><a href="commands.html">commands</a>~</span>Interpreter<span class="signature">(commands<span class="signature-attributes">opt</span>, intrinsics<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
             <div class="class-description">Command interpreter to execute command strings.</div>
         
@@ -46,7 +46,7 @@
     
 
     
-    <h4 class="name" id="Interpreter"><span class="type-signature"></span>new Interpreter<span class="signature">(commands<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Interpreter"><span class="type-signature"></span>new Interpreter<span class="signature">(commands<span class="signature-attributes">opt</span>, intrinsics<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -77,6 +77,8 @@
         <th>Attributes</th>
         
 
+        
+        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -113,8 +115,51 @@
             
 
             
+                <td class="default">
+                
+                </td>
+            
 
-            <td class="description last">Commands this interpreter recognizes.  (Intrinsic commands are already available)</td>
+            <td class="description last">Commands this  interpreter recognizes.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>intrinsics</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    true
+                
+                </td>
+            
+
+            <td class="description last">Whether to add intrinsic commands  to the interpreter scope (like 'define' and 'pause').</td>
         </tr>
 
     
@@ -155,7 +200,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line30">line 30</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line34">line 34</a>
     </li></ul></dd>
     
 
@@ -259,7 +304,79 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line46">line 46</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line63">line 63</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="commands"><span class="type-signature"></span>commands<span class="type-signature"> :object.&lt;string, <a href="commands.html#.Command">commands.Command</a>></span></h4>
+
+
+
+
+<div class="description">
+    All commands indexed by their names.
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">object.&lt;string, <a href="commands.html#.Command">commands.Command</a>></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line55">line 55</a>
     </li></ul></dd>
     
 
@@ -347,7 +464,7 @@
 
             
 
-            <td class="description last">The command name. Should be the same as the command.meta.name property.</td>
+            <td class="description last">The command name.</td>
         </tr>
 
     
@@ -411,7 +528,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line55">line 55</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line72">line 72</a>
     </li></ul></dd>
     
 
@@ -560,7 +677,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line63">line 63</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -773,7 +890,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line98">line 98</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line125">line 125</a>
     </li></ul></dd>
     
 
@@ -1073,7 +1190,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line84">line 84</a>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -1138,6 +1255,166 @@
 
 
         
+            
+
+    
+
+    
+    <h4 class="name" id="lookup"><span class="type-signature"></span>lookup<span class="signature">(name, command)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Looks up a command this interpreter recognizes.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The command name.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>command</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="commands.html#.Command">commands.Command</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The command function or `null` if the command is not found.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="commands_interpreter.js.html">commands/interpreter.js</a>, <a href="commands_interpreter.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
     
 
     
@@ -1159,7 +1436,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Tue Sep 03 2019 17:34:59 GMT-0400 (Eastern Daylight Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Sat Sep 07 2019 09:38:11 GMT-0400 (Eastern Daylight Time)
 </footer>
 
 <script> prettyPrint(); </script>
