@@ -177,7 +177,7 @@ class Commander {
     let tl = this.selector.resolveTrafficLight();
     if (!tl) {
       this.suspended = command;
-      this.logger.log(`no traffic light available to run '${command}'`);
+      this.logger.log('no traffic light available');
       return;
     }
     try {
@@ -191,20 +191,18 @@ class Commander {
 
   async _cancelIfRunningDifferent(command, tl) {
     if (!this.running || this.running === command) return;
-    this.logger.log(`${tl}: cancel '${this.running}'`);
     this.interpreter.cancel();
     await tl.reset();
   }
 
   _skipIfRunningSame(command, tl) {
     if (this.running !== command) return false;
-    this.logger.log(`${tl}: skip '${command}'`);
     return true;
   }
 
   async _execute(command, tl, reset) {
     if (reset) await tl.reset();
-    this.logger.log(`${tl}: running '${command}'`);
+    this.logger.log(`${tl}: running`);
     this.running = command;
     let res = await this.interpreter.execute(command, {tl});
     if (command === this.running) this.running = null;
@@ -215,19 +213,19 @@ class Commander {
   _finishedExecution(command, tl) {
     if (this.isInterrupted || !tl.isEnabled) {
       let state = this.isInterrupted ? 'interrupted' : 'disabled';
-      this.logger.log(`${tl}: ${state}, suspending '${command}'`);
+      this.logger.log(`${tl}: ${state}, suspending running command`);
       this.suspended = command;
       this.isInterrupted = false;
       this._resumeIfNeeded(); // try to resume in another traffic light
     } else {
       this.suspended = null;
-      this.logger.log(`${tl}: finished '${command}'`);
+      this.logger.log(`${tl}: finished`);
     }
   }
 
   _errorInExecution(command, tl, error) {
     if (command === this.running) this.running = null;
-    this.logger.error(`${tl}: error in '${command}'`);
+    this.logger.error(`${tl}: error in command`);
     this.logger.error(error.message);
   }
 
