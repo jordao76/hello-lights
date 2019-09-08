@@ -5,7 +5,7 @@ const util = require('util');
 
 ////////////////////////////////////////////////
 
-const tryRequire = (path) => {
+const tryRequire = path => {
   try {
     return require(path);
   } catch (e) {

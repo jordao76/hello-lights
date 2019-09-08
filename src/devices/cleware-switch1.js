@@ -1,3 +1,4 @@
+const {usbDetector} = require('../physical/usb-detector');
 const {Device, DeviceManager} = require('../physical/device');
 const HID = require('node-hid');
 
@@ -36,51 +37,26 @@ class ClewareSwitch1Device extends Device {
 
 //////////////////////////////////////////////
 
-const noop = () => {};
-const requireUsbDetection = () => {
-  try {
-    return require('usb-detection');
-  } catch (e) {
-    // return a dummy
-    return {
-      startMonitoring: noop,
-      stopMonitoring: noop,
-      on: noop
-    };
-  }
-};
-const usbDetect = requireUsbDetection();
-
-//////////////////////////////////////////////
-
 class ClewareSwitch1DeviceManager extends DeviceManager {
 
   startMonitoring() {
-    if (this._monitoringCount === 0) {
-      usbDetect.startMonitoring();
-    }
-    ++this._monitoringCount;
+    usbDetector.startMonitoring();
   }
 
   stopMonitoring() {
-    if (this._monitoringCount === 0) return;
-    --this._monitoringCount;
-    if (this._monitoringCount === 0) {
-      usbDetect.stopMonitoring();
-    }
+    usbDetector.stopMonitoring();
   }
 
   constructor() {
     super('cleware-switch1');
     this._devicesBySerialNum = {};
-    this._monitoringCount = 0;
 
     this.refreshDevices();
-    usbDetect.on(`add:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
+    usbDetector.on(`add:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
       this.refreshDevices();
       this.emit('added');
     });
-    usbDetect.on(`remove:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
+    usbDetector.on(`remove:${VENDOR_ID}:${SWITCH1_DEVICE}`, () => {
       this.refreshDevices();
       this.emit('removed');
     });
@@ -114,6 +90,10 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
   }
 
   allDevices() {
+    if (!usbDetector.supportsMonitoring()) {
+      // the detector is not detecting....
+      this.refreshDevices();
+    }
     return Object.values(this._devicesBySerialNum);
   }
 
