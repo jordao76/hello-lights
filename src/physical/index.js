@@ -18,5 +18,6 @@ module.exports = {
   DeviceManager,
   RED, YELLOW, GREEN,
   ON, OFF,
-  PhysicalLight, PhysicalTrafficLight
+  PhysicalLight, PhysicalTrafficLight,
+  ...require('./usb-detector')
 };

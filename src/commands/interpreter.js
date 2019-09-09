@@ -36,7 +36,7 @@ class Interpreter {
     if (intrinsics) {
       Object.assign(commandsInScope, {
         ...define.commands, // add the 'define' commands
-        ...$import.commands, // add the 'imports' command
+        ...$import.commands, // add the 'import' command
         ...baseCommands.commands // add the base commands
       });
     }
