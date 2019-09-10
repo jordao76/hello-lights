@@ -33,13 +33,15 @@ class PhysicalTrafficLightSelector extends EventEmitter {
     this.devicesBySerialNum = {};
 
     this.manager.startMonitoring();
-    this.manager.on('added', () =>
+    this.manager.on('added', () => {
+      if (this._device) return; // there's currently a device checked-out
       /**
        * Traffic light enabled event.
-       * Fired for any traffic light that gets enabled.
+       * Only fired if there's currently no checked-out traffic light.
        * @event selectors.PhysicalTrafficLightSelector#enabled
        */
-      this.emit('enabled'));
+      this.emit('enabled');
+    });
   }
 
   /**
@@ -76,15 +78,15 @@ class PhysicalTrafficLightSelector extends EventEmitter {
 
   _registerDeviceIfNeeded(device) {
     let sn = device.serialNum;
-    if (this.devicesBySerialNum[sn]) return;
+    if (this.devicesBySerialNum[sn]) return; // already registered
     this.devicesBySerialNum[sn] = device;
     device.on('disconnected', () => {
-      if (this._device !== device) return;
+      if (this._device !== device) return; // not the current device
       device.trafficLight.checkIn();
       this._device = null;
       /**
        * Traffic light disabled event.
-       * Only fired for the specific traffic light that was checked-out.
+       * Only fired if the specific traffic light that was checked-out was disconnected.
        * @event selectors.PhysicalTrafficLightSelector#disabled
        */
       this.emit('disabled');
