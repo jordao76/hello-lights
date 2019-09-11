@@ -47,6 +47,10 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
     usbDetector.stopMonitoring();
   }
 
+  supportsMonitoring() {
+    return usbDetector.supportsMonitoring();
+  }
+
   constructor() {
     super('cleware-switch1');
     this._devicesBySerialNum = {};
@@ -90,8 +94,7 @@ class ClewareSwitch1DeviceManager extends DeviceManager {
   }
 
   allDevices() {
-    if (!usbDetector.supportsMonitoring()) {
-      // the detector is not detecting....
+    if (!this.supportsMonitoring()) {
       this.refreshDevices();
     }
     return Object.values(this._devicesBySerialNum);

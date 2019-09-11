@@ -81,7 +81,7 @@ class UsbDetector {
 
   /**
    * Whether this detector supports monitoring: if the detector detects.
-   * @returns If the detector supports monitoring - always `true`.
+   * @returns {boolean} If the detector supports monitoring - always `true`.
    */
   supportsMonitoring() {
     return true;

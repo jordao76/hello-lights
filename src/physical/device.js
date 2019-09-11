@@ -93,16 +93,24 @@ class Device extends EventEmitter {
 class DeviceManager extends EventEmitter {
 
   /**
-   * Starts monitoring for devices.
+   * Starts monitoring for devices. No-op by default.
    * @fires physical.DeviceManager#added
    * @fires physical.DeviceManager#removed
    */
   startMonitoring() { }
 
   /**
-   * Stops monitoring for devices.
+   * Stops monitoring for devices. No-op by default.
    */
   stopMonitoring() { }
+
+  /**
+   * If this device manager supports monitoring, `true` by default.
+   * @returns {boolean} If this device manager supports monitoring.
+   */
+  supportsMonitoring() {
+    return true;
+  }
 
   /**
    * @param {string} type - The type of device managed.

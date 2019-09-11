@@ -52,10 +52,12 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
        * @event selectors.PhysicalMultiTrafficLightSelector#interrupted
        */
       this.emit('interrupted'));
-    this.manager.on('added', () => {
-      this._retrieveTrafficLights()
-        .forEach(tl => this.trafficLight.add(tl));
-    });
+    this.manager.on('added', () => this._refreshTrafficLights());
+  }
+
+  _refreshTrafficLights() {
+    this._retrieveTrafficLights()
+      .forEach(tl => this.trafficLight.add(tl));
   }
 
   _setupCommands(interpreter) {
@@ -85,6 +87,9 @@ class PhysicalMultiTrafficLightSelector extends EventEmitter {
    * @returns {trafficLight.FlexMultiTrafficLight} - A multi traffic light, or `null`.
    */
   resolveTrafficLight() {
+    if (!this.manager.supportsMonitoring()) {
+      this._refreshTrafficLights();
+    }
     if (this.trafficLight.isEnabled) return this.trafficLight;
     return null;
   }
