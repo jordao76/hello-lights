@@ -91,7 +91,7 @@ class PhysicalTrafficLight extends TrafficLight {
   }
 
   async reset() {
-    if (!this.device.isConnected) return;
+    if (!this.isConnected) return;
     await Promise.all([
       this.red.turnOff(),
       this.yellow.turnOff(),
@@ -103,7 +103,7 @@ class PhysicalTrafficLight extends TrafficLight {
    * Syncs the physical lights in the device with the state of this instance.
    */
   async sync() {
-    if (!this.device.isConnected) return;
+    if (!this.isConnected) return;
     await Promise.all([
       this.red.sync(),
       this.yellow.sync(),
@@ -113,7 +113,7 @@ class PhysicalTrafficLight extends TrafficLight {
 
   /**
    * If the traffic light is enabled and ready to use.
-   * Checks if the traffic light's device is connected.
+   * Same as `isConnected`.
    * @type {boolean}
    */
   get isEnabled() {
@@ -122,6 +122,7 @@ class PhysicalTrafficLight extends TrafficLight {
 
   /**
    * If the traffic light's device is connected.
+   * Same as `isEnabled`.
    * @type {boolean}
    */
   get isConnected() {
