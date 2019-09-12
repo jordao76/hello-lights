@@ -5,21 +5,20 @@ const util = require('util');
 
 ////////////////////////////////////////////////
 
-const tryRequire = path => {
+function tryRequire(path) {
   try {
     return require(path);
   } catch (e) {
     return {};
   }
-};
+}
 
 ////////////////////////////////////////////////
 
 // The default Selector constructor.
 // This is an optional requirement since when used in a web context
 // it would fail because of further USB-related dependencies.
-// Browserify won't pick it up since the `require` call is encapsulated in
-// `tryRequire`.
+// Browserify won't pick it up since the `require` call is encapsulated in `tryRequire`.
 // If DefaultSelectorCtor is null, then it's a mandatory option to the Commander ctor.
 const DefaultSelectorCtor = tryRequire('./selectors/physical-traffic-light-selector').SelectorCtor;
 
@@ -61,12 +60,6 @@ class Commander {
    * @param {function} [options.SelectorCtor] - The constructor of a traffic
    *   light selector to use. Will be passed the entire `options` object.
    *   Ignored if `options.selector` is set.
-   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
-   *   This is an option for the default `options.SelectorCtor`.
-   * @param {string|number} [options.serialNum] - The serial number of the
-   *   traffic light to use, if available. Cleware USB traffic lights have
-   *   a numeric serial number.
-   *   This is an option for the default `options.SelectorCtor`.
    */
   constructor(options = {}) {
     let {
@@ -83,7 +76,6 @@ class Commander {
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
     this.selector.on('interrupted', () => this._interrupt());
-    this.manager = options.manager || this.selector.manager; // not used by the Commander, exposed for convenient access when needed
   }
 
   /**
@@ -281,18 +273,48 @@ class Commander {
 ////////////////////////////////////////////////
 
 /**
- * Factory for a Commander that deals with multiple traffic lights.
- * It will greedily get all available traffic lights for use and add commands
- * to deal with multiple traffic lights.
+ * Factory for a Commander that deals with a single physical traffic light.
+ * It will get the first available traffic light for use.
  * @param {object} [options] - Commander options.
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
+ * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
+ *   a command.
  * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
- * @returns {Commander} A multi-traffic-light commander.
+ * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+ * @param {string|number} [options.serialNum] - The serial number of the
+ *   traffic light to use, if available. Cleware USB traffic lights have
+ *   a numeric serial number.
+ * @returns {Commander} A single traffic light commander.
+ */
+Commander.single = (options = {}) => {
+  const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
+  const selector = new SelectorCtor(options);
+  const commander = new Commander({...options, selector});
+  commander.manager = selector.manager;
+  return commander;
+};
+
+////////////////////////////////////////////////
+
+/**
+ * Factory for a Commander that deals with multiple physical traffic lights.
+ * It will greedily get all available traffic lights for use.
+ * @param {object} [options] - Commander options.
+ * @param {object} [options.logger=console] - A Console-like object for logging,
+ *   with a log and an error function.
+ * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
+ *   a command.
+ * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
+ * @param {physical.DeviceManager} [options.manager] - The physical Device Manager to use.
+ * @returns {Commander} A multiple traffic lights commander.
  */
 Commander.multi = (options = {}) => {
   const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
-  return new Commander({...options, SelectorCtor});
+  const selector = new SelectorCtor(options);
+  const commander = new Commander({...options, selector});
+  commander.manager = selector.manager;
+  return commander;
 };
 
 ////////////////////////////////////////////////
