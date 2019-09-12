@@ -52,15 +52,15 @@ reset.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-function defineCommands(cp) {
+function defineCommands(interpreter) {
   // add base commands
-  cp.add('toggle', toggle);
-  cp.add('turn', turn);
-  cp.add('reset', reset);
+  interpreter.add('toggle', toggle);
+  interpreter.add('turn', turn);
+  interpreter.add('reset', reset);
   // add other commands
-  require('./morse').defineCommands(cp);
+  require('./morse').defineCommands(interpreter);
   // add higher-level commands
-  require('./traffic-light-commands.cljs')(cp);
+  require('./traffic-light-commands.cljs')(interpreter);
 }
 
 //////////////////////////////////////////////////////////////////////////////

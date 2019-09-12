@@ -2,8 +2,8 @@
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
 ; // rendered as such.
-; module.exports = function(cp) { cp.execute(`
-;---------------------------------------------------------------------------
+; module.exports = function(interpreter) { interpreter.execute(`
+;------------------------------------------------------------------------------
 
 (define lights
   "Set the lights to the given values (on or off):
@@ -14,7 +14,7 @@
     (turn yellow :yellow)
     (turn green  :green)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define flash
   "Flashes a light for the given duration.
@@ -25,7 +25,7 @@
     (toggle :light) (pause :ms)
     (toggle :light) (pause :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define blink
   "Flashes a light for the given number of times and duration for each time:
@@ -34,7 +34,7 @@
   (repeat :times
     (flash :light :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define twinkle
   "Flashes a light for the given duration forever:
@@ -43,7 +43,7 @@
   (loop
     (flash :light :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define cycle
   "Blinks each light in turn for the given duration and number of times,
@@ -55,7 +55,7 @@
     (blink :times yellow :ms)
     (blink :times green  :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define jointly
   "Flashes all lights together forever:
@@ -65,7 +65,7 @@
     (lights on  on  on)  (pause :ms)
     (lights off off off) (pause :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define heartbeat
   "Heartbeat pattern:
@@ -75,7 +75,7 @@
     (blink 2 :light 250)
     (pause 350)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define pulse
   "Single pulse pattern:
@@ -87,7 +87,7 @@
     (toggle :light)
     (pause 1500)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define count
   "Count a number of times repeatedly:
@@ -97,7 +97,7 @@
     (blink :times :light 200)
     (pause 800)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define sos
   "SOS distress signal morse code pattern:
@@ -106,13 +106,13 @@
   (loop
     (morse :light "SOS")))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define danger
   "Twinkle red with 400ms flashes."
   (twinkle red 400))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define up
   "Go up with the given duration:
@@ -123,7 +123,7 @@
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define down
   "Go down with the given duration:
@@ -134,7 +134,7 @@
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle green)  (pause :ms) (toggle green)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define bounce
   "Bounce with the given duration:
@@ -146,7 +146,7 @@
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define activity
   "Time an activity from green (go) to yellow (attention) to red (stop).
@@ -170,4 +170,4 @@
     (timeout :attention-ms (twinkle yellow 500))
     (lights on off off)))
 
-;`); }//--------------------------------------------------------------------
+;`); }//-----------------------------------------------------------------------

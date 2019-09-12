@@ -96,14 +96,14 @@ useAll.meta = {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-function defineCommands(cp) {
+function defineCommands(interpreter) {
   // add multi commands
-  cp.add('use', use);
-  cp.add('use-next', useNext);
-  cp.add('use-previous', usePrevious);
-  cp.add('use-last', useLast);
-  cp.add('use-near', useNear);
-  cp.add('use-all', useAll);
+  interpreter.add('use', use);
+  interpreter.add('use-next', useNext);
+  interpreter.add('use-previous', usePrevious);
+  interpreter.add('use-last', useLast);
+  interpreter.add('use-near', useNear);
+  interpreter.add('use-all', useAll);
 }
 
 //////////////////////////////////////////////////////////////////////////////

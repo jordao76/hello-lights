@@ -20,21 +20,26 @@ const tryRequire = path => {
 // it would fail because of further USB-related dependencies.
 // Browserify won't pick it up since the `require` call is encapsulated in
 // `tryRequire`.
-// If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
-const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
+// If DefaultSelectorCtor is null, then it's a mandatory option to the Commander ctor.
+const DefaultSelectorCtor = tryRequire('./selectors/physical-traffic-light-selector').SelectorCtor;
 
 ////////////////////////////////////////////////
 
-const {Interpreter} = require('./commands/interpreter');
-const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
-// the default command interpreter
-const DefaultInterpreter = new Interpreter();
-defineCommands(DefaultInterpreter);
+function makeDefaultInterpreter() {
+  const {Interpreter} = require('./commands/interpreter');
+  const interpreter = new Interpreter();
+  // define all commands
+  require('./traffic-light/traffic-light-commands').defineCommands(interpreter);
+  require('./traffic-light/multi-traffic-light-commands').defineCommands(interpreter);
+  return interpreter;
+}
 
 ////////////////////////////////////////////////
 
-const {MetaFormatter} = require('./commands/meta-formatter');
-const DefaultFormatter = new MetaFormatter();
+function makeDefaultFormatter() {
+  const {MetaFormatter} = require('./commands/meta-formatter');
+  return new MetaFormatter();
+}
 
 ////////////////////////////////////////////////
 
@@ -52,34 +57,33 @@ class Commander {
    *   a command.
    * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
-   *   Takes precedence over `options.selectorCtor`.
-   * @param {function} [options.selectorCtor] - The constructor of a traffic
+   *   Takes precedence over `options.SelectorCtor`.
+   * @param {function} [options.SelectorCtor] - The constructor of a traffic
    *   light selector to use. Will be passed the entire `options` object.
    *   Ignored if `options.selector` is set.
    * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
-   *   This is an option for the default `options.selectorCtor`.
+   *   This is an option for the default `options.SelectorCtor`.
    * @param {string|number} [options.serialNum] - The serial number of the
    *   traffic light to use, if available. Cleware USB traffic lights have
    *   a numeric serial number.
-   *   This is an option for the default `options.selectorCtor`.
+   *   This is an option for the default `options.SelectorCtor`.
    */
   constructor(options = {}) {
     let {
       logger = console,
-      formatter = DefaultFormatter,
-      interpreter = DefaultInterpreter,
+      formatter = makeDefaultFormatter(),
+      interpreter = makeDefaultInterpreter(),
       selector = null,
-      selectorCtor = SelectorCtor
+      SelectorCtor = DefaultSelectorCtor
     } = options;
     this.logger = logger;
     this.formatter = formatter;
     this.interpreter = interpreter;
-    this.manager = options.manager;
-
-    this.selector = selector || new selectorCtor({...options, logger, interpreter}); // eslint-disable-line new-cap
+    this.selector = selector || new SelectorCtor(options);
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
     this.selector.on('interrupted', () => this._interrupt());
+    this.manager = options.manager || this.selector.manager; // not used by the Commander, exposed for convenient access when needed
   }
 
   /**
@@ -288,8 +292,7 @@ class Commander {
  */
 Commander.multi = (options = {}) => {
   const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
-  let {selectorCtor = SelectorCtor} = options;
-  return new Commander({...options, selectorCtor});
+  return new Commander({...options, SelectorCtor});
 };
 
 ////////////////////////////////////////////////

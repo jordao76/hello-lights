@@ -37,7 +37,7 @@ const logger = {
 const commander = new Commander({
   logger,
   manager: Manager,
-  selectorCtor: SelectorCtor
+  SelectorCtor
 });
 
 /////////////////////////////////////////////////////////////////
