@@ -1,4 +1,4 @@
-let { Light, TrafficLight } = require('../traffic-light/traffic-light');
+const {Light, TrafficLight} = require('../traffic-light/traffic-light');
 
 ///////////////
 

@@ -34,7 +34,7 @@ class FlatScope {
   /**
    * Looks up a command in this scope.
    * @param {string} name - The command name.
-   * @param {commands.Command} command - The command function or `null` if the command is not found.
+   * @returns {commands.Command} - The command function or `null` if the command is not found.
    */
   lookup(name) {
     return this.commands[name];
