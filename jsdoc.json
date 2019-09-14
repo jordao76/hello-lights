@@ -1,0 +1,24 @@
+{
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "opts": {
+    "template": "node_modules/docdash",
+    "package": "./package.json",
+    "readme": "./README.md",
+    "destination": "./web/doc/",
+    "recurse": true
+  },
+  "docdash": {
+    "typedefs": true,
+    "sectionOrder": [
+      "Tutorials",
+      "Namespaces",
+      "Modules",
+      "Interfaces",
+      "Classes",
+      "Mixins",
+      "Externals"
+    ]
+}
+}

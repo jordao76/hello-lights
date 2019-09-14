@@ -29,15 +29,15 @@ let commander = new Commander();
 commander.run('twinkle red 400');
 ```
 
-The `Commander` class documentation can be found [here](https://jordao76.github.io/hello-lights/doc/Commander.html).
+For the `Commander` class documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.3/Commander.html).
 
 ## Commands
 
-Check out the available commands [here](https://jordao76.github.io/hello-lights). For multiple traffic lights (`Commander.multi`) look [here](https://jordao76.github.io/hello-lights/multi.html). You can even create your own with the `define` command.
+Check out the available commands [here](https://jordao76.github.io/hello-lights). For multiple traffic lights (`Commander.multi`) look [here](https://jordao76.github.io/hello-lights/multi.html).
 
 ## Documentation
 
-The JSDoc generated documentation is [here](https://jordao76.github.io/hello-lights/doc).
+For the documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.3/index.html).
 
 ## License
 
