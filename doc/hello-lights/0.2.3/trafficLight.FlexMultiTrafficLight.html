@@ -1,0 +1,2146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>FlexMultiTrafficLight - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="commands.html">commands</a></li><li><a href="physical.html">physical</a></li><li><a href="selectors.html">selectors</a></li><li><a href="trafficLight.html">trafficLight</a></li></ul><h3>Classes</h3><ul><li><a href="Commander.html">Commander</a><ul class='methods'><li data-type='method'><a href="Commander.html#.multi">multi</a></li><li data-type='method'><a href="Commander.html#.single">single</a></li><li data-type='method'><a href="Commander.html#cancel">cancel</a></li><li data-type='method'><a href="Commander.html#close">close</a></li><li data-type='method'><a href="Commander.html#help">help</a></li><li data-type='method'><a href="Commander.html#logInfo">logInfo</a></li><li data-type='method'><a href="Commander.html#run">run</a></li><li data-type='method'><a href="Commander.html#runDefinitions">runDefinitions</a></li><li data-type='method'><a href="Commander.html#runDefinitionsFile">runDefinitionsFile</a></li><li data-type='method'><a href="Commander.html#runFile">runFile</a></li></ul></li><li><a href="commands.Cancellable.html">Cancellable</a><ul class='methods'><li data-type='method'><a href="commands.Cancellable.html#add">add</a></li><li data-type='method'><a href="commands.Cancellable.html#cancel">cancel</a></li><li data-type='method'><a href="commands.Cancellable.html#del">del</a></li></ul></li><li><a href="commands.CodeFormatter.html">CodeFormatter</a><ul class='methods'><li data-type='method'><a href="commands.CodeFormatter.html#format">format</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatCommand">formatCommand</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatComment">formatComment</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatIdentifier">formatIdentifier</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatNumber">formatNumber</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatParens">formatParens</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatSpace">formatSpace</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatString">formatString</a></li><li data-type='method'><a href="commands.CodeFormatter.html#formatVariable">formatVariable</a></li></ul></li><li><a href="commands.Interpreter.html">Interpreter</a><ul class='methods'><li data-type='method'><a href="commands.Interpreter.html#add">add</a></li><li data-type='method'><a href="commands.Interpreter.html#cancel">cancel</a></li><li data-type='method'><a href="commands.Interpreter.html#execute">execute</a></li><li data-type='method'><a href="commands.Interpreter.html#executeFile">executeFile</a></li><li data-type='method'><a href="commands.Interpreter.html#lookup">lookup</a></li></ul></li><li><a href="commands.MetaFormatter.html">MetaFormatter</a><ul class='methods'><li data-type='method'><a href="commands.MetaFormatter.html#format">format</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatBlockTag">formatBlockTag</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatCode">formatCode</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatDesc">formatDesc</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatInlineCode">formatInlineCode</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatInlineTag">formatInlineTag</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatName">formatName</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatParam">formatParam</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatParams">formatParams</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatReturn">formatReturn</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatSignature">formatSignature</a></li><li data-type='method'><a href="commands.MetaFormatter.html#formatTextBlock">formatTextBlock</a></li></ul></li><li><a href="physical.Device.html">Device</a><ul class='methods'><li data-type='method'><a href="physical.Device.html#connect">connect</a></li><li data-type='method'><a href="physical.Device.html#disconnect">disconnect</a></li><li data-type='method'><a href="physical.Device.html#turn">turn</a></li></ul></li><li><a href="physical.DeviceManager.html">DeviceManager</a><ul class='methods'><li data-type='method'><a href="physical.DeviceManager.html#allDevices">allDevices</a></li><li data-type='method'><a href="physical.DeviceManager.html#info">info</a></li><li data-type='method'><a href="physical.DeviceManager.html#logInfo">logInfo</a></li><li data-type='method'><a href="physical.DeviceManager.html#startMonitoring">startMonitoring</a></li><li data-type='method'><a href="physical.DeviceManager.html#stopMonitoring">stopMonitoring</a></li><li data-type='method'><a href="physical.DeviceManager.html#supportsMonitoring">supportsMonitoring</a></li></ul></li><li><a href="physical.NullUsbDetector.html">NullUsbDetector</a><ul class='methods'><li data-type='method'><a href="physical.NullUsbDetector.html#on">on</a></li><li data-type='method'><a href="physical.NullUsbDetector.html#startMonitoring">startMonitoring</a></li><li data-type='method'><a href="physical.NullUsbDetector.html#stopMonitoring">stopMonitoring</a></li><li data-type='method'><a href="physical.NullUsbDetector.html#supportsMonitoring">supportsMonitoring</a></li></ul></li><li><a href="physical.PhysicalLight.html">PhysicalLight</a><ul class='methods'><li data-type='method'><a href="physical.PhysicalLight.html#sync">sync</a></li><li data-type='method'><a href="physical.PhysicalLight.html#toggle">toggle</a></li><li data-type='method'><a href="physical.PhysicalLight.html#turnOff">turnOff</a></li><li data-type='method'><a href="physical.PhysicalLight.html#turnOn">turnOn</a></li></ul></li><li><a href="physical.PhysicalTrafficLight.html">PhysicalTrafficLight</a><ul class='methods'><li data-type='method'><a href="physical.PhysicalTrafficLight.html#checkIn">checkIn</a></li><li data-type='method'><a href="physical.PhysicalTrafficLight.html#checkOut">checkOut</a></li><li data-type='method'><a href="physical.PhysicalTrafficLight.html#reset">reset</a></li><li data-type='method'><a href="physical.PhysicalTrafficLight.html#sync">sync</a></li></ul></li><li><a href="physical.UsbDetector.html">UsbDetector</a><ul class='methods'><li data-type='method'><a href="physical.UsbDetector.html#on">on</a></li><li data-type='method'><a href="physical.UsbDetector.html#startMonitoring">startMonitoring</a></li><li data-type='method'><a href="physical.UsbDetector.html#stopMonitoring">stopMonitoring</a></li><li data-type='method'><a href="physical.UsbDetector.html#supportsMonitoring">supportsMonitoring</a></li></ul></li><li><a href="selectors.PhysicalMultiTrafficLightSelector.html">PhysicalMultiTrafficLightSelector</a><ul class='methods'><li data-type='method'><a href="selectors.PhysicalMultiTrafficLightSelector.html#close">close</a></li><li data-type='method'><a href="selectors.PhysicalMultiTrafficLightSelector.html#logInfo">logInfo</a></li><li data-type='method'><a href="selectors.PhysicalMultiTrafficLightSelector.html#resolveTrafficLight">resolveTrafficLight</a></li></ul></li><li><a href="selectors.PhysicalTrafficLightSelector.html">PhysicalTrafficLightSelector</a><ul class='methods'><li data-type='method'><a href="selectors.PhysicalTrafficLightSelector.html#close">close</a></li><li data-type='method'><a href="selectors.PhysicalTrafficLightSelector.html#logInfo">logInfo</a></li><li data-type='method'><a href="selectors.PhysicalTrafficLightSelector.html#resolveTrafficLight">resolveTrafficLight</a></li></ul></li><li><a href="trafficLight.FlexMultiTrafficLight.html">FlexMultiTrafficLight</a><ul class='methods'><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#add">add</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#checkIn">checkIn</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#checkOut">checkOut</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#last">last</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#near">near</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#next">next</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#previous">previous</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#reset">reset</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#use">use</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#useAll">useAll</a></li><li data-type='method'><a href="trafficLight.FlexMultiTrafficLight.html#using">using</a></li></ul></li><li><a href="trafficLight.Light.html">Light</a><ul class='methods'><li data-type='method'><a href="trafficLight.Light.html#toggle">toggle</a></li><li data-type='method'><a href="trafficLight.Light.html#turnOff">turnOff</a></li><li data-type='method'><a href="trafficLight.Light.html#turnOn">turnOn</a></li></ul></li><li><a href="trafficLight.MultiLight.html">MultiLight</a><ul class='methods'><li data-type='method'><a href="trafficLight.MultiLight.html#toggle">toggle</a></li><li data-type='method'><a href="trafficLight.MultiLight.html#turnOff">turnOff</a></li><li data-type='method'><a href="trafficLight.MultiLight.html#turnOn">turnOn</a></li></ul></li><li><a href="trafficLight.MultiTrafficLight.html">MultiTrafficLight</a><ul class='methods'><li data-type='method'><a href="trafficLight.MultiTrafficLight.html#checkIn">checkIn</a></li><li data-type='method'><a href="trafficLight.MultiTrafficLight.html#checkOut">checkOut</a></li><li data-type='method'><a href="trafficLight.MultiTrafficLight.html#reset">reset</a></li></ul></li><li><a href="trafficLight.TrafficLight.html">TrafficLight</a><ul class='methods'><li data-type='method'><a href="trafficLight.TrafficLight.html#checkIn">checkIn</a></li><li data-type='method'><a href="trafficLight.TrafficLight.html#checkOut">checkOut</a></li><li data-type='method'><a href="trafficLight.TrafficLight.html#reset">reset</a></li></ul></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">FlexMultiTrafficLight</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="trafficLight.html">trafficLight</a>~</span>
+        
+        FlexMultiTrafficLight
+        </h2>
+        
+            <div class="class-description"><p>A composite traffic light with a flexible way to select which composed
+traffic lights are active or in use.</p></div>
+        
+    
+</header>
+
+<article>
+    
+        <div class="container-overview">
+        
+            
+
+    
+    <h2>Constructor</h2>
+    
+
+    <h4 class="name" id="FlexMultiTrafficLight"><span class="type-signature"></span>new FlexMultiTrafficLight<span class="signature">(trafficLights)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line107">line 107</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Creates a new instance of this class.
+Starts off using the first traffic light in the provided <code>trafficLights</code>.
+Tries to check out the provided traffic lights.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>trafficLights</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;<a href="trafficLight.TrafficLight.html">trafficLight.TrafficLight</a>></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Traffic lights composed.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        </div>
+    
+
+    
+        <h3 class="subsection-title">Extends</h3>
+
+        
+
+
+    <ul>
+        <li><a href="trafficLight.TrafficLight.html">trafficLight.TrafficLight</a></li>
+    </ul>
+
+
+    
+
+    
+
+    
+    
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="green"><span class="type-signature"></span>green<span class="type-signature"> :<a href="trafficLight.Light.html">trafficLight.Light</a></span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line62">line 62</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#green">trafficLight.TrafficLight#green</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>The green light.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type"><a href="trafficLight.Light.html">trafficLight.Light</a></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="isAvailable"><span class="type-signature"></span>isAvailable<span class="type-signature"> :boolean</span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line107">line 107</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#isAvailable">trafficLight.TrafficLight#isAvailable</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>If the traffic light is available: enabled and not checked-out.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="isCheckedOut"><span class="type-signature"></span>isCheckedOut<span class="type-signature"> :boolean</span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line67">line 67</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#isCheckedOut">trafficLight.TrafficLight#isCheckedOut</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>If the traffic light is checked-out or reserved.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="isEnabled"><span class="type-signature"></span>isEnabled<span class="type-signature"> :boolean</span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line314">line 314</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#isEnabled">trafficLight.TrafficLight#isEnabled</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>If there are composed traffic lights and any of them is enabled.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="red"><span class="type-signature"></span>red<span class="type-signature"> :<a href="trafficLight.Light.html">trafficLight.Light</a></span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line54">line 54</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#red">trafficLight.TrafficLight#red</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>The red light.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type"><a href="trafficLight.Light.html">trafficLight.Light</a></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id="yellow"><span class="type-signature"></span>yellow<span class="type-signature"> :<a href="trafficLight.Light.html">trafficLight.Light</a></span></h4>
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line58">line 58</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#yellow">trafficLight.TrafficLight#yellow</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>The yellow light.</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type"><a href="trafficLight.Light.html">trafficLight.Light</a></span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="add"><span class="type-signature"></span>add<span class="signature">(trafficLight)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line122">line 122</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Adds a traffic light to the composite.
+Tries to exclusively check it out first and because of that won't add
+any duplicates.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>trafficLight</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="trafficLight.TrafficLight.html">trafficLight.TrafficLight</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Traffic light to add.
+Must not be null.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="checkIn"><span class="type-signature"></span>checkIn<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line99">line 99</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#checkIn">trafficLight.TrafficLight#checkIn</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Checks-in the traffic light, making it available for checking out again.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="checkOut"><span class="type-signature"></span>checkOut<span class="signature">()</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line91">line 91</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#checkOut">trafficLight.TrafficLight#checkOut</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Checks-out or reserve the traffic light for exclusive usage, making it
+unavailable for other users.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>True if the traffic light was successfully checked out.
+False if it was already checked out.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="last"><span class="type-signature"></span>last<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line292">line 292</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects the last traffic light to use.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="near"><span class="type-signature"></span>near<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line265">line 265</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects the nearest traffic light to use, remembering the direction
+of movement (forwards or backwards).
+Also works with multiple selected traffic lights, moving all to the nearest,
+following a single direction (so it's possible to wrap around at the last
+if both the first and last indexes are in use).</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="next"><span class="type-signature"></span>next<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line245">line 245</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects the next traffic light to use, going back to the first one if
+the currently selected one is the last.
+Also works with multiple selected traffic lights, moving all to the next.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="previous"><span class="type-signature"></span>previous<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line254">line 254</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects the previous traffic light to use, going to the last one if
+the currently selected one is the first.
+Also works with multiple selected traffic lights, moving all to the previous.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line306">line 306</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#reset">trafficLight.TrafficLight#reset</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Resets all active traffic lights.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="use"><span class="type-signature"></span>use<span class="signature">(activeIndexes)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line157">line 157</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects which traffic lights to use given their indexes (0-based),
+only considering enabled traffic lights.
+Indexes wrap around from the last to the first.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>activeIndexes</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;number></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Traffic light indexes to use.
+Must not be empty.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="useAll"><span class="type-signature"></span>useAll<span class="signature">()</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line299">line 299</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Selects all traffic lights to use simultaneously.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="using"><span class="type-signature"></span>using<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;number>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line236">line 236</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Gets the traffic light indexes that are in use.
+If there are no traffic lights in use, or no traffic lights are useable,
+returns an empty array.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>The traffic light indexes that are in use.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;number></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+    
+
+    
+
+    
+        <h3 class="subsection-title">Events</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id="event:disabled">disabled</h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line120">line 120</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#event:disabled">trafficLight.TrafficLight#event:disabled</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Traffic light disabled event.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="event:enabled">enabled</h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_traffic-light.js.html">traffic-light/traffic-light.js</a>, <a href="traffic-light_traffic-light.js.html#line115">line 115</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-overrides">Overrides:</dt>
+    <dd class="tag-overrides"><ul class="dummy"><li>
+        <a href="trafficLight.TrafficLight.html#event:enabled">trafficLight.TrafficLight#event:enabled</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Traffic light enabled event.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="event:interrupted">interrupted</h4>
+
+    
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="traffic-light_multi-traffic-light.js.html">traffic-light/multi-traffic-light.js</a>, <a href="traffic-light_multi-traffic-light.js.html#line218">line 218</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+<div class="description">
+    <p>Interrupted event. In a <code>FlexMultiTrafficLight</code>, if an active traffic
+light gets disabled, and there are still enabled traffic lights left,
+this event is raised. If no more traffic lights are enabled,
+then the <code>disabled</code> event is raised.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+</article>
+
+</section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Sat Sep 14 2019 14:24:03 GMT-0400 (Eastern Daylight Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

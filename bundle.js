@@ -1647,36 +1647,40 @@ const util = require('util');
 
 ////////////////////////////////////////////////
 
-const tryRequire = path => {
+function tryRequire(path) {
   try {
     return require(path);
   } catch (e) {
     return {};
   }
-};
+}
 
 ////////////////////////////////////////////////
 
 // The default Selector constructor.
 // This is an optional requirement since when used in a web context
 // it would fail because of further USB-related dependencies.
-// Browserify won't pick it up since the `require` call is encapsulated in
-// `tryRequire`.
-// If SelectorCtor is null, then it's a mandatory option to the Commander ctor.
-const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
+// Browserify won't pick it up since the `require` call is encapsulated in `tryRequire`.
+// If DefaultSelectorCtor is null, then it's a mandatory option to the Commander ctor.
+const DefaultSelectorCtor = tryRequire('./selectors/physical-traffic-light-selector').SelectorCtor;
 
 ////////////////////////////////////////////////
 
-const {Interpreter} = require('./commands/interpreter');
-const {defineCommands} = require('./traffic-light/traffic-light-commands'); // TODO: put this in a base TrafficLightSelector class
-// the default command interpreter
-const DefaultInterpreter = new Interpreter();
-defineCommands(DefaultInterpreter);
+function makeDefaultInterpreter() {
+  const {Interpreter} = require('./commands/interpreter');
+  const interpreter = new Interpreter();
+  // define all commands
+  require('./traffic-light/traffic-light-commands').defineCommands(interpreter);
+  require('./traffic-light/multi-traffic-light-commands').defineCommands(interpreter);
+  return interpreter;
+}
 
 ////////////////////////////////////////////////
 
-const {MetaFormatter} = require('./commands/meta-formatter');
-const DefaultFormatter = new MetaFormatter();
+function makeDefaultFormatter() {
+  const {MetaFormatter} = require('./commands/meta-formatter');
+  return new MetaFormatter();
+}
 
 ////////////////////////////////////////////////
 
@@ -1694,31 +1698,23 @@ class Commander {
    *   a command.
    * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
    * @param {object} [options.selector] - The traffic light selector to use.
-   *   Takes precedence over `options.selectorCtor`.
-   * @param {function} [options.selectorCtor] - The constructor of a traffic
+   *   Takes precedence over `options.SelectorCtor`.
+   * @param {function} [options.SelectorCtor] - The constructor of a traffic
    *   light selector to use. Will be passed the entire `options` object.
    *   Ignored if `options.selector` is set.
-   * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
-   *   This is an option for the default `options.selectorCtor`.
-   * @param {string|number} [options.serialNum] - The serial number of the
-   *   traffic light to use, if available. Cleware USB traffic lights have
-   *   a numeric serial number.
-   *   This is an option for the default `options.selectorCtor`.
    */
   constructor(options = {}) {
     let {
       logger = console,
-      formatter = DefaultFormatter,
-      interpreter = DefaultInterpreter,
+      formatter = makeDefaultFormatter(),
+      interpreter = makeDefaultInterpreter(),
       selector = null,
-      selectorCtor = SelectorCtor
+      SelectorCtor = DefaultSelectorCtor
     } = options;
     this.logger = logger;
     this.formatter = formatter;
     this.interpreter = interpreter;
-    this.manager = options.manager;
-
-    this.selector = selector || new selectorCtor({...options, logger, interpreter}); // eslint-disable-line new-cap
+    this.selector = selector || new SelectorCtor(options);
     this.selector.on('enabled', () => this._resumeIfNeeded());
     this.selector.on('disabled', () => this.cancel());
     this.selector.on('interrupted', () => this._interrupt());
@@ -1919,26 +1915,55 @@ class Commander {
 ////////////////////////////////////////////////
 
 /**
- * Factory for a Commander that deals with multiple traffic lights.
- * It will greedily get all available traffic lights for use and add commands
- * to deal with multiple traffic lights.
+ * Factory for a Commander that deals with a single physical traffic light.
+ * It will get the first available traffic light for use.
  * @param {object} [options] - Commander options.
  * @param {object} [options.logger=console] - A Console-like object for logging,
  *   with a log and an error function.
+ * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
+ *   a command.
  * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
- * @returns {Commander} A multi-traffic-light commander.
+ * @param {physical.DeviceManager} [options.manager] - The Device Manager to use.
+ * @param {string|number} [options.serialNum] - The serial number of the
+ *   traffic light to use, if available. Cleware USB traffic lights have
+ *   a numeric serial number.
+ * @returns {Commander} A single traffic light commander.
+ */
+Commander.single = (options = {}) => {
+  const {SelectorCtor} = tryRequire('./selectors/physical-traffic-light-selector');
+  const selector = new SelectorCtor(options);
+  const commander = new Commander({...options, selector});
+  commander.manager = selector.manager;
+  return commander;
+};
+
+////////////////////////////////////////////////
+
+/**
+ * Factory for a Commander that deals with multiple physical traffic lights.
+ * It will greedily get all available traffic lights for use.
+ * @param {object} [options] - Commander options.
+ * @param {object} [options.logger=console] - A Console-like object for logging,
+ *   with a log and an error function.
+ * @param {commands.MetaFormatter} [options.formatter] - A formatter for the help text of
+ *   a command.
+ * @param {commands.Interpreter} [options.interpreter] - The Command Interpreter to use.
+ * @param {physical.DeviceManager} [options.manager] - The physical Device Manager to use.
+ * @returns {Commander} A multiple traffic lights commander.
  */
 Commander.multi = (options = {}) => {
   const {SelectorCtor} = tryRequire('./selectors/physical-multi-traffic-light-selector');
-  let {selectorCtor = SelectorCtor} = options;
-  return new Commander({...options, selectorCtor});
+  const selector = new SelectorCtor(options);
+  const commander = new Commander({...options, selector});
+  commander.manager = selector.manager;
+  return commander;
 };
 
 ////////////////////////////////////////////////
 
 module.exports = {Commander};
 
-},{"./commands/interpreter":19,"./commands/meta-formatter":20,"./traffic-light/traffic-light-commands":29,"fs":1,"util":7}],9:[function(require,module,exports){
+},{"./commands/interpreter":19,"./commands/meta-formatter":20,"./traffic-light/multi-traffic-light-commands":26,"./traffic-light/traffic-light-commands":29,"fs":1,"util":7}],9:[function(require,module,exports){
 const {and} = require('./validation');
 
 /////////////////////////////////////////////////////////////////////////////
@@ -4857,7 +4882,7 @@ class Interpreter {
   /**
    * Looks up a command this interpreter recognizes.
    * @param {string} name - The command name.
-   * @param {commands.Command} command - The command function or `null` if the command is not found.
+   * @returns {commands.Command} - The command function or `null` if the command is not found.
    */
   lookup(name) {
     return this.scope.lookup(name);
@@ -6217,7 +6242,7 @@ class FlatScope {
   /**
    * Looks up a command in this scope.
    * @param {string} name - The command name.
-   * @param {commands.Command} command - The command function or `null` if the command is not found.
+   * @returns {commands.Command} - The command function or `null` if the command is not found.
    */
   lookup(name) {
     return this.commands[name];
@@ -6402,8 +6427,8 @@ morse.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-function defineCommands(cp) {
-  cp.add('morse', morse);
+function defineCommands(interpreter) {
+  interpreter.add('morse', morse);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -6520,14 +6545,14 @@ useAll.meta = {
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
 
-function defineCommands(cp) {
+function defineCommands(interpreter) {
   // add multi commands
-  cp.add('use', use);
-  cp.add('use-next', useNext);
-  cp.add('use-previous', usePrevious);
-  cp.add('use-last', useLast);
-  cp.add('use-near', useNear);
-  cp.add('use-all', useAll);
+  interpreter.add('use', use);
+  interpreter.add('use-next', useNext);
+  interpreter.add('use-previous', usePrevious);
+  interpreter.add('use-last', useLast);
+  interpreter.add('use-near', useNear);
+  interpreter.add('use-all', useAll);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -6878,8 +6903,8 @@ module.exports = {
 ; // as Clojure (or ClojureScript).
 ; // The commands defined here are NOT Clojure, they just look good
 ; // rendered as such.
-; module.exports = function(cp) { cp.execute(`
-;---------------------------------------------------------------------------
+; module.exports = function(interpreter) { interpreter.execute(`
+;------------------------------------------------------------------------------
 
 (define lights
   "Set the lights to the given values (on or off):
@@ -6890,7 +6915,7 @@ module.exports = {
     (turn yellow :yellow)
     (turn green  :green)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define flash
   "Flashes a light for the given duration.
@@ -6901,7 +6926,7 @@ module.exports = {
     (toggle :light) (pause :ms)
     (toggle :light) (pause :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define blink
   "Flashes a light for the given number of times and duration for each time:
@@ -6910,7 +6935,7 @@ module.exports = {
   (repeat :times
     (flash :light :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define twinkle
   "Flashes a light for the given duration forever:
@@ -6919,7 +6944,7 @@ module.exports = {
   (loop
     (flash :light :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define cycle
   "Blinks each light in turn for the given duration and number of times,
@@ -6931,7 +6956,7 @@ module.exports = {
     (blink :times yellow :ms)
     (blink :times green  :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define jointly
   "Flashes all lights together forever:
@@ -6941,7 +6966,7 @@ module.exports = {
     (lights on  on  on)  (pause :ms)
     (lights off off off) (pause :ms)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define heartbeat
   "Heartbeat pattern:
@@ -6951,7 +6976,7 @@ module.exports = {
     (blink 2 :light 250)
     (pause 350)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define pulse
   "Single pulse pattern:
@@ -6963,7 +6988,7 @@ module.exports = {
     (toggle :light)
     (pause 1500)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define count
   "Count a number of times repeatedly:
@@ -6973,7 +6998,7 @@ module.exports = {
     (blink :times :light 200)
     (pause 800)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define sos
   "SOS distress signal morse code pattern:
@@ -6982,13 +7007,13 @@ module.exports = {
   (loop
     (morse :light "SOS")))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define danger
   "Twinkle red with 400ms flashes."
   (twinkle red 400))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define up
   "Go up with the given duration:
@@ -6999,7 +7024,7 @@ module.exports = {
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle red)    (pause :ms) (toggle red)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define down
   "Go down with the given duration:
@@ -7010,7 +7035,7 @@ module.exports = {
     (toggle yellow) (pause :ms) (toggle yellow)
     (toggle green)  (pause :ms) (toggle green)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define bounce
   "Bounce with the given duration:
@@ -7022,7 +7047,7 @@ module.exports = {
     (toggle red)    (pause :ms) (toggle red)
     (toggle yellow) (pause :ms) (toggle yellow)))
 
-;`);cp.execute(`;-----------------------------------------------------------
+;`);interpreter.execute(`;-----------------------------------------------------
 
 (define activity
   "Time an activity from green (go) to yellow (attention) to red (stop).
@@ -7046,7 +7071,7 @@ module.exports = {
     (timeout :attention-ms (twinkle yellow 500))
     (lights on off off)))
 
-;`); }//--------------------------------------------------------------------
+;`); }//-----------------------------------------------------------------------
 
 },{}],29:[function(require,module,exports){
 //////////////////////////////////////////////////////////////////////////////
@@ -7103,15 +7128,15 @@ reset.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-function defineCommands(cp) {
+function defineCommands(interpreter) {
   // add base commands
-  cp.add('toggle', toggle);
-  cp.add('turn', turn);
-  cp.add('reset', reset);
+  interpreter.add('toggle', toggle);
+  interpreter.add('turn', turn);
+  interpreter.add('reset', reset);
   // add other commands
-  require('./morse').defineCommands(cp);
+  require('./morse').defineCommands(interpreter);
   // add higher-level commands
-  require('./traffic-light-commands.cljs')(cp);
+  require('./traffic-light-commands.cljs')(interpreter);
 }
 
 //////////////////////////////////////////////////////////////////////////////
