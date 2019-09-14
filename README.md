@@ -29,7 +29,7 @@ let commander = new Commander();
 commander.run('twinkle red 400');
 ```
 
-For the `Commander` class documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.4/Commander.html).
+For the `Commander` class documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.5/Commander.html).
 
 ## Commands
 
@@ -37,7 +37,7 @@ Check out the available commands [here](https://jordao76.github.io/hello-lights)
 
 ## Documentation
 
-For the documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.4/index.html).
+For the documentation look [here](https://jordao76.github.io/hello-lights/doc/hello-lights/0.2.5/index.html).
 
 ## License
 
