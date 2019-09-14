@@ -10,6 +10,7 @@
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "scripts": {
+    "version": "npm run mocha-solo ./test/test-README.coffee",
     "predoc": "jsdoc src -c jsdoc.json",
     "doc": "opn web/doc/hello-lights/%npm_package_version%/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
