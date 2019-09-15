@@ -10,10 +10,9 @@
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "scripts": {
-    "version": "npm run mocha-solo ./test/test-README.coffee",
     "postversion": "npm run deploy",
     "predoc": "jsdoc src -c jsdoc.json",
-    "doc": "opn web/doc/hello-lights/%npm_package_version%/index.html",
+    "doc": "opn web/doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
     "peg": "pegjs -o src/commands/peg-parser.js src/commands/grammar.pegjs && pegjs -o src/commands/doc-peg-parser.js src/commands/doc-grammar.pegjs && pegjs -o src/commands/formatter-peg-parser.js src/commands/formatter-grammar.pegjs",
     "mocha-solo": "mocha --require coffeescript/register",

@@ -4,7 +4,6 @@
   ],
   "opts": {
     "template": "node_modules/docdash",
-    "package": "./package.json",
     "readme": "./README.md",
     "destination": "./web/doc/",
     "recurse": true
