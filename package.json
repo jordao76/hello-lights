@@ -11,6 +11,7 @@
   "license": "MIT",
   "scripts": {
     "version": "npm run mocha-solo ./test/test-README.coffee",
+    "postversion": "npm run deploy",
     "predoc": "jsdoc src -c jsdoc.json",
     "doc": "opn web/doc/hello-lights/%npm_package_version%/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
