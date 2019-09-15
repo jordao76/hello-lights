@@ -12,7 +12,7 @@
   "scripts": {
     "postversion": "npm run deploy",
     "predoc": "jsdoc src -c jsdoc.json",
-    "doc": "opn web/doc/index.html",
+    "doc": "open-cli web/doc/index.html",
     "lint": "coffeelint -f coffeelint.json test && eslint src web dev",
     "peg": "pegjs -o src/commands/peg-parser.js src/commands/grammar.pegjs && pegjs -o src/commands/doc-peg-parser.js src/commands/doc-grammar.pegjs && pegjs -o src/commands/formatter-peg-parser.js src/commands/formatter-grammar.pegjs",
     "mocha-solo": "mocha --require coffeescript/register",
@@ -21,10 +21,10 @@
     "pretest": "npm run peg",
     "test": "npm run mocha",
     "precoverage": "nyc npm run test",
-    "coverage": "nyc report --reporter=html && opn coverage/index.html",
+    "coverage": "nyc report --reporter=html && open-cli coverage/index.html",
     "browserify": "browserify web/main.js -o web/bundle.js",
     "preweb": "npm run peg && npm run browserify",
-    "web": "opn web/index.html",
+    "web": "open-cli web/index.html",
     "predeploy": "npm run test && npm run browserify && npm run predoc",
     "deploy": "gh-pages -d web",
     "cpy-lib": "cpy \"**/*.*\" \"!*.pegjs\" ../lib/ --cwd=src --parents",
@@ -44,14 +44,14 @@
     "coffeescript": "^2.4.1",
     "cpy-cli": "^2.0.0",
     "docdash": "^1.1.1",
-    "eslint": "^5.16.0",
+    "eslint": "^6.4.0",
     "gh-pages": "^2.1.1",
     "jsdoc": "^3.6.3",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.0",
     "nyc": "^14.1.1",
-    "opn-cli": "^3.1.0",
+    "open-cli": "^5.0.0",
     "pegjs": "^0.10.0",
-    "sinon": "^7.4.1"
+    "sinon": "^7.4.2"
   },
   "dependencies": {
     "node-hid": "^0.7.9"
