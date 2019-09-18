@@ -136,5 +136,5 @@ describe 'Return values', () ->
       @analyzer.errors.should.deep.equal [
         type: 'error'
         loc: '1:8-1:21'
-        text: 'Bad call to "concat" for "sum" parameter 1 ("num"), must be a number'
+        text: 'Bad call to "concat" for "sum" parameter 1 ("num"), expected: a number'
       ]

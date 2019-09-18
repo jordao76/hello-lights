@@ -133,14 +133,14 @@ describe 'Command Analyzer - import', () ->
     it 'import file path must not be a variable', () ->
       @analyze 'import :a-variable'
       @analyzer.errors.length.should.equal 1
-      @analyzer.errors[0].text.should.equal 'Bad value ":a-variable" to "import" parameter 1 ("file-path"), must be a string'
+      @analyzer.errors[0].text.should.equal 'Bad value ":a-variable" to "import" parameter 1 ("file-path"), expected: string'
       @analyzer.errors[0].loc.should.equal '1:8-1:18'
 
     it 'import file path must not be a string-returning command', () ->
       act = @analyze 'import (file-path)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad call to "file-path" for "import" parameter 1 ("file-path"), must be a string'
+        text: 'Bad call to "file-path" for "import" parameter 1 ("file-path"), expected: string'
         loc: '1:9-1:17'
       ]
 

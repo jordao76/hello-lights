@@ -1,5 +1,7 @@
 require '../setup-unhandled-rejection'
 {
+  number,
+  options,
   isIdentifier,
   isString,
   isNumber,
@@ -7,6 +9,50 @@ require '../setup-unhandled-rejection'
 } = require('../../src/commands').validation
 chai = require 'chai'
 should = chai.should()
+
+describe 'Command validation factories', () ->
+
+  it 'number', () ->
+    isNumber = number()
+    isNumber(123).should.be.true
+    isNumber("123").should.be.false
+    isNumber.type.should.equal 'number'
+    isNumber.exp.should.equal 'number'
+
+    isMs = number('ms', 70)
+    isMs(123).should.be.true
+    isMs(70).should.be.true
+    isMs(69).should.be.false
+    isMs.min.should.equal 70
+    isMs.type.should.equal 'ms'
+    isMs.exp.should.equal 'ms [70,+∞]'
+
+    isTemp = number('temp', -273, 10000)
+    isTemp(123).should.be.true
+    isTemp(-273).should.be.true
+    isTemp(-274).should.be.false
+    isTemp(10000).should.be.true
+    isTemp(10001).should.be.false
+    isTemp.min.should.equal -273
+    isTemp.max.should.equal 10000
+    isTemp.type.should.equal 'temp'
+    isTemp.exp.should.equal 'temp [-273,10000]'
+
+    isGrade = number('grade', null, 10)
+    isGrade(-273).should.be.true
+    isGrade(10).should.be.true
+    isGrade(11).should.be.false
+    isGrade.max.should.equal 10
+    isGrade.type.should.equal 'grade'
+    isGrade.exp.should.equal 'grade [-∞,10]'
+
+  it 'options', () ->
+    isLight = options 'light', ['red','green','yellow']
+    isLight('red').should.be.true
+    isLight('green').should.be.true
+    isLight('rouge').should.be.false
+    isLight.type.should.equal 'light'
+    isLight.exp.should.equal '"red" or "green" or "yellow"'
 
 describe 'Command validations', () ->
 

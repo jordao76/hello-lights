@@ -148,7 +148,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'def 42 (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value "42" to "def" parameter 1 ("name"), must be a valid identifier'
+        text: 'Bad value "42" to "def" parameter 1 ("name"), expected: identifier'
         loc: '1:5-1:6'
       ]
 
@@ -156,7 +156,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'def :name (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value ":name" to "def" parameter 1 ("name"), must be a valid identifier'
+        text: 'Bad value ":name" to "def" parameter 1 ("name"), expected: identifier'
         loc: '1:5-1:9'
       ]
 
@@ -164,7 +164,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'def (name) (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad call to "name" for "def" parameter 1 ("name"), must be a valid identifier'
+        text: 'Bad call to "name" for "def" parameter 1 ("name"), expected: identifier'
         loc: '1:6-1:9'
       ]
 
@@ -180,7 +180,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'do (def :var (turn north))'
       @analyzer.errors.should.deep.equal [
         { type: 'error', text: '"def" cannot be nested', loc: '1:5-1:25' }
-        { type: 'error', text: 'Bad value ":var" to "def" parameter 1 ("name"), must be a valid identifier', loc: '1:9-1:12' }
+        { type: 'error', text: 'Bad value ":var" to "def" parameter 1 ("name"), expected: identifier', loc: '1:9-1:12' }
       ]
 
     it 'cannot redefine def', () ->
@@ -193,7 +193,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'def turn-north (do (turning north))' # turning doesn't exist
       @analyzer.errors.should.deep.equal [
         { type: 'error', text: 'Command not found: "turning"', loc: '1:21-1:33' }
-        { type: 'error', text: 'Bad call to "turning" for "do" parameter 1 ("commands"), must be a command', loc: '1:21-1:33' }
+        { type: 'error', text: 'Bad call to "turning" for "do" parameter 1 ("commands"), expected: command', loc: '1:21-1:33' }
       ]
 
     it 'defined command as a variable', () ->
@@ -263,7 +263,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'define 42 "The answer" (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value "42" to "define" parameter 1 ("name"), must be a valid identifier'
+        text: 'Bad value "42" to "define" parameter 1 ("name"), expected: identifier'
         loc: '1:8-1:9'
       ]
 
@@ -271,7 +271,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'define :name "Description" (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value ":name" to "define" parameter 1 ("name"), must be a valid identifier'
+        text: 'Bad value ":name" to "define" parameter 1 ("name"), expected: identifier'
         loc: '1:8-1:12'
       ]
 
@@ -279,7 +279,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'define turn-north :doc (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad value ":doc" to "define" parameter 2 ("description"), must be a string'
+        text: 'Bad value ":doc" to "define" parameter 2 ("description"), expected: string'
         loc: '1:19-1:22'
       ]
 
@@ -287,7 +287,7 @@ describe 'Command Analyzer - define', () ->
       act = @analyze 'define turn-north (description) (turn north)'
       @analyzer.errors.should.deep.equal [
         type: 'error'
-        text: 'Bad call to "description" for "define" parameter 2 ("description"), must be a string'
+        text: 'Bad call to "description" for "define" parameter 2 ("description"), expected: string'
         loc: '1:20-1:30'
       ]
 

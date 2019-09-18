@@ -5,8 +5,11 @@
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isNumber,
-  isCommand
+  isCommand,
+  isMs,
+  isSeconds,
+  isMinutes,
+  isTimes
 } = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
@@ -55,7 +58,7 @@ function pause(ctx, params) {
 }
 pause.meta = {
   name: 'pause',
-  params: [{ name: 'ms', validate: isNumber }],
+  params: [{ name: 'ms', validate: isMs }],
   desc: `Pauses execution for the given duration in milliseconds.`
 };
 
@@ -81,7 +84,7 @@ async function timeout(ctx, [ms, command]) {
 timeout.meta = {
   name: 'timeout',
   params: [
-    { name: 'ms', validate: isNumber },
+    { name: 'ms', validate: isMs },
     { name: 'command', validate: isCommand }
   ],
   desc: `
@@ -97,8 +100,8 @@ function ms(ctx, [ms]) {
 }
 ms.meta = {
   name: 'ms',
-  params: [{ name: 'ms', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'ms', validate: isMs }],
+  returns: isMs,
   desc: `Returns the given number of milliseconds (an identity function).`
 };
 
@@ -107,8 +110,8 @@ function seconds(ctx, [sec]) {
 }
 seconds.meta = {
   name: 'seconds',
-  params: [{ name: 'sec', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'seconds', validate: isSeconds }],
+  returns: isMs,
   desc: `Converts the given number of seconds to milliseconds.`
 };
 
@@ -117,8 +120,8 @@ function minutes(ctx, [min]) {
 }
 minutes.meta = {
   name: 'minutes',
-  params: [{ name: 'min', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'minutes', validate: isMinutes }],
+  returns: isMs,
   desc: `Converts the given number of minutes to milliseconds.`
 };
 
@@ -178,7 +181,7 @@ async function repeat(ctx, [times, ...commands]) {
 repeat.meta = {
   name: 'repeat',
   params: [
-    { name: 'times', validate: isNumber },
+    { name: 'times', validate: isTimes },
     { name: 'command', validate: isCommand, isRest: true }
   ],
   desc: `

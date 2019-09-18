@@ -45,4 +45,8 @@
  * @returns {boolean} If the validation succeeds or not.
  * @property {string} exp - The expected value for this validation function to
  *   succeed. Used in error messages.
+ * @property {string} type - A representation of the "type" of value being validated.
+ * @property {number} [min] - The minimum value allowed (for numbers).
+ * @property {number} [max] - The maximum value allowed (for numbers).
+ * @property {string[]} [options] - The options allowed (like an enum).
  */

@@ -80,7 +80,7 @@ describe 'Command Analyzer', () ->
     @isValidForTurn.calledOnceWith('forth').should.be.true
     @analyzer.errors.should.deep.equal [
       type: 'error'
-      text: 'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
+      text: 'Bad value "forth" to "turn" parameter 1 ("direction"), expected: a good turn'
       loc: '1:6-1:10'
     ]
 
@@ -98,7 +98,7 @@ describe 'Command Analyzer', () ->
     @isValidForTurn.calledOnceWith(@do).should.be.true
     @analyzer.errors.should.deep.equal [
       type: 'error'
-      text: 'Bad call to "do" for "turn" parameter 1 ("direction"), must be a good turn'
+      text: 'Bad call to "do" for "turn" parameter 1 ("direction"), expected: a good turn'
       loc: '1:7-1:10'
     ]
 
@@ -204,7 +204,7 @@ describe 'Command Analyzer', () ->
     @analyzer.errors.should.deep.equal [
       {
         type: 'error'
-        text: 'Bad value "forth" to "turn" parameter 1 ("direction"), must be a good turn'
+        text: 'Bad value "forth" to "turn" parameter 1 ("direction"), expected: a good turn'
         loc: '1:11-1:15'
       }
       {
@@ -260,12 +260,12 @@ describe 'Command Analyzer', () ->
     @analyzer.errors.should.deep.equal [
       {
         type: 'error'
-        text: 'Bad value "1" to "do" parameter 1 ("rest"), must be a good value'
+        text: 'Bad value "1" to "do" parameter 1 ("rest"), expected: a good value'
         loc: '1:4-1:4'
       }
       {
         type: 'error'
-        text: 'Bad value "2" to "do" parameter 1 ("rest"), must be a good value'
+        text: 'Bad value "2" to "do" parameter 1 ("rest"), expected: a good value'
         loc: '1:6-1:6'
       }
     ]
@@ -399,8 +399,8 @@ describe 'Command Analyzer', () ->
     @isValidP3.withArgs(43).returns false
     @analyze 'mixed "some value" 42 asdf 43'
     @analyzer.errors.should.deep.equal [
-      { loc: '1:20-1:21', text: 'Bad value "42" to "mixed" parameter 2 ("p2"), must be a good P2', type: 'error' }
-      { loc: '1:28-1:29', text: 'Bad value "43" to "mixed" parameter 3 ("p3"), must be a good P3', type: 'error' }
+      { loc: '1:20-1:21', text: 'Bad value "42" to "mixed" parameter 2 ("p2"), expected: a good P2', type: 'error' }
+      { loc: '1:28-1:29', text: 'Bad value "43" to "mixed" parameter 3 ("p3"), expected: a good P3', type: 'error' }
     ]
 
   describe 'macros', () ->

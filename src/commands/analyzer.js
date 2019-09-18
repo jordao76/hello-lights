@@ -181,8 +181,8 @@ const badArity = (name, exp, act, loc) => ({
 const badValue = (node, paramIdx, arg) => {
   let param = node.value.meta.params[paramIdx];
   let text = isCommand(arg)
-    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
-    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`;
+    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx + 1} ("${param.name}"), expected: ${param.validate.exp}`
+    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx + 1} ("${param.name}"), expected: ${param.validate.exp}`;
   return { type: 'error', loc: arg.loc, text };
 };
 

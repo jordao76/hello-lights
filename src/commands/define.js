@@ -123,7 +123,7 @@ const badVariable = (node, arg, paramIdx) => {
   return {
     type: 'error',
     loc: arg.loc,
-    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), expected: ${param.validate.exp}`
   };
 };
 
