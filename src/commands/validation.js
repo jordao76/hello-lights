@@ -1,11 +1,11 @@
 //////////////////////////////////////////////////////////////////////////////
-// Validation functions factories
+// Validation function factories
 //////////////////////////////////////////////////////////////////////////////
 
-const type = t => {
-  const v = e => typeof e === t; // eslint-disable-line valid-typeof
-  v.exp = t;
-  v.type = t;
+const type = (t, b = t) => {
+  const v = e => typeof e === b; // eslint-disable-line valid-typeof
+  v.exp = v.type = t;
+  v.base = b;
   return v;
 };
 
@@ -18,16 +18,17 @@ const number = (t = 'number', min = null, max = null) => {
     if (hasMax && n > max) return false;
     return true;
   };
-  v.exp = t;
+  v.base = 'number';
+  v.exp = v.type = t;
   if (hasMin || hasMax) v.exp += ` [${hasMin?min:'-∞'},${hasMax?max:'+∞'}]`;
   if (hasMin) v.min = min;
   if (hasMax) v.max = max;
-  v.type = t;
   return v;
 };
 
 const options = (t, l) => {
   const v = e => l.indexOf(e) >= 0;
+  v.base = typeof l[0]; // e.g. "string"
   v.exp = `"${l.join('" or "')}"`;
   v.type = t;
   v.options = l;
@@ -38,6 +39,7 @@ const and = (...vfs) => {
   vfs = [...new Set(vfs)]; // remove duplicates
   if (vfs.length === 1) return vfs[0];
   const v = e => vfs.every(vf => vf(e));
+  v.base = 'object';
   v.exp = vfs.map(vf => vf.exp).join(' and ');
   return v;
 };
@@ -54,16 +56,16 @@ const isIdentifier = s =>
   /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
 isIdentifier.exp = 'identifier';
 
-const isNumber = number();
-
 const isString = type('string');
 
-const isCommand = type('function');
-isCommand.exp = 'command';
+const isCommand = type('command', 'function');
 
-const isMs = number('ms', 1);
+// time-based
+const isMs = number('ms', 70); // arbitrary lower limit for milliseconds
 const isSeconds = number('second', 1);
 const isMinutes = number('minute', 1);
+
+// number of times
 const isTimes = number('times', 1);
 
 //////////////////////////////////////////////////////////////////////////////
@@ -75,7 +77,6 @@ module.exports = {
   and,
   isIdentifier,
   isString,
-  isNumber,
   isCommand,
   isMs,
   isSeconds,

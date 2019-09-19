@@ -46,6 +46,7 @@
  * @property {string} exp - The expected value for this validation function to
  *   succeed. Used in error messages.
  * @property {string} type - A representation of the "type" of value being validated.
+ * @property {string} base - The base JavaScript type for the value: "string", "number", "boolean", etc.
  * @property {number} [min] - The minimum value allowed (for numbers).
  * @property {number} [max] - The maximum value allowed (for numbers).
  * @property {string[]} [options] - The options allowed (like an enum).
