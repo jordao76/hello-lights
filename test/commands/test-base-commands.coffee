@@ -31,7 +31,7 @@ describe 'Base Commands', () ->
       it 'should pause for 500ms', (done) ->
         paused = false
         run = () ->
-          await c.pause [500]
+          await c.pause {}, [500]
           paused = true
         run().then () ->
           paused.should.be.true
@@ -42,7 +42,7 @@ describe 'Base Commands', () ->
       it 'should be cancellable', (done) ->
         paused = false
         run = () ->
-          await c.pause [5000]
+          await c.pause {}, [5000]
           paused = true
         run().then () ->
           paused.should.be.true
@@ -168,7 +168,8 @@ describe 'Base Commands', () ->
 
       it 'should execute the given commands in a loop, cancel to break out of the loop (default cancellable)', () ->
         c1 = sinon.stub()
-        c2 = sinon.stub().callsFake () ->
+        c2 = sinon.stub().callsFake ({$trap}) ->
+          $trap.inc() # increment the busy-loop trap so as not to trigger it (simulate a pause call)
           c1.callsFake ({ct}) ->
             # cancel after the first pass
             c.cancel {ct}
@@ -179,13 +180,25 @@ describe 'Base Commands', () ->
       it 'should execute the given commands in a loop, cancel to break out of the loop (custom cancellable)', () ->
         cancellable = new Cancellable
         c1 = sinon.stub()
-        c2 = sinon.stub().callsFake () ->
+        c2 = sinon.stub().callsFake ({$trap}) ->
+          $trap.inc() # increment the busy-loop trap so as not to trigger it (simulate a pause call)
           c1.callsFake ({ct}) ->
             # cancel after the first pass
             ct.should.equal cancellable
             c.cancel {ct}
         await c.loop {ct: cancellable}, [c1, c2]
         c1.callCount.should.equal 2
+        c2.callCount.should.equal 1
+
+      it 'should detect a busy loop (a loop where pause is not called) and raise an error', () ->
+        c1 = sinon.stub()
+        c2 = sinon.stub()
+        try
+          await c.loop {}, [c1, c2]
+          true.should.equal.false # it's an error if an exception is NOT raised
+        catch e
+          e.message.should.equal 'Busy loop detected! Did you forget to call "pause"?'
+        c1.callCount.should.equal 1
         c2.callCount.should.equal 1
 
       it 'should NOT run when cancelled', () ->
@@ -200,7 +213,8 @@ describe 'Base Commands', () ->
     describe 'repeat', () ->
 
       it 'should execute the given commands in sequence twice', () ->
-        c1 = sinon.stub()
+        c1 = sinon.stub().callsFake ({$trap}) ->
+          $trap.inc() # increment the busy-loop trap so as not to trigger it (simulate a pause call)
         c2 = sinon.stub()
         await c.repeat {}, [2, c1, c2]
         c1.callCount.should.equal 2

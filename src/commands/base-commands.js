@@ -13,6 +13,48 @@ const {
 } = require('./validation');
 
 //////////////////////////////////////////////////////////////////////////////
+// Busy-loop trap
+//////////////////////////////////////////////////////////////////////////////
+// It's OK for a command to have an infinite loop, as long as `pause` is
+// called within the loop. If `pause` is not called, the loop is deemed a
+// busy-loop, and would hang the main JavaScript thread.
+//////////////////////////////////////////////////////////////////////////////
+
+// trap busy loops: no calls to pause in an infinite loop-pass
+class Trap {
+
+  constructor() {
+    // stores the total count of calls to `pause`
+    this.count = 0;
+  }
+
+  // `pause` calls `inc()` to indicate it was called
+  inc() {
+    // with ~100ms pauses it would take 28.5 million years to reach Number.MAX_SAFE_INTEGER and fail
+    // 9007199254740991(MAX_SAFE_INTEGER) * 100(ms) / 1000(s) / 60(min) / 60(h) / 24(d) / 365(y)
+    ++this.count;
+  }
+
+  // marks the start of a loop-pass, remember the number of times `pause` was called
+  mark() {
+    this.cmp = this.count;
+  }
+
+  // checks at the end of a loop-pass if `pause` was called or not
+  check(ct) {
+    if (this.count === this.cmp) {
+      // no calls to pause mean this is a busy-loop,
+      // cancel it and raise an exception
+      cancel({ct}); // calling `ct.cancel()` would not refresh the default `cancellable`
+      throw new Error('Busy loop detected! Did you forget to call "pause"?');
+    }
+  }
+
+}
+
+const getTrap = ctx => ctx.$trap = ctx.$trap || new Trap();
+
+//////////////////////////////////////////////////////////////////////////////
 // Base commands
 //////////////////////////////////////////////////////////////////////////////
 
@@ -42,14 +84,12 @@ cancel.meta = {
 // Returns a Promise that resolves when the pause duration is complete,
 // or if it's cancelled. Even if the pause is cancelled, the Promise
 // is resolved, never rejected.
-function pause(ctx, params) {
-  // allow the first parameter to be omitted
-  // => pause({ct}, [500]) OR pause([500])
-  let ct = ctx.ct || cancellable;
+function pause(ctx, [ms]) {
+  getTrap(ctx).inc();
+  const ct = ctx.ct || cancellable;
   if (ct.isCancelled) return;
-  let [ms] = params || ctx;
   return new Promise(resolve => {
-    let timeoutID = setTimeout(() => {
+    const timeoutID = setTimeout(() => {
       ct.del(timeoutID);
       resolve();
     }, ms);
@@ -59,7 +99,7 @@ function pause(ctx, params) {
 pause.meta = {
   name: 'pause',
   params: [{ name: 'ms', validate: isMs }],
-  desc: `Pauses execution for the given duration in milliseconds.`
+  desc: 'Pauses execution for the given duration in milliseconds.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -128,10 +168,10 @@ minutes.meta = {
 //////////////////////////////////////////////////////////////////////////////
 
 async function $do(ctx, [...commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
+  const {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
-    let command = commands[i];
+    const command = commands[i];
     await command({...ctx, ct, scope});
   }
 }
@@ -149,11 +189,25 @@ $do.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop(ctx, params) {
-  let {ct = cancellable, scope = {}} = ctx;
+// a single loop pass through a series of commands that checks for a busy-loop;
+// returns `true` to break out of the loop, `false` to continue
+// throws if it's a busy-loop in `trap.check()`
+async function loopPass(ctx, commands) {
+  const {ct = cancellable, scope = {}} = ctx;
+  const trap = getTrap(ctx);
+  trap.mark();
+  if (ct.isCancelled) return true;
+  await $do({...ctx, ct, scope}, commands);
+  if (ct.isCancelled) return true;
+  trap.check(ct);
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function loop(ctx, commands) {
   while (true) {
-    if (ct.isCancelled) return;
-    await $do({...ctx, ct, scope}, params);
+    if (await loopPass(ctx, commands)) return;
   }
 }
 loop.meta = {
@@ -172,10 +226,8 @@ loop.meta = {
 //////////////////////////////////////////////////////////////////////////////
 
 async function repeat(ctx, [times, ...commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
   while (times-- > 0) {
-    if (ct.isCancelled) return;
-    await $do({...ctx, ct, scope}, [...commands]);
+    if (await loopPass(ctx, commands)) return;
   }
 }
 repeat.meta = {

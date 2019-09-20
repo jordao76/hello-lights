@@ -24,7 +24,7 @@ function exec({root, node, scope, descIdx, commandIdx}) {
 
   let [command] = new Generator().generate([commandNode]);
   let res = (ctx, args) => {
-    let {scope = {}} = ctx;
+    let {scope = {}} = ctx; // this is the parameters scope, NOT the higher level commands scope
     params.forEach((param, i) => scope[param.name] = args[i]);
     return command({...ctx, scope});
   };

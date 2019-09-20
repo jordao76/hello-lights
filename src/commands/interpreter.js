@@ -123,18 +123,20 @@ class Interpreter {
    * @returns {object[]} Array with the results of the executions of the commands.
    */
   async execute(text, ctx = {}, ct = this.ct) {
-    let commands = this.process(text);
+    const commands = this.process(text);
 
-    let res = [];
-    for (let i = 0; i < commands.length; ++i) {
-      if (ct.isCancelled) break;
-      let command = commands[i];
-      res.push(await command({...ctx, ct}));
-    }
-
-    if (ct === this.ct && ct.isCancelled) {
-      // this.ct was cancelled, so re-instantiate it
-      this.ct = new Cancellable();
+    const res = [];
+    try {
+      for (let i = 0; i < commands.length; ++i) {
+        if (ct.isCancelled) break;
+        const command = commands[i];
+        res.push(await command({...ctx, ct}));
+      }
+    } finally {
+      if (ct === this.ct && ct.isCancelled) {
+        // this.ct was cancelled, so re-instantiate it
+        this.ct = new Cancellable();
+      }
     }
 
     return res;

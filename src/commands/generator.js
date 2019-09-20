@@ -52,7 +52,7 @@ const resolve = (ctx, params, args) =>
   args.map((arg, i) => {
 
     if (isVar(arg)) {
-      // lookup a variable in the scope
+      // lookup a variable in the parameters scope
       return ctx.scope[arg.name];
     }
 
