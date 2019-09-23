@@ -1,15 +1,36 @@
+/**
+ * Command validation functions and utils.
+ * @namespace validation
+ * @memberof commands
+ */
+
 //////////////////////////////////////////////////////////////////////////////
 // Validation function factories
 //////////////////////////////////////////////////////////////////////////////
 
-const type = (t, b = t) => {
-  const v = e => typeof e === b; // eslint-disable-line valid-typeof
-  v.exp = v.type = t;
-  v.base = b;
+/**
+ * A factory for a validation function based on a type.
+ * @memberof commands.validation
+ * @param {string} type - "Type" of the validation function. Any text that represents this type.
+ * @param {string} [base=type] - Base JavaScript type: "string", "number", "boolean", etc.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeType = (type, base = type) => {
+  const v = e => typeof e === base; // eslint-disable-line valid-typeof
+  v.exp = v.type = type;
+  v.base = base;
   return v;
 };
 
-const number = (t = 'number', min = null, max = null) => {
+/**
+ * A factory for a validation function based on a number.
+ * @memberof commands.validation
+ * @param {string} [type='number'] - "Type" of the validation function. Any text that represents this type.
+ * @param {number} [min] - Minimum value.
+ * @param {number} [max] - Maximum value.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeNumber = (type = 'number', min = null, max = null) => {
   const hasMin = typeof min === 'number';
   const hasMax = typeof max === 'number';
   const v = n => {
@@ -19,22 +40,36 @@ const number = (t = 'number', min = null, max = null) => {
     return true;
   };
   v.base = 'number';
-  v.exp = v.type = t;
+  v.exp = v.type = type;
   if (hasMin || hasMax) v.exp += ` [${hasMin?min:'-∞'},${hasMax?max:'+∞'}]`;
   if (hasMin) v.min = min;
   if (hasMax) v.max = max;
   return v;
 };
 
-const options = (t, l) => {
-  const v = e => l.indexOf(e) >= 0;
-  v.base = typeof l[0]; // e.g. "string"
-  v.exp = `"${l.join('" or "')}"`;
-  v.type = t;
-  v.options = l;
+/**
+ * A factory for a validation function based on a number of string options.
+ * @memberof commands.validation
+ * @param {string} type - "Type" of the validation function. Any text that represents this type.
+ * @param {string[]} options - Options the validation function accepts. Must not be empty.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeOptions = (type, options) => {
+  const v = e => options.indexOf(e) >= 0;
+  v.base = 'string';
+  v.exp = `"${options.join('" or "')}"`;
+  v.type = type;
+  v.options = options;
   return v;
 };
 
+/**
+ * A factory for a validation function that combines other validation functions with "and".
+ * @memberof commands.validation
+ * @package
+ * @param {...commands.Validate} vfs - Validation functions to combine.
+ * @returns {commands.Validate} Combined validation function.
+ */
 const and = (...vfs) => {
   vfs = [...new Set(vfs)]; // remove duplicates
   if (vfs.length === 1) return vfs[0];
@@ -48,6 +83,12 @@ const and = (...vfs) => {
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
+/**
+ * A validation function for an identifier.
+ * @memberof commands.validation
+ * @param {string} s - String to test.
+ * @returns {boolean} If the input is a valid identifier.
+ */
 const isIdentifier = s =>
   // A negative look behind to check for a string that does NOT end with a dash
   // is only supported on node 8.9.4 with the --harmony flag
@@ -56,24 +97,60 @@ const isIdentifier = s =>
   /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
 isIdentifier.exp = 'identifier';
 
-const isString = type('string');
+/**
+ * A validation function for a string.
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is of type 'string'.
+ */
+const isString = makeType('string');
 
-const isCommand = type('command', 'function');
+/**
+ * A validation function for a command.
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is of type 'function', assumed to be a command function.
+ */
+const isCommand = makeType('command', 'function');
 
-// time-based
-const isMs = number('ms', 70); // arbitrary lower limit for milliseconds
-const isSeconds = number('second', 1);
-const isMinutes = number('minute', 1);
+/**
+ * A validation function for a number of milliseconds (mininum value 70).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of milliseconds.
+ */
+const isMs = makeNumber('ms', 70); // arbitrary lower limit for milliseconds
 
-// number of times
-const isTimes = number('times', 1);
+/**
+ * A validation function for a number of seconds (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of seconds.
+ */
+const isSeconds = makeNumber('second', 1);
+
+/**
+ * A validation function for a number of minutes (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of minutes.
+ */
+const isMinutes = makeNumber('minute', 1);
+
+/**
+ * A validation function for a number of times (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of times.
+ */
+const isTimes = makeNumber('times', 1);
 
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
-  type,
-  number,
-  options,
+  makeType,
+  makeNumber,
+  makeOptions,
   and,
   isIdentifier,
   isString,

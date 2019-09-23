@@ -1,12 +1,12 @@
-const {options} = require('../commands/validation');
+const {makeOptions} = require('../commands/validation');
 
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
-const isLight = options('light', ['red', 'yellow', 'green']);
+const isLight = makeOptions('light', ['red', 'yellow', 'green']);
 
-const isState = options('state', ['on', 'off']);
+const isState = makeOptions('state', ['on', 'off']);
 
 //////////////////////////////////////////////////////////////////////////////
 
