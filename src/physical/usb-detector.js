@@ -107,9 +107,9 @@ const usbDetect = tryRequire('usb-detection');
  * or a dummy object that does not support monitoring in case the "usb-detection"
  * module is not available (it's an optional dependency).
  * @memberof physical
- * @type {(UsbDetector|NullUsbDetector)}
+ * @type {(physical.UsbDetector|physical.NullUsbDetector)}
  */
-const usbDetector = usbDetect ? new UsbDetector(usbDetect) : new NullUsbDetector(); // singleton
+const usbDetector = usbDetect ? new UsbDetector(usbDetect) : new NullUsbDetector();
 
 //////////////////////////////////////////////
 
