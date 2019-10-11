@@ -2147,8 +2147,8 @@ const badArity = (name, exp, act, loc) => ({
 const badValue = (node, paramIdx, arg) => {
   let param = node.value.meta.params[paramIdx];
   let text = isCommand(arg)
-    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
-    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`;
+    ? `Bad call to "${arg.name}" for "${node.name}" parameter ${paramIdx + 1} ("${param.name}"), expected: ${param.validate.exp}`
+    : `Bad value "${arg.value}" to "${node.name}" parameter ${paramIdx + 1} ("${param.name}"), expected: ${param.validate.exp}`;
   return { type: 'error', loc: arg.loc, text };
 };
 
@@ -2164,9 +2164,54 @@ module.exports = {Analyzer};
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isNumber,
-  isCommand
+  isCommand,
+  isMs,
+  isSeconds,
+  isMinutes,
+  isTimes
 } = require('./validation');
+
+//////////////////////////////////////////////////////////////////////////////
+// Busy-loop trap
+//////////////////////////////////////////////////////////////////////////////
+// It's OK for a command to have an infinite loop, as long as `pause` is
+// called within the loop. If `pause` is not called, the loop is deemed a
+// busy-loop, and would hang the main JavaScript thread.
+//////////////////////////////////////////////////////////////////////////////
+
+// trap busy loops: no calls to pause in an infinite loop-pass
+class Trap {
+
+  constructor() {
+    // stores the total count of calls to `pause`
+    this.count = 0;
+  }
+
+  // `pause` calls `inc()` to indicate it was called
+  inc() {
+    // with ~100ms pauses it would take 28.5 million years to reach Number.MAX_SAFE_INTEGER and fail
+    // 9007199254740991(MAX_SAFE_INTEGER) * 100(ms) / 1000(s) / 60(min) / 60(h) / 24(d) / 365(y)
+    ++this.count;
+  }
+
+  // marks the start of a loop-pass, remember the number of times `pause` was called
+  mark() {
+    this.cmp = this.count;
+  }
+
+  // checks at the end of a loop-pass if `pause` was called or not
+  check(ct) {
+    if (this.count === this.cmp) {
+      // no calls to pause mean this is a busy-loop,
+      // cancel it and raise an exception
+      cancel({ct}); // calling `ct.cancel()` would not refresh the default `cancellable`
+      throw new Error('Busy loop detected! Did you forget to call "pause"?');
+    }
+  }
+
+}
+
+const getTrap = ctx => ctx.$trap = ctx.$trap || new Trap();
 
 //////////////////////////////////////////////////////////////////////////////
 // Base commands
@@ -2198,14 +2243,12 @@ cancel.meta = {
 // Returns a Promise that resolves when the pause duration is complete,
 // or if it's cancelled. Even if the pause is cancelled, the Promise
 // is resolved, never rejected.
-function pause(ctx, params) {
-  // allow the first parameter to be omitted
-  // => pause({ct}, [500]) OR pause([500])
-  let ct = ctx.ct || cancellable;
+function pause(ctx, [ms]) {
+  getTrap(ctx).inc();
+  const ct = ctx.ct || cancellable;
   if (ct.isCancelled) return;
-  let [ms] = params || ctx;
   return new Promise(resolve => {
-    let timeoutID = setTimeout(() => {
+    const timeoutID = setTimeout(() => {
       ct.del(timeoutID);
       resolve();
     }, ms);
@@ -2214,8 +2257,8 @@ function pause(ctx, params) {
 }
 pause.meta = {
   name: 'pause',
-  params: [{ name: 'ms', validate: isNumber }],
-  desc: `Pauses execution for the given duration in milliseconds.`
+  params: [{ name: 'ms', validate: isMs }],
+  desc: 'Pauses execution for the given duration in milliseconds.'
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -2240,7 +2283,7 @@ async function timeout(ctx, [ms, command]) {
 timeout.meta = {
   name: 'timeout',
   params: [
-    { name: 'ms', validate: isNumber },
+    { name: 'ms', validate: isMs },
     { name: 'command', validate: isCommand }
   ],
   desc: `
@@ -2256,8 +2299,8 @@ function ms(ctx, [ms]) {
 }
 ms.meta = {
   name: 'ms',
-  params: [{ name: 'ms', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'ms', validate: isMs }],
+  returns: isMs,
   desc: `Returns the given number of milliseconds (an identity function).`
 };
 
@@ -2266,8 +2309,8 @@ function seconds(ctx, [sec]) {
 }
 seconds.meta = {
   name: 'seconds',
-  params: [{ name: 'sec', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'seconds', validate: isSeconds }],
+  returns: isMs,
   desc: `Converts the given number of seconds to milliseconds.`
 };
 
@@ -2276,18 +2319,18 @@ function minutes(ctx, [min]) {
 }
 minutes.meta = {
   name: 'minutes',
-  params: [{ name: 'min', validate: isNumber }],
-  returns: isNumber,
+  params: [{ name: 'minutes', validate: isMinutes }],
+  returns: isMs,
   desc: `Converts the given number of minutes to milliseconds.`
 };
 
 //////////////////////////////////////////////////////////////////////////////
 
 async function $do(ctx, [...commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
+  const {ct = cancellable, scope = {}} = ctx;
   for (let i = 0; i < commands.length; ++i) {
     if (ct.isCancelled) return;
-    let command = commands[i];
+    const command = commands[i];
     await command({...ctx, ct, scope});
   }
 }
@@ -2305,11 +2348,25 @@ $do.meta = {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function loop(ctx, params) {
-  let {ct = cancellable, scope = {}} = ctx;
+// a single loop pass through a series of commands that checks for a busy-loop;
+// returns `true` to break out of the loop, `false` to continue
+// throws if it's a busy-loop in `trap.check()`
+async function loopPass(ctx, commands) {
+  const {ct = cancellable, scope = {}} = ctx;
+  const trap = getTrap(ctx);
+  trap.mark();
+  if (ct.isCancelled) return true;
+  await $do({...ctx, ct, scope}, commands);
+  if (ct.isCancelled) return true;
+  trap.check(ct);
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
+async function loop(ctx, commands) {
   while (true) {
-    if (ct.isCancelled) return;
-    await $do({...ctx, ct, scope}, params);
+    if (await loopPass(ctx, commands)) return;
   }
 }
 loop.meta = {
@@ -2328,16 +2385,14 @@ loop.meta = {
 //////////////////////////////////////////////////////////////////////////////
 
 async function repeat(ctx, [times, ...commands]) {
-  let {ct = cancellable, scope = {}} = ctx;
   while (times-- > 0) {
-    if (ct.isCancelled) return;
-    await $do({...ctx, ct, scope}, [...commands]);
+    if (await loopPass(ctx, commands)) return;
   }
 }
 repeat.meta = {
   name: 'repeat',
   params: [
-    { name: 'times', validate: isNumber },
+    { name: 'times', validate: isTimes },
     { name: 'command', validate: isCommand, isRest: true }
   ],
   desc: `
@@ -2578,7 +2633,7 @@ function exec({root, node, scope, descIdx, commandIdx}) {
 
   let [command] = new Generator().generate([commandNode]);
   let res = (ctx, args) => {
-    let {scope = {}} = ctx;
+    let {scope = {}} = ctx; // this is the parameters scope, NOT the higher level commands scope
     params.forEach((param, i) => scope[param.name] = args[i]);
     return command({...ctx, scope});
   };
@@ -2677,7 +2732,7 @@ const badVariable = (node, arg, paramIdx) => {
   return {
     type: 'error',
     loc: arg.loc,
-    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), must be ${param.validate.exp}`
+    text: `Bad value ":${arg.name}" to "${node.name}" parameter ${paramIdx+1} ("${param.name}"), expected: ${param.validate.exp}`
   };
 };
 
@@ -4645,7 +4700,7 @@ const resolve = (ctx, params, args) =>
   args.map((arg, i) => {
 
     if (isVar(arg)) {
-      // lookup a variable in the scope
+      // lookup a variable in the parameters scope
       return ctx.scope[arg.name];
     }
 
@@ -4777,7 +4832,7 @@ const badVariable = (node, arg) => {
   return {
     type: 'error',
     loc: arg.loc,
-    text: `Bad value ":${arg.name}" to "${node.name}" parameter 1 ("${param.name}"), must be ${param.validate.exp}`
+    text: `Bad value ":${arg.name}" to "${node.name}" parameter 1 ("${param.name}"), expected: ${param.validate.exp}`
   };
 };
 
@@ -4929,18 +4984,20 @@ class Interpreter {
    * @returns {object[]} Array with the results of the executions of the commands.
    */
   async execute(text, ctx = {}, ct = this.ct) {
-    let commands = this.process(text);
+    const commands = this.process(text);
 
-    let res = [];
-    for (let i = 0; i < commands.length; ++i) {
-      if (ct.isCancelled) break;
-      let command = commands[i];
-      res.push(await command({...ctx, ct}));
-    }
-
-    if (ct === this.ct && ct.isCancelled) {
-      // this.ct was cancelled, so re-instantiate it
-      this.ct = new Cancellable();
+    const res = [];
+    try {
+      for (let i = 0; i < commands.length; ++i) {
+        if (ct.isCancelled) break;
+        const command = commands[i];
+        res.push(await command({...ctx, ct}));
+      }
+    } finally {
+      if (ct === this.ct && ct.isCancelled) {
+        // this.ct was cancelled, so re-instantiate it
+        this.ct = new Cancellable();
+      }
     }
 
     return res;
@@ -6255,43 +6312,167 @@ class FlatScope {
 module.exports = {FlatScope};
 
 },{}],24:[function(require,module,exports){
+/**
+ * Command validation functions and utils.
+ * @namespace validation
+ * @memberof commands
+ */
+
+//////////////////////////////////////////////////////////////////////////////
+// Validation function factories
+//////////////////////////////////////////////////////////////////////////////
+
+/**
+ * A factory for a validation function based on a type.
+ * @memberof commands.validation
+ * @param {string} type - "Type" of the validation function. Any text that represents this type.
+ * @param {string} [base=type] - Base JavaScript type: "string", "number", "boolean", etc.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeType = (type, base = type) => {
+  const v = e => typeof e === base; // eslint-disable-line valid-typeof
+  v.exp = v.type = type;
+  v.base = base;
+  return v;
+};
+
+/**
+ * A factory for a validation function based on a number.
+ * @memberof commands.validation
+ * @param {string} [type='number'] - "Type" of the validation function. Any text that represents this type.
+ * @param {number} [min] - Minimum value.
+ * @param {number} [max] - Maximum value.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeNumber = (type = 'number', min = null, max = null) => {
+  const hasMin = typeof min === 'number';
+  const hasMax = typeof max === 'number';
+  const v = n => {
+    if (typeof n !== 'number') return false;
+    if (hasMin && n < min) return false;
+    if (hasMax && n > max) return false;
+    return true;
+  };
+  v.base = 'number';
+  v.exp = v.type = type;
+  if (hasMin || hasMax) v.exp += ` [${hasMin?min:'-∞'},${hasMax?max:'+∞'}]`;
+  if (hasMin) v.min = min;
+  if (hasMax) v.max = max;
+  return v;
+};
+
+/**
+ * A factory for a validation function based on a number of string options.
+ * @memberof commands.validation
+ * @param {string} type - "Type" of the validation function. Any text that represents this type.
+ * @param {string[]} options - Options the validation function accepts. Must not be empty.
+ * @returns {commands.Validate} Validation function.
+ */
+const makeOptions = (type, options) => {
+  const v = e => options.indexOf(e) >= 0;
+  v.base = 'string';
+  v.exp = `"${options.join('" or "')}"`;
+  v.type = type;
+  v.options = options;
+  return v;
+};
+
+/**
+ * A factory for a validation function that combines other validation functions with "and".
+ * @memberof commands.validation
+ * @package
+ * @param {...commands.Validate} vfs - Validation functions to combine.
+ * @returns {commands.Validate} Combined validation function.
+ */
+const and = (...vfs) => {
+  vfs = [...new Set(vfs)]; // remove duplicates
+  if (vfs.length === 1) return vfs[0];
+  const v = e => vfs.every(vf => vf(e));
+  v.base = 'object';
+  v.exp = vfs.map(vf => vf.exp).join(' and ');
+  return v;
+};
+
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
+/**
+ * A validation function for an identifier.
+ * @memberof commands.validation
+ * @param {string} s - String to test.
+ * @returns {boolean} If the input is a valid identifier.
+ */
 const isIdentifier = s =>
   // A negative look behind to check for a string that does NOT end with a dash
   // is only supported on node 8.9.4 with the --harmony flag
   // https://node.green/#ES2018-features--RegExp-Lookbehind-Assertions
   // /^[a-z_][a-z_0-9-]*(?<!-)$/i
   /^[a-z_][a-z_0-9-]*$/i.test(s) && /[^-]$/.test(s);
-isIdentifier.exp = 'a valid identifier';
+isIdentifier.exp = 'identifier';
 
-const isNumber = n => typeof n === 'number';
-isNumber.exp = 'a number';
+/**
+ * A validation function for a string.
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is of type 'string'.
+ */
+const isString = makeType('string');
 
-const isString = s => typeof s === 'string';
-isString.exp = 'a string';
+/**
+ * A validation function for a command.
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is of type 'function', assumed to be a command function.
+ */
+const isCommand = makeType('command', 'function');
 
-const isCommand = f => typeof f === 'function';
-isCommand.exp = 'a command';
+/**
+ * A validation function for a number of milliseconds (mininum value 70).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of milliseconds.
+ */
+const isMs = makeNumber('ms', 70); // arbitrary lower limit for milliseconds
 
-const and = (...vfs) => {
-  vfs = [...new Set(vfs)]; // remove duplicates
-  if (vfs.length === 1) return vfs[0];
-  let v = e => vfs.every(vf => vf(e));
-  v.exp = vfs.map(vf => vf.exp).join(' and ');
-  return v;
-};
+/**
+ * A validation function for a number of seconds (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of seconds.
+ */
+const isSeconds = makeNumber('second', 1);
+
+/**
+ * A validation function for a number of minutes (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of minutes.
+ */
+const isMinutes = makeNumber('minute', 1);
+
+/**
+ * A validation function for a number of times (mininum value 1).
+ * @memberof commands.validation
+ * @param {object} e - Object to test.
+ * @returns {boolean} If the input is a number of times.
+ */
+const isTimes = makeNumber('times', 1);
 
 //////////////////////////////////////////////////////////////////////////////
 
 module.exports = {
+  makeType,
+  makeNumber,
+  makeOptions,
+  and,
   isIdentifier,
   isString,
-  isNumber,
   isCommand,
-  and
+  isMs,
+  isSeconds,
+  isMinutes,
+  isTimes
 };
 
 },{}],25:[function(require,module,exports){
@@ -7315,15 +7496,15 @@ module.exports = {
 //////////////////////////////////////////////////////////////////////////////
 
 },{}],32:[function(require,module,exports){
+const {makeOptions} = require('../commands/validation');
+
 //////////////////////////////////////////////////////////////////////////////
 // Validation functions
 //////////////////////////////////////////////////////////////////////////////
 
-const isLight = l => l === 'red' || l === 'yellow' || l === 'green';
-isLight.exp = '"red", "yellow" or "green"';
+const isLight = makeOptions('light', ['red', 'yellow', 'green']);
 
-const isState = s => s === 'on' || s === 'off';
-isState.exp = '"on" or "off"';
+const isState = makeOptions('state', ['on', 'off']);
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -7331,7 +7512,7 @@ module.exports = {isLight, isState};
 
 //////////////////////////////////////////////////////////////////////////////
 
-},{}],33:[function(require,module,exports){
+},{"../commands/validation":24}],33:[function(require,module,exports){
 const {MetaFormatter} = require('../src/commands/meta-formatter');
 const {CodeFormatter} = require('../src/commands/code-formatter');
 
