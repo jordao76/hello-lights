@@ -2,7 +2,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 const {
-  isNumber
+  makeNumber
 } = require('../commands/validation');
 
 //////////////////////////////////////////////////////////////////////////////
@@ -16,7 +16,7 @@ function use({tl, ct}, [...indexes]) {
 }
 use.meta = {
   name: 'use',
-  params: [{ name: 'indexes', validate: isNumber, isRest: true }],
+  params: [{ name: 'indexes', validate: makeNumber('number', 1), isRest: true }],
   desc: `
     When using multiple traffic lights, uses the given numbered ones.
     @example

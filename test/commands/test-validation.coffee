@@ -4,7 +4,6 @@ require '../setup-unhandled-rejection'
   makeOptions,
   isIdentifier,
   isString,
-  isNumber,
   isCommand
 } = require('../../src/commands').validation
 chai = require 'chai'
@@ -80,13 +79,6 @@ describe 'Command validations', () ->
     isString('').should.be.true
     isString(42).should.be.false
     isString(()->{}).should.be.false
-
-  it 'isNumber', () ->
-    isNumber('a string').should.be.false
-    isNumber('').should.be.false
-    isNumber(42).should.be.true
-    isNumber(0).should.be.true
-    isNumber(()->{}).should.be.false
 
   it 'isCommand', () ->
     isCommand('a string').should.be.false
