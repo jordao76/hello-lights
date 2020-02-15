@@ -41,23 +41,23 @@
     "chai-as-promised": "^7.1.1",
     "chai-string": "^1.5.0",
     "coffeelint": "^2.1.0",
-    "coffeescript": "^2.4.1",
-    "cpy-cli": "^2.0.0",
-    "docdash": "^1.1.1",
-    "eslint": "^6.4.0",
-    "gh-pages": "^2.1.1",
+    "coffeescript": "^2.5.1",
+    "cpy-cli": "^3.1.0",
+    "docdash": "^1.2.0",
+    "eslint": "^6.8.0",
+    "gh-pages": "^2.2.0",
     "jsdoc": "^3.6.3",
-    "mocha": "^6.2.0",
-    "nyc": "^14.1.1",
+    "mocha": "^7.0.1",
+    "nyc": "^15.0.0",
     "open-cli": "^5.0.0",
     "pegjs": "^0.10.0",
-    "sinon": "^7.4.2"
+    "sinon": "^8.1.1"
   },
   "dependencies": {
-    "node-hid": "^0.7.9"
+    "node-hid": "^1.2.0"
   },
   "optionalDependencies": {
-    "usb-detection": "^4.3.0"
+    "usb-detection": "^4.7.0"
   },
   "nyc": {
     "exclude": [

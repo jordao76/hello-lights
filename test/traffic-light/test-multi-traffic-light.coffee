@@ -346,13 +346,13 @@ describe 'FlexMultiTrafficLight', () ->
     describe 'should skip over disabled traffic lights', () ->
 
       beforeEach () ->
-                              # *[0] [1] [2] [3]
+        #                       *[0] [1] [2] [3]
         @tl1.setEnabled false # *[0] []  [1] [2] <--- 1st active, 2nd disabled
 
       it 'next skips over disabled traffic light', () ->
         @mtl.red.toggle()
         @tl0.red.on.should.be.true
-                    # *[0] []  [1] [2]
+        #             *[0] []  [1] [2]
         @mtl.next() #  [0] [] *[1] [2]
         @mtl.using().should.deep.equal [1]
         @mtl.red.toggle()
@@ -361,7 +361,7 @@ describe 'FlexMultiTrafficLight', () ->
         @tl2.red.on.should.be.true
 
       it 'use ignores disabled traffic light', () ->
-                           # *[0] []  [1]  [2]
+        #                    *[0] []  [1]  [2]
         @mtl.use [0, 1, 2] # *[0] [] *[1] *[2]
         @mtl.using().should.deep.equal [0, 1, 2]
         @mtl.red.toggle()
