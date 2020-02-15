@@ -50,7 +50,7 @@
         FlexMultiTrafficLight
         </h2>
         
-            <div class="class-description"><p>A composite traffic light with a flexible way to select which composed
+            <div class="class-description usertext"><p>A composite traffic light with a flexible way to select which composed
 traffic lights are active or in use.</p></div>
         
     
@@ -117,7 +117,7 @@ traffic lights are active or in use.</p></div>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Creates a new instance of this class.
 Starts off using the first traffic light in the provided <code>trafficLights</code>.
 Tries to check out the provided traffic lights.</p>
@@ -286,7 +286,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>The green light.</p>
 </div>
 
@@ -364,7 +364,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>If the traffic light is available: enabled and not checked-out.</p>
 </div>
 
@@ -442,7 +442,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>If the traffic light is checked-out or reserved.</p>
 </div>
 
@@ -520,7 +520,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>If there are composed traffic lights and any of them is enabled.</p>
 </div>
 
@@ -598,7 +598,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>The red light.</p>
 </div>
 
@@ -676,7 +676,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>The yellow light.</p>
 </div>
 
@@ -759,7 +759,7 @@ Tries to check out the provided traffic lights.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Adds a traffic light to the composite.
 Tries to exclusively check it out first and because of that won't add
 any duplicates.</p>
@@ -903,7 +903,7 @@ Must not be null.</p></td>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Checks-in the traffic light, making it available for checking out again.</p>
 </div>
 
@@ -995,7 +995,7 @@ Must not be null.</p></td>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Checks-out or reserve the traffic light for exclusive usage, making it
 unavailable for other users.</p>
 </div>
@@ -1106,7 +1106,7 @@ False if it was already checked out.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects the last traffic light to use.</p>
 </div>
 
@@ -1193,7 +1193,7 @@ False if it was already checked out.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects the nearest traffic light to use, remembering the direction
 of movement (forwards or backwards).
 Also works with multiple selected traffic lights, moving all to the nearest,
@@ -1284,7 +1284,7 @@ if both the first and last indexes are in use).</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects the next traffic light to use, going back to the first one if
 the currently selected one is the last.
 Also works with multiple selected traffic lights, moving all to the next.</p>
@@ -1373,7 +1373,7 @@ Also works with multiple selected traffic lights, moving all to the next.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects the previous traffic light to use, going to the last one if
 the currently selected one is the first.
 Also works with multiple selected traffic lights, moving all to the previous.</p>
@@ -1467,7 +1467,7 @@ Also works with multiple selected traffic lights, moving all to the previous.</p
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Resets all active traffic lights.</p>
 </div>
 
@@ -1554,7 +1554,7 @@ Also works with multiple selected traffic lights, moving all to the previous.</p
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects which traffic lights to use given their indexes (0-based),
 only considering enabled traffic lights.
 Indexes wrap around from the last to the first.</p>
@@ -1693,7 +1693,7 @@ Must not be empty.</p></td>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Selects all traffic lights to use simultaneously.</p>
 </div>
 
@@ -1780,7 +1780,7 @@ Must not be empty.</p></td>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Gets the traffic light indexes that are in use.
 If there are no traffic lights in use, or no traffic lights are useable,
 returns an empty array.</p>
@@ -1904,7 +1904,7 @@ returns an empty array.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Traffic light disabled event.</p>
 </div>
 
@@ -1996,7 +1996,7 @@ returns an empty array.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Traffic light enabled event.</p>
 </div>
 
@@ -2083,7 +2083,7 @@ returns an empty array.</p>
 
 
 
-<div class="description">
+<div class="description usertext">
     <p>Interrupted event. In a <code>FlexMultiTrafficLight</code>, if an active traffic
 light gets disabled, and there are still enabled traffic lights left,
 this event is raised. If no more traffic lights are enabled,
@@ -2133,7 +2133,7 @@ then the <code>disabled</code> event is raised.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Thu Oct 10 2019 22:22:36 GMT-0400 (Eastern Daylight Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Sat Feb 15 2020 13:17:25 GMT-0500 (Eastern Standard Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
