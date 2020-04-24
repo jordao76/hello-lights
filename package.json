@@ -49,15 +49,15 @@
     "jsdoc": "^3.6.3",
     "mocha": "^7.0.1",
     "nyc": "^15.0.0",
-    "open-cli": "^5.0.0",
+    "open-cli": "^6.0.1",
     "pegjs": "^0.10.0",
-    "sinon": "^8.1.1"
+    "sinon": "^9.0.2"
   },
   "dependencies": {
     "node-hid": "^1.2.0"
   },
   "optionalDependencies": {
-    "usb-detection": "^4.7.0"
+    "usb-detection": "^4.9.0"
   },
   "nyc": {
     "exclude": [
