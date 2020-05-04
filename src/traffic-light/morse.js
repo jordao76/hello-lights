@@ -105,14 +105,15 @@ function timecodeText(text) {
 
 //////////////////////////////////////////////////////////////////////////////
 
-async function morse({tl, ct}, [light, text]) {
+async function morse(ctx, [light, text]) {
+  const {tl, ct} = ctx;
   if (ct.isCancelled) return;
-  let times = timecodeText(text);
+  const times = timecodeText(text);
   tl[light].turnOff(); // start as 'off'
   for (let i = 0; i < times.length; ++i) {
     if (ct.isCancelled) break;
     tl[light].toggle();
-    await pause({ct}, [times[i] * TIME_UNIT]);
+    await pause(ctx, [times[i] * TIME_UNIT]);
   }
 }
 
