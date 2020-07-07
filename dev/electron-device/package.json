@@ -9,7 +9,7 @@
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "dependencies": {
-    "electron": "^3.0.5",
+    "electron": "^7.2.4",
     "rimraf": "^2.6.2"
   }
 }
