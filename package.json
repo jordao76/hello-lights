@@ -36,25 +36,25 @@
     "dev:server": "node dev/lights-server"
   },
   "devDependencies": {
-    "browserify": "^16.5.0",
-    "chai": "^4.2.0",
+    "browserify": "^16.5.2",
+    "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "chai-string": "^1.5.0",
     "coffeelint": "^2.1.0",
     "coffeescript": "^2.5.1",
-    "cpy-cli": "^3.1.0",
+    "cpy-cli": "^3.1.1",
     "docdash": "^1.2.0",
     "eslint": "^6.8.0",
     "gh-pages": "^2.2.0",
-    "jsdoc": "^3.6.3",
-    "mocha": "^7.1.2",
-    "nyc": "^15.0.0",
+    "jsdoc": "^3.6.6",
+    "mocha": "^7.2.0",
+    "nyc": "^15.1.0",
     "open-cli": "^6.0.1",
     "pegjs": "^0.10.0",
-    "sinon": "^9.0.2"
+    "sinon": "^9.2.4"
   },
   "dependencies": {
-    "node-hid": "^1.2.0"
+    "node-hid": "^2.1.1"
   },
   "optionalDependencies": {
     "usb-detection": "^4.9.0"
