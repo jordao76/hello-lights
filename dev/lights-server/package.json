@@ -11,7 +11,7 @@
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "socket.io": "^2.4.0"
   }
 }
