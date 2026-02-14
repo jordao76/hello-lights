@@ -3,6 +3,9 @@
   "version": "0.3.1",
   "description": "Commands to control a traffic light",
   "main": "index.js",
+  "bin": {
+    "hello-lights": "./cli.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/jordao76/hello-lights.git"
@@ -30,10 +33,10 @@
     "cpy-lib": "cpy \"**/*.*\" \"!*.pegjs\" ../lib/ --cwd=src --parents",
     "prepublishOnly": "npm run test && npm run cpy-lib",
     "dev:install": "cd dev && npm install",
-    "predev:repl": "npm run cpy-lib",
-    "dev:repl": "node dev/lights-repl",
     "predev:server": "npm run cpy-lib",
-    "dev:server": "node dev/lights-server"
+    "dev:server": "node dev/lights-server",
+    "precli": "npm run cpy-lib",
+    "cli": "node cli.js"
   },
   "devDependencies": {
     "browserify": "^16.5.2",
@@ -54,7 +57,9 @@
     "sinon": "^9.2.4"
   },
   "dependencies": {
-    "node-hid": "^2.1.1"
+    "chalk": "^3.0.0",
+    "node-hid": "^2.1.1",
+    "yargs": "^13.3.0"
   },
   "optionalDependencies": {
     "usb-detection": "^4.9.0"

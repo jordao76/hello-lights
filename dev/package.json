@@ -4,13 +4,12 @@
   "private": true,
   "description": "Tools and samples for hello-lights.",
   "scripts": {
-    "preinstall": "cd electron-device && npm install && cd ../commander-cli && npm install && cd ../lights-repl && npm install && cd ../lights-server && npm install && cd ../"
+    "preinstall": "cd electron-device && npm install && cd ../lights-server && npm install && cd ../"
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
   "dependencies": {
     "chalk": "^2.4.1",
-    "commander-cli": "file:commander-cli",
     "electron-device": "file:electron-device",
     "hello-lights": "file:.."
   }

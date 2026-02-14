@@ -2,7 +2,16 @@
 
 const EventEmitter = require('events');
 const chalk = require('chalk');
-const {commander} = require('commander-cli');
+const {Commander} = require('hello-lights');
+const {Manager} = require('hello-lights/lib/devices/cleware-switch1');
+
+const commander = Commander.single({
+  logger: {
+    log: (...args) => console.log(chalk.cyan(...args)),
+    error: (...args) => console.error(chalk.yellow(...args))
+  },
+  manager: Manager
+});
 
 /////////////////////////////////////////////////////////////////
 
