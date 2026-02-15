@@ -49,6 +49,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run peg
+
       - run: npm run browserify
 
       - name: Generate docs
