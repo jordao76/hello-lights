@@ -1,7 +1,7 @@
 # hello-lights
 
 [![npm](https://img.shields.io/npm/v/hello-lights.svg)](https://www.npmjs.com/package/hello-lights)
-[![CI](https://github.com/jordao76/hello-lights/actions/workflows/pr.yml/badge.svg)](https://github.com/jordao76/hello-lights/actions/workflows/pr.yml)
+[![CI](https://github.com/jordao76/hello-lights/actions/workflows/ci.yml/badge.svg)](https://github.com/jordao76/hello-lights/actions/workflows/ci.yml)
 [![License](http://img.shields.io/:license-mit-blue.svg)](https://github.com/jordao76/hello-lights/blob/master/LICENSE.md)
 
 > Commands to control a traffic light
