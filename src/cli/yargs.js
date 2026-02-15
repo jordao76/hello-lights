@@ -10,6 +10,7 @@ yargs
   .define(require('./exec-command'))
   .define(require('./exec-file-command'))
   .define(require('./repl-command'))
+  .define(require('./serve'))
   .scriptName('hello-lights')
   .demandCommand(1, 'What is your command?')
   .epilogue('for more info, check out https://github.com/jordao76/hello-lights')
