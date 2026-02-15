@@ -4,7 +4,7 @@
   "private": true,
   "description": "Tools and samples for hello-lights.",
   "scripts": {
-    "preinstall": "cd electron-device && npm install && cd ../lights-server && npm install && cd ../"
+    "preinstall": "cd electron-device && npm install && cd ../"
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
