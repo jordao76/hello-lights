@@ -35,7 +35,7 @@ describe 'Commander', () =>
     describe 'traffic lights info', () =>
 
       it 'logInfo', () =>
-        @cm.logInfo()
+        await @cm.logInfo()
         @logger.log.calledWith('device 999999: connected').should.be.true
 
     describe 'runDefinitionsFile', () =>
@@ -317,6 +317,10 @@ describe 'Commander', () =>
     it 'commandNames: lists all available commands', () =>
       @cm.commandNames.should.deep.equal @commandNames
 
+    it 'fetchCommandNames: async lists all available commands', () =>
+      names = await @cm.fetchCommandNames()
+      names.should.deep.equal @commandNames
+
     it 'help: log help for a command', () =>
-      @cm.help('move')
+      await @cm.help('move')
       sinon.assert.calledWith(@logger.log, 'move :where\nMoves the widget\n')

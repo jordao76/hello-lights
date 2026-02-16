@@ -1,4 +1,5 @@
 const {Commander} = require('./commander');
+const {RestCommander} = require('./rest-commander');
 
 module.exports = {
   commands: require('./commands'),
@@ -6,5 +7,6 @@ module.exports = {
   physical: require('./physical'),
   devices: require('./devices'),
   selectors: require('./selectors'),
-  Commander
+  Commander,
+  RestCommander
 };

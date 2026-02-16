@@ -33,6 +33,7 @@ describe 'serve command', ->
         cancel: @cancel
         runDefinitions: @runDefinitions
         commandNames: ['turn', 'blink', 'reset']
+        fetchCommandNames: sinon.stub().resolves(['turn', 'blink', 'reset'])
         interpreter:
           lookup: (name) ->
             if name is 'turn'
