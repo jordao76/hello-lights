@@ -89,7 +89,7 @@ class Commander {
   /**
    * Cancels any currently executing command.
    */
-  cancel() {
+  async cancel() {
     this.interpreter.cancel();
   }
 
@@ -249,10 +249,18 @@ class Commander {
   }
 
   /**
+   * Fetches all supported command names.
+   * @returns {Promise<string[]>} A promise that resolves with the command names.
+   */
+  async fetchCommandNames() {
+    return this.interpreter.commandNames;
+  }
+
+  /**
    * Logs the help info for the given command name.
    * @param {string} commandName - Name of the command to log help info.
    */
-  help(commandName) {
+  async help(commandName) {
     let command = this.interpreter.lookup(commandName);
     if (!command) {
       this.logger.error(`Command not found: "${commandName}"`);
@@ -264,7 +272,7 @@ class Commander {
   /**
    * Logs information about known traffic lights.
    */
-  logInfo() {
+  async logInfo() {
     this.selector.logInfo(this.logger);
   }
 

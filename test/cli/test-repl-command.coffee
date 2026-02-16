@@ -12,6 +12,7 @@ describe 'repl-command', () ->
     @run = sinon.spy()
     @mockCommander = {
       commandNames: ['cmd1', 'cmd2']
+      fetchCommandNames: sinon.stub().resolves(['cmd1', 'cmd2'])
       @run,
       manager: {}
       logger: { log: sinon.stub() }

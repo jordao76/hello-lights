@@ -13,8 +13,8 @@ class CommanderRepl {
     this.manager = this.commander.manager;
   }
 
-  formatCommandNames() {
-    let names = this.commander.commandNames;
+  async formatCommandNames() {
+    let names = await this.commander.fetchCommandNames();
     let parts = ['  '];
     names.forEach((name, i) => {
       parts.push(`  ${name}`);
@@ -23,7 +23,7 @@ class CommanderRepl {
     return parts.join('');
   }
 
-  help(commandName) {
+  async help(commandName) {
     if (commandName === undefined) {
       this.logger.log([
         `Commands for the traffic light`,
@@ -34,30 +34,30 @@ class CommanderRepl {
         `> [command]`,
         `> { [... multi line command] }`,
         `  available commands:`,
-        this.formatCommandNames()
+        await this.formatCommandNames()
       ].join('\n'));
     } else {
-      this.commander.help(commandName);
+      await this.commander.help(commandName);
     }
   }
 
-  execute(text, context, filename, callback) {
+  async execute(text, context, filename, callback) {
     text = text.trim();
     let match;
     if (!text) {
     } else if (text === 'cancel') {
-      this.commander.cancel();
+      await this.commander.cancel();
     } else if (text === 'help') {
-      this.help();
+      await this.help();
     } else if (match = text.match(/^help\s+(.+)/)) { // eslint-disable-line no-cond-assign
-      this.help(match[1]);
+      await this.help(match[1]);
     } else if (text === 'exit' || text === 'quit') {
-      this.commander.cancel();
+      await this.commander.cancel();
       this.commander.close();
       this.logger.log('Bye');
       process.exit(0);
     } else if (text === 'check device') {
-      this.commander.logInfo();
+      await this.commander.logInfo();
     } else if (this.supportsNewDevice() && text === 'new device') {
       this.newDevice();
     } else if (text.startsWith('{')) {

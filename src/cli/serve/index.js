@@ -18,8 +18,8 @@ function createApp(commander) {
     res.sendStatus(202);
   });
 
-  app.post('/cancel', (req, res) => {
-    commander.cancel();
+  app.post('/cancel', async (req, res) => {
+    await commander.cancel();
     res.sendStatus(200);
   });
 
@@ -28,8 +28,8 @@ function createApp(commander) {
     res.sendStatus(202);
   });
 
-  app.get('/commands', (req, res) => {
-    res.json(commander.commandNames);
+  app.get('/commands', async (req, res) => {
+    res.json(await commander.fetchCommandNames());
   });
 
   app.get('/commands/:name', (req, res) => {
