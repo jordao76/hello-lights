@@ -30,7 +30,7 @@
     "preweb": "npm run peg && npm run browserify",
     "web": "open-cli web/index.html",
     "cpy-lib": "cpy \"**/*.*\" \"!*.pegjs\" ../lib/ --cwd=src --parents",
-    "prepublishOnly": "npm run test && npm run cpy-lib",
+    "prepublishOnly": "npm run cpy-lib",
     "dev:install": "cd dev && npm install",
     "precli": "npm run cpy-lib",
     "cli": "node cli.js"
