@@ -34,9 +34,11 @@ $ hello-lights exec-file ./cmds.clj     # execute commands from a file
 $ hello-lights repl                     # start an interactive REPL
 $ hello-lights serve                    # start the HTTP server on port 9000
 $ hello-lights serve --port 3000        # start the HTTP server on a custom port
+$ hello-lights --selector http exec bounce 300   # execute via a remote server
+$ hello-lights --selector http --host http://myserver:3000 repl  # REPL via a remote server
 ```
 
-Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
+Use `--help` for the full list of options, including `--serial-num` to target a specific device, `--selector multi` to control multiple traffic lights at once, and `--selector http` to send commands to a remote hello-lights server.
 
 ### Library
 
@@ -95,9 +97,11 @@ $ npm run cli -- exec-file ./cmds.clj  # execute commands from a file
 $ npm run cli -- repl                  # start an interactive REPL
 $ npm run cli -- serve                 # start the HTTP server on port 9000
 $ npm run cli -- serve --port 3000     # start the HTTP server on a custom port
+$ npm run cli -- --selector http exec bounce 300   # execute via a remote server
+$ npm run cli -- --selector http --host http://myserver:3000 repl  # REPL via a remote server
 ```
 
-Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
+Use `--help` for the full list of options, including `--serial-num` to target a specific device, `--selector multi` to control multiple traffic lights at once, and `--selector http` to send commands to a remote hello-lights server.
 
 ## HTTP Server REST API
 

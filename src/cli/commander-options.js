@@ -1,6 +1,6 @@
 const chalk = require('chalk');
 const path = require('path');
-const {Commander} = require('..');
+const {Commander, RestCommander} = require('..');
 const {MetaFormatter, CodeFormatter} = require('..').commands;
 
 /////////////////////////////////////////////////////////////////
@@ -87,6 +87,9 @@ function resolveDeviceManager(options) {
 /////////////////////////////////////////////////////////////////
 
 function resolveCommander(options) {
+  if (options.selector === 'http') {
+    return new RestCommander({host: options.host, logger});
+  }
   return Commander[options.selector]({
     logger,
     formatter: new ChalkMetaFormatter(),
@@ -116,8 +119,13 @@ function define(yargs) {
     .option('selector', {
       alias: 's',
       describe: 'selector type to use',
-      choices: ['single', 'multi'],
-      default: 'single' });
+      choices: ['single', 'multi', 'http'],
+      default: 'single' })
+    .option('host', {
+      alias: 'H',
+      describe: 'server URL for --selector http',
+      default: 'http://localhost:9000',
+      type: 'string' });
 }
 
 /////////////////////////////////////////////////////////////////
