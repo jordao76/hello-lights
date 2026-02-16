@@ -37,6 +37,51 @@ Check out the available commands [here](https://jordao76.github.io/hello-lights)
 
 For the documentation look [here](https://jordao76.github.io/hello-lights/doc/index.html).
 
+## Development
+
+Install dependencies:
+
+```sh
+$ npm install
+```
+
+### npm scripts
+
+| Script | Description |
+|---|---|
+| `npm test` | Run all tests (generates PEG parsers first) |
+| `npm run lint` | Lint source and test files |
+| `npm run coverage` | Run tests with coverage instrumentation |
+| `npm run coverage:text` | Print a text coverage summary to the terminal |
+| `npm run coverage:open` | Generate and open an HTML coverage report |
+| `npm run build:doc` | Generate JSDoc documentation into `web/doc/` |
+| `npm run build:web` | Build all web assets (PEG parsers, browserify bundle, docs) |
+| `npm run doc` | Build and open the documentation in the browser |
+| `npm run web` | Build and open the browser demo |
+| `npm run mocha-grep <pattern>` | Run only tests matching a pattern |
+| `npm run cli` | Run the CLI locally |
+
+### CLI
+
+Run the CLI locally with `npm run cli`:
+
+```sh
+$ npm run cli -- exec bounce 300       # execute a command
+$ npm run cli -- exec-file ./cmds.clj  # execute commands from a file
+$ npm run cli -- repl                  # start an interactive REPL
+$ npm run cli -- serve                 # start the HTTP server on port 9000
+$ npm run cli -- serve --port 3000     # start the HTTP server on a custom port
+```
+
+Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
+
+## CI
+
+The [CI workflow](.github/workflows/ci.yml) runs on every push and pull request to `master`. It has two jobs:
+
+- **Build** -- lints, runs tests with coverage, and builds all web assets.
+- **Deploy** -- on push to `master`, deploys the `web/` directory to GitHub Pages using the `actions/deploy-pages` action.
+
 ## License
 
 Licensed under the [MIT license](https://github.com/jordao76/hello-lights/blob/master/LICENSE.md).
