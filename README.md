@@ -99,6 +99,34 @@ $ npm run cli -- serve --port 3000     # start the HTTP server on a custom port
 
 Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
 
+## HTTP Server REST API
+
+The `serve` command starts an HTTP server that exposes the Commander interface as a REST API. By default it listens on port 9000.
+
+| Endpoint | Method | Body | Response |
+|---|---|---|---|
+| `/run` | POST | Command string (plain text) | 202 Accepted |
+| `/run?reset=true` | POST | Command string (plain text) | 202 Accepted (resets lights first) |
+| `/cancel` | POST | — | 200 OK |
+| `/definitions` | POST | Definition string (plain text) | 202 Accepted |
+| `/commands` | GET | — | 200 + JSON array of command names |
+| `/commands/:name` | GET | — | 200 + help text (`text/x-ansi`) or 404 |
+| `/info` | GET | — | 200 + JSON array of `{ serialNum, status }` |
+
+Examples:
+
+```sh
+$ curl -X POST http://localhost:9000/run -d 'blink 3 green 300'
+$ curl -X POST http://localhost:9000/run?reset=true -d 'twinkle red 400'
+$ curl -X POST http://localhost:9000/cancel
+$ curl -X POST http://localhost:9000/definitions -d '(def foo (blink 1 green 300))'
+$ curl http://localhost:9000/commands
+$ curl http://localhost:9000/commands/turn
+$ curl http://localhost:9000/info
+```
+
+The server also serves a browser demo at the root URL (`/`).
+
 ## Running as a Linux Service
 
 You can set up `hello-lights serve` to run automatically as a systemd user service on Linux.

@@ -10,14 +10,44 @@ function createApp(commander) {
   const app = express();
 
   app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.text({type: '*/*'}));
+
   app.post('/run', (req, res) => {
-    let commandStr = '';
-    req.on('data', data => commandStr += data);
-    req.on('end', () => {
-      commander.run(commandStr);
-      res.statusCode = 202; // accepted
-      res.end();
-    });
+    let reset = req.query.reset === 'true';
+    commander.run(req.body || '', reset);
+    res.sendStatus(202);
+  });
+
+  app.post('/cancel', (req, res) => {
+    commander.cancel();
+    res.sendStatus(200);
+  });
+
+  app.post('/definitions', (req, res) => {
+    commander.runDefinitions(req.body || '');
+    res.sendStatus(202);
+  });
+
+  app.get('/commands', (req, res) => {
+    res.json(commander.commandNames);
+  });
+
+  app.get('/commands/:name', (req, res) => {
+    let command = commander.interpreter.lookup(req.params.name);
+    if (!command) {
+      res.status(404).send(`Command not found: "${req.params.name}"`);
+      return;
+    }
+    let helpText = commander.formatter.format(command.meta);
+    res.type('text/x-ansi').send(helpText);
+  });
+
+  app.get('/info', (req, res) => {
+    if (commander.manager) {
+      res.json(commander.manager.info());
+    } else {
+      res.json([]);
+    }
   });
 
   return app;
