@@ -67,19 +67,35 @@ describe 'commander-options', () ->
       yargs.parse '--selector multi exec hello', (err, argv, output) ->
         expect(argv.selector).to.equal 'multi'
         expect(err).to.be.null
+    it '--selector http', () ->
+      yargs.parse '--selector http exec hello', (err, argv, output) ->
+        expect(argv.selector).to.equal 'http'
+        expect(err).to.be.null
     it '--selector wrong', () ->
       yargs.parse '--selector wrong exec hello', (err, argv, output) ->
         expect(err.message).to.include 'Invalid values'
-        expect(err.message).to.include 'Argument: selector, Given: "wrong", Choices: "single", "multi"'
+        expect(err.message).to.include 'Argument: selector, Given: "wrong", Choices: "single", "multi", "http"'
     it 'no selector given: --selector', () ->
       yargs.parse '--selector exec hello', (err, argv, output) ->
         expect(err.message).to.include 'Invalid values'
-        expect(err.message).to.include 'Argument: selector, Given: "exec", Choices: "single", "multi"'
+        expect(err.message).to.include 'Argument: selector, Given: "exec", Choices: "single", "multi", "http"'
+
+  describe '--host', () ->
+
+    it 'default --host is http://localhost:9000', () ->
+      yargs.parse 'exec hello', (err, argv, output) ->
+        expect(argv.host).to.equal 'http://localhost:9000'
+        expect(err).to.be.null
+    it '--host custom', () ->
+      yargs.parse '--host http://myserver:3000 exec hello', (err, argv, output) ->
+        expect(argv.host).to.equal 'http://myserver:3000'
+        expect(err).to.be.null
 
 describe 'resolveCommander', () ->
 
   {PhysicalTrafficLightSelector, PhysicalMultiTrafficLightSelector} =
     require('../../src').selectors
+  {RestCommander} = require('../../src')
 
   beforeEach () ->
     # use sinon to prevent usb-detect to kick in with the ClewareSwitch1DeviceManager
@@ -132,3 +148,17 @@ describe 'resolveCommander', () ->
       selector: 'multi'
     commander = commanderOptions.resolveCommander(options)
     expect(commander.selector.serialNum).to.be.undefined # multi doesn't use a serialNum
+
+  it '--selector http', () ->
+    options =
+      selector: 'http'
+      host: 'http://localhost:9000'
+    commander = commanderOptions.resolveCommander(options)
+    expect(commander).to.be.an.instanceof RestCommander
+
+  it '--selector http with custom host', () ->
+    options =
+      selector: 'http'
+      host: 'http://myserver:3000'
+    commander = commanderOptions.resolveCommander(options)
+    expect(commander).to.be.an.instanceof RestCommander

@@ -84,7 +84,7 @@ class CommanderRepl {
   }
 
   supportsNewDevice() {
-    return !!this.manager.newDevice;
+    return !!this.manager && !!this.manager.newDevice;
   }
   newDevice() {
     this.manager.newDevice();
