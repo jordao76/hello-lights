@@ -77,10 +77,11 @@ Use `--help` for the full list of options, including `--serial-num` to target a 
 
 ## CI
 
-The [CI workflow](.github/workflows/ci.yml) runs on every push and pull request to `master`. It has two jobs:
+The CI workflow runs on every push and pull request to `master`. It has three jobs:
 
 - **Build** -- lints, runs tests with coverage, and builds all web assets.
-- **Deploy** -- on push to `master`, deploys the `web/` directory to GitHub Pages using the `actions/deploy-pages` action.
+- **Deploy** -- on push to `master`, deploys the `web/` directory to GitHub Pages.
+- **Publish** -- on push to `master`, bumps the package version, publishes to npm with provenance via trusted publishing, and creates a GitHub Release. The version bump type is determined from the commit message: `[major]` or `BREAKING CHANGE` for major, `[minor]` for minor, and patch by default.
 
 ## License
 
