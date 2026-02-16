@@ -4,11 +4,11 @@
   "description": "Commands to control a traffic light",
   "main": "index.js",
   "bin": {
-    "hello-lights": "./cli.js"
+    "hello-lights": "cli.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jordao76/hello-lights.git"
+    "url": "git+https://github.com/jordao76/hello-lights.git"
   },
   "author": "Rodrigo Jordao <rodrigo.jordao@gmail.com> (https://github.com/jordao76)",
   "license": "MIT",
