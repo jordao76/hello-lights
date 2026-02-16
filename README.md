@@ -10,13 +10,37 @@ Works with a [Cleware USB traffic light](http://www.cleware.info/data/usbtischam
 
 ## Install
 
+### As a CLI (global)
+
+```sh
+$ npm install -g hello-lights
+```
+
+### As a library
+
 ```sh
 $ npm install hello-lights --save
 ```
 
 ## Usage
 
-Issue commands to control a connected traffic light:
+### CLI
+
+Install globally and run `hello-lights` from the command line:
+
+```sh
+$ hello-lights exec bounce 300          # execute a command
+$ hello-lights exec-file ./cmds.clj     # execute commands from a file
+$ hello-lights repl                     # start an interactive REPL
+$ hello-lights serve                    # start the HTTP server on port 9000
+$ hello-lights serve --port 3000        # start the HTTP server on a custom port
+```
+
+Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
+
+### Library
+
+Use `hello-lights` as a library in your Node.js project:
 
 ```js
 const {Commander} = require('hello-lights');
@@ -74,6 +98,51 @@ $ npm run cli -- serve --port 3000     # start the HTTP server on a custom port
 ```
 
 Use `--help` for the full list of options, including `--serial-num` to target a specific device and `--selector multi` to control multiple traffic lights at once.
+
+## Running as a Linux Service
+
+You can set up `hello-lights serve` to run automatically as a systemd user service on Linux.
+
+Create the service file at `~/.config/systemd/user/hello-lights.service`:
+
+```ini
+[Unit]
+Description=Hello Lights Server
+After=network.target
+
+[Service]
+Type=simple
+Environment=PATH=/path/to/node/bin:/usr/bin:/bin
+ExecStart=/path/to/node/bin/hello-lights serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+Replace `/path/to/node/bin` with the directory containing your `node` and `hello-lights` binaries (e.g. `~/.nvm/versions/node/v24.13.1/bin`). The `Environment=PATH=...` line is needed because systemd doesn't load your shell profile, so tools installed via nvm won't be found otherwise.
+
+Then enable and start the service:
+
+```sh
+$ systemctl --user daemon-reload
+$ systemctl --user enable hello-lights   # start automatically on login
+$ systemctl --user start hello-lights    # start now
+```
+
+To start the service on boot (without needing to log in), enable lingering for your user:
+
+```sh
+$ sudo loginctl enable-linger $USER
+```
+
+Check status and logs:
+
+```sh
+$ systemctl --user status hello-lights
+$ journalctl --user -u hello-lights -f   # follow logs
+```
 
 ## CI
 
