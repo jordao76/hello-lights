@@ -81,6 +81,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run peg
+
       - run: npm install -g npm@latest
 
       - name: Determine version bump type
