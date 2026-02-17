@@ -28,6 +28,7 @@ describe 'serve command', ->
       @run = sinon.stub()
       @cancel = sinon.stub()
       @runDefinitions = sinon.stub()
+      @process = sinon.stub()
       @mockCommander =
         run: @run
         cancel: @cancel
@@ -35,6 +36,7 @@ describe 'serve command', ->
         commandNames: ['turn', 'blink', 'reset']
         fetchCommandNames: sinon.stub().resolves(['turn', 'blink', 'reset'])
         interpreter:
+          process: @process
           lookup: (name) ->
             if name is 'turn'
               meta: { name: 'turn', params: [{name: 'light'}, {name: 'state'}], desc: 'Turns a light on or off.' }
@@ -44,7 +46,8 @@ describe 'serve command', ->
           format: (meta) -> "#{meta.name} :#{meta.params.map((p) -> p.name).join(' :')}\n#{meta.desc}"
         manager:
           info: -> [{ serialNum: 123, status: 'connected' }]
-      @app = createApp @mockCommander
+      noop = ->
+      @app = createApp @mockCommander, logger: { log: noop, error: noop }
       @server = @app.listen 0, done # port 0 = random available port
 
     afterEach (done) ->
@@ -70,6 +73,14 @@ describe 'serve command', ->
           expect(res.statusCode).to.equal 202
           sinon.assert.calledWith @run, 'blink 1 green 300', true
 
+    it 'POST /run returns 400 for malformed command', ->
+      @process.throws new Error('1:1-1:3: Command not found: "bad"')
+      request(@server, 'POST', '/run', 'bad')
+        .then (res) =>
+          expect(res.statusCode).to.equal 400
+          expect(res.body).to.include 'Command not found'
+          sinon.assert.notCalled @run
+
     it 'POST /cancel calls commander.cancel', ->
       request(@server, 'POST', '/cancel', null)
         .then (res) =>
@@ -82,6 +93,14 @@ describe 'serve command', ->
           expect(res.statusCode).to.equal 202
           sinon.assert.calledOnce @runDefinitions
           sinon.assert.calledWith @runDefinitions, '(def foo (blink 1 green 300))'
+
+    it 'POST /definitions returns 400 for malformed definitions', ->
+      @process.throws new Error('1:1-1:3: Command not found: "bad"')
+      request(@server, 'POST', '/definitions', 'bad')
+        .then (res) =>
+          expect(res.statusCode).to.equal 400
+          expect(res.body).to.include 'Command not found'
+          sinon.assert.notCalled @runDefinitions
 
     it 'GET /commands returns JSON array of command names', ->
       request(@server, 'GET', '/commands', null)

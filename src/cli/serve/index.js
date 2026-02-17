@@ -1,11 +1,23 @@
 /////////////////////////////////////////////////////////////////
 
 const path = require('path');
+const chalk = require('chalk');
 const commanderOptions = require('../commander-options');
 
 /////////////////////////////////////////////////////////////////
 
-function createApp(commander) {
+const now = () => chalk.gray(`[${new Date().toISOString()}]`);
+
+const logger = {
+  log: (...args) =>
+    console.log(now(), '[INFO]', ...args),
+  error: (...args) =>
+    console.error(now(), chalk.red('[ERROR]'), chalk.red(...args))
+};
+
+/////////////////////////////////////////////////////////////////
+
+function createApp(commander, {logger: log = logger} = {}) {
   const express = require('express');
   const app = express();
 
@@ -13,8 +25,17 @@ function createApp(commander) {
   app.use(express.text({type: '*/*'}));
 
   app.post('/run', (req, res) => {
+    let body = req.body || '';
+    log.log('POST /run:', body);
+    try {
+      commander.interpreter.process(body);
+    } catch (e) {
+      log.error('POST /run: malformed:', e.message);
+      res.status(400).send(e.message);
+      return;
+    }
     let reset = req.query.reset === 'true';
-    commander.run(req.body || '', reset);
+    commander.run(body, reset);
     res.sendStatus(202);
   });
 
@@ -24,7 +45,16 @@ function createApp(commander) {
   });
 
   app.post('/definitions', (req, res) => {
-    commander.runDefinitions(req.body || '');
+    let body = req.body || '';
+    log.log('POST /definitions:', body);
+    try {
+      commander.interpreter.process(body);
+    } catch (e) {
+      log.error('POST /definitions: malformed:', e.message);
+      res.status(400).send(e.message);
+      return;
+    }
+    commander.runDefinitions(body);
     res.sendStatus(202);
   });
 
@@ -56,12 +86,12 @@ function createApp(commander) {
 function serve(options) {
   const commander = commanderOptions.resolveCommander(options);
   const app = createApp(commander);
-  const server = app.listen(options.port, () => console.log(`Server listening on port ${options.port}`));
+  const server = app.listen(options.port, () => logger.log(`Server listening on port ${options.port}`));
   server.on('error', err => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`Error: port ${options.port} is already in use`);
+      logger.error(`port ${options.port} is already in use`);
     } else {
-      console.error(`Error: ${err.message}`);
+      logger.error(err.message);
     }
     process.exit(1);
   });

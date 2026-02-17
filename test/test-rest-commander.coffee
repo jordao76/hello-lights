@@ -13,6 +13,7 @@ describe 'RestCommander', ->
       commandNames: ['turn', 'blink', 'reset']
       fetchCommandNames: sinon.stub().resolves(['turn', 'blink', 'reset'])
       interpreter:
+        process: sinon.stub()
         lookup: (name) ->
           if name is 'turn'
             meta: { name: 'turn', params: [{name: 'light'}, {name: 'state'}], desc: 'Turns a light on or off.' }
@@ -22,7 +23,8 @@ describe 'RestCommander', ->
         format: (meta) -> "#{meta.name} :#{meta.params.map((p) -> p.name).join(' :')}\n#{meta.desc}"
       manager:
         info: -> [{ serialNum: 123, status: 'connected' }]
-    app = createApp @mockCommander
+    noop = ->
+    app = createApp @mockCommander, logger: { log: noop, error: noop }
     @server = app.listen 0, =>
       port = @server.address().port
       @logger = { log: sinon.stub(), error: sinon.stub() }
@@ -43,6 +45,12 @@ describe 'RestCommander', ->
       @rc.run('blink 1 green 300', true).then =>
         sinon.assert.calledWith @mockCommander.run, 'blink 1 green 300', true
 
+    it 'logs error on malformed command', ->
+      @mockCommander.interpreter.process.throws new Error 'bad command'
+      @rc.run('bad').then =>
+        sinon.assert.calledOnce @logger.error
+        expect(@logger.error.firstCall.args[0]).to.include 'bad command'
+
   describe 'cancel', ->
 
     it 'sends POST /cancel', ->
@@ -55,6 +63,12 @@ describe 'RestCommander', ->
       @rc.runDefinitions('(def foo (blink 1 green 300))').then =>
         sinon.assert.calledOnce @mockCommander.runDefinitions
         sinon.assert.calledWith @mockCommander.runDefinitions, '(def foo (blink 1 green 300))'
+
+    it 'logs error on malformed command', ->
+      @mockCommander.interpreter.process.throws new Error 'bad definition'
+      @rc.runDefinitions('bad').then =>
+        sinon.assert.calledOnce @logger.error
+        expect(@logger.error.firstCall.args[0]).to.include 'bad definition'
 
   describe 'fetchCommandNames', ->
 
