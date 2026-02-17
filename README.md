@@ -109,10 +109,10 @@ The `serve` command starts an HTTP server that exposes the Commander interface a
 
 | Endpoint | Method | Body | Response |
 |---|---|---|---|
-| `/run` | POST | Command string (plain text) | 202 Accepted |
-| `/run?reset=true` | POST | Command string (plain text) | 202 Accepted (resets lights first) |
+| `/run` | POST | Command string (plain text) | 202 Accepted, or 400 if malformed |
+| `/run?reset=true` | POST | Command string (plain text) | 202 Accepted (resets lights first), or 400 if malformed |
 | `/cancel` | POST | — | 200 OK |
-| `/definitions` | POST | Definition string (plain text) | 202 Accepted |
+| `/definitions` | POST | Definition string (plain text) | 202 Accepted, or 400 if malformed |
 | `/commands` | GET | — | 200 + JSON array of command names |
 | `/commands/:name` | GET | — | 200 + help text (`text/x-ansi`) or 404 |
 | `/info` | GET | — | 200 + JSON array of `{ serialNum, status }` |

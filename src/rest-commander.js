@@ -57,7 +57,10 @@ class RestCommander {
    */
   async run(command, reset = false) {
     let path = reset ? '/run?reset=true' : '/run';
-    await request(this.host, 'POST', path, command);
+    let res = await request(this.host, 'POST', path, command);
+    if (res.statusCode === 400) {
+      this.logger.error(res.body);
+    }
   }
 
   /**
@@ -72,7 +75,10 @@ class RestCommander {
    * @param {string} command - Command with definitions to execute.
    */
   async runDefinitions(command) {
-    await request(this.host, 'POST', '/definitions', command);
+    let res = await request(this.host, 'POST', '/definitions', command);
+    if (res.statusCode === 400) {
+      this.logger.error(res.body);
+    }
   }
 
   /**
