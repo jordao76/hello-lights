@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Only open PRs for security vulnerabilities, not version bumps
+    open-pull-requests-limit: 5
+    groups:
+      # Group all security patches into a single PR when possible
+      security-patches:
+        applies-to: security-updates
+        patterns:
+          - "*"
