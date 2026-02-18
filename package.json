@@ -55,7 +55,7 @@
   "dependencies": {
     "chalk": "^3.0.0",
     "express": "^5.2.1",
-    "node-hid": "^2.1.1",
+    "node-hid": "^3.3.0",
     "yargs": "^13.3.0"
   },
   "optionalDependencies": {
