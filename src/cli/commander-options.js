@@ -1,4 +1,4 @@
-const chalk = require('chalk');
+const chalk = require('chalk').default;
 const path = require('path');
 const {Commander, RestCommander} = require('..');
 const {MetaFormatter, CodeFormatter} = require('..').commands;
