@@ -1,6 +1,6 @@
 {
   "name": "hello-lights",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Commands to control a traffic light",
   "main": "index.js",
   "bin": {
