@@ -44,20 +44,6 @@ function createApp(commander, {logger: log = logger} = {}) {
     res.sendStatus(200);
   });
 
-  app.post('/definitions', (req, res) => {
-    let body = req.body || '';
-    log.log('POST /definitions:', body);
-    try {
-      commander.interpreter.process(body);
-    } catch (e) {
-      log.error('POST /definitions: malformed:', e.message);
-      res.status(400).send(e.message);
-      return;
-    }
-    commander.runDefinitions(body);
-    res.sendStatus(202);
-  });
-
   app.get('/commands', async (req, res) => {
     res.json(await commander.fetchCommandNames());
   });

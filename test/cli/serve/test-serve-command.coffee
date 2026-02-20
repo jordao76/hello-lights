@@ -27,12 +27,10 @@ describe 'serve command', ->
     beforeEach (done) ->
       @run = sinon.stub()
       @cancel = sinon.stub()
-      @runDefinitions = sinon.stub()
       @process = sinon.stub()
       @mockCommander =
         run: @run
         cancel: @cancel
-        runDefinitions: @runDefinitions
         commandNames: ['turn', 'blink', 'reset']
         fetchCommandNames: sinon.stub().resolves(['turn', 'blink', 'reset'])
         interpreter:
@@ -86,21 +84,6 @@ describe 'serve command', ->
         .then (res) =>
           expect(res.statusCode).to.equal 200
           sinon.assert.calledOnce @cancel
-
-    it 'POST /definitions calls commander.runDefinitions', ->
-      request(@server, 'POST', '/definitions', '(def foo (blink 1 green 300))')
-        .then (res) =>
-          expect(res.statusCode).to.equal 202
-          sinon.assert.calledOnce @runDefinitions
-          sinon.assert.calledWith @runDefinitions, '(def foo (blink 1 green 300))'
-
-    it 'POST /definitions returns 400 for malformed definitions', ->
-      @process.throws new Error('1:1-1:3: Command not found: "bad"')
-      request(@server, 'POST', '/definitions', 'bad')
-        .then (res) =>
-          expect(res.statusCode).to.equal 400
-          expect(res.body).to.include 'Command not found'
-          sinon.assert.notCalled @runDefinitions
 
     it 'GET /commands returns JSON array of command names', ->
       request(@server, 'GET', '/commands', null)
