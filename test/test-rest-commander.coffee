@@ -9,7 +9,6 @@ describe 'RestCommander', ->
     @mockCommander =
       run: sinon.stub()
       cancel: sinon.stub()
-      runDefinitions: sinon.stub()
       commandNames: ['turn', 'blink', 'reset']
       fetchCommandNames: sinon.stub().resolves(['turn', 'blink', 'reset'])
       interpreter:
@@ -56,19 +55,6 @@ describe 'RestCommander', ->
     it 'sends POST /cancel', ->
       @rc.cancel().then =>
         sinon.assert.calledOnce @mockCommander.cancel
-
-  describe 'runDefinitions', ->
-
-    it 'sends POST /definitions with the command string', ->
-      @rc.runDefinitions('(def foo (blink 1 green 300))').then =>
-        sinon.assert.calledOnce @mockCommander.runDefinitions
-        sinon.assert.calledWith @mockCommander.runDefinitions, '(def foo (blink 1 green 300))'
-
-    it 'logs error on malformed command', ->
-      @mockCommander.interpreter.process.throws new Error 'bad definition'
-      @rc.runDefinitions('bad').then =>
-        sinon.assert.calledOnce @logger.error
-        expect(@logger.error.firstCall.args[0]).to.include 'bad definition'
 
   describe 'fetchCommandNames', ->
 

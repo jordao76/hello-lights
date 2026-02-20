@@ -71,17 +71,6 @@ class RestCommander {
   }
 
   /**
-   * Executes definition-only commands on the remote server.
-   * @param {string} command - Command with definitions to execute.
-   */
-  async runDefinitions(command) {
-    let res = await request(this.host, 'POST', '/definitions', command);
-    if (res.statusCode === 400) {
-      this.logger.error(res.body);
-    }
-  }
-
-  /**
    * Fetches all available command names from the remote server.
    * @returns {Promise<string[]>} Array of command names.
    */

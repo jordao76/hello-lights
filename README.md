@@ -63,46 +63,6 @@ Check out the available commands [here](https://jordao76.github.io/hello-lights)
 
 For the documentation look [here](https://jordao76.github.io/hello-lights/doc/index.html).
 
-## Development
-
-Install dependencies:
-
-```sh
-$ npm install
-```
-
-### npm scripts
-
-| Script | Description |
-|---|---|
-| `npm test` | Run all tests (generates PEG parsers first) |
-| `npm run lint` | Lint source and test files |
-| `npm run coverage` | Run tests with coverage instrumentation |
-| `npm run coverage:text` | Print a text coverage summary to the terminal |
-| `npm run coverage:open` | Generate and open an HTML coverage report |
-| `npm run build:doc` | Generate JSDoc documentation into `web/doc/` |
-| `npm run build:web` | Build all web assets (PEG parsers, browserify bundle, docs) |
-| `npm run doc` | Build and open the documentation in the browser |
-| `npm run web` | Build and open the browser demo |
-| `npm run mocha-grep <pattern>` | Run only tests matching a pattern |
-| `npm run cli` | Run the CLI locally |
-
-### CLI
-
-Run the CLI locally with `npm run cli`:
-
-```sh
-$ npm run cli -- exec bounce 300       # execute a command
-$ npm run cli -- exec-file ./cmds.clj  # execute commands from a file
-$ npm run cli -- repl                  # start an interactive REPL
-$ npm run cli -- serve                 # start the HTTP server on port 9000
-$ npm run cli -- serve --port 3000     # start the HTTP server on a custom port
-$ npm run cli -- --selector http exec bounce 300   # execute via a remote server
-$ npm run cli -- --selector http --host http://myserver:3000 repl  # REPL via a remote server
-```
-
-Use `--help` for the full list of options, including `--serial-num` to target a specific device, `--selector multi` to control multiple traffic lights at once, and `--selector http` to send commands to a remote hello-lights server.
-
 ## HTTP Server REST API
 
 The `serve` command starts an HTTP server that exposes the Commander interface as a REST API. By default it listens on port 9000.
@@ -112,7 +72,6 @@ The `serve` command starts an HTTP server that exposes the Commander interface a
 | `/run` | POST | Command string (plain text) | 202 Accepted, or 400 if malformed |
 | `/run?reset=true` | POST | Command string (plain text) | 202 Accepted (resets lights first), or 400 if malformed |
 | `/cancel` | POST | — | 200 OK |
-| `/definitions` | POST | Definition string (plain text) | 202 Accepted, or 400 if malformed |
 | `/commands` | GET | — | 200 + JSON array of command names |
 | `/commands/:name` | GET | — | 200 + help text (`text/x-ansi`) or 404 |
 | `/info` | GET | — | 200 + JSON array of `{ serialNum, status }` |
@@ -123,7 +82,6 @@ Examples:
 $ curl -X POST http://localhost:9000/run -d 'blink 3 green 300'
 $ curl -X POST http://localhost:9000/run?reset=true -d 'twinkle red 400'
 $ curl -X POST http://localhost:9000/cancel
-$ curl -X POST http://localhost:9000/definitions -d '(def foo (blink 1 green 300))'
 $ curl http://localhost:9000/commands
 $ curl http://localhost:9000/commands/turn
 $ curl http://localhost:9000/info
@@ -175,6 +133,30 @@ Check status and logs:
 $ systemctl --user status hello-lights
 $ journalctl --user -u hello-lights -f   # follow logs
 ```
+
+## Development
+
+Install dependencies:
+
+```sh
+$ npm install
+```
+
+### npm scripts
+
+| Script | Description |
+|---|---|
+| `npm test` | Run all tests (generates PEG parsers first) |
+| `npm run lint` | Lint source and test files |
+| `npm run coverage` | Run tests with coverage instrumentation |
+| `npm run coverage:text` | Print a text coverage summary to the terminal |
+| `npm run coverage:open` | Generate and open an HTML coverage report |
+| `npm run build:doc` | Generate JSDoc documentation into `web/doc/` |
+| `npm run build:web` | Build all web assets (PEG parsers, browserify bundle, docs) |
+| `npm run doc` | Build and open the documentation in the browser |
+| `npm run web` | Build and open the browser demo |
+| `npm run mocha-grep <pattern>` | Run only tests matching a pattern |
+| `npm run cli` | Run the CLI locally (e.g. `npm run cli -- exec bounce 300`) |
 
 ## CI
 
